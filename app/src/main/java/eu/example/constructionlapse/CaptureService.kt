@@ -22,6 +22,11 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraFilter
 import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2CameraControl
+import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CameraCharacteristics
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -235,24 +240,73 @@ class CaptureService : LifecycleService() {
         }
     }
 
-    fun meterAt(point: MeteringPoint, mode: Int, result: (Boolean, String) -> Unit) {
-        val c = camera ?: run { result(false, "Camera unavailable"); return }
-        val action = when (mode) {
+    /**
+     * Independent AF and AE regions. CameraX 1.6+ is used for focus/region placement,
+     * Camera2 interop for AE lock, with support checking and explicit feedback.
+     * Hardware AF success does not prove photographic sharpness.
+     */
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun meterAt(
+        point: MeteringPoint, mode: Int, focusLock: Boolean, exposureLock: Boolean,
+        result: (Boolean, String) -> Unit
+    ) {
+        val c = camera ?: run { result(false, "Camera not initialized"); return }
+        val usesAf = mode != 1
+        val usesAe = mode != 0
+        if (usesAe && exposureLock) {
+            val supported = runCatching {
+                Camera2CameraInfo.from(c.cameraInfo).getCameraCharacteristic(
+                    CameraCharacteristics.CONTROL_AE_LOCK_AVAILABLE
+                ) == true
+            }.getOrDefault(false)
+            if(!supported) {
+                result(false, "AE locking is not supported by this lens")
+                return
+            }
+        }
+        val builder = when(mode) {
             0 -> FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
             1 -> FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AE)
             else -> FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
                 .addPoint(point, FocusMeteringAction.FLAG_AE)
-        }.build()
+        }
+        if (usesAf && focusLock) builder.disableAutoCancel()
+        // For AE-only requests, no AF point is submitted: an existing AF lock is not rescanned.
+        val action = builder.build()
         try {
-            val future = c.cameraControl.startFocusAndMetering(action)
-            future.addListener({
+            val metering = c.cameraControl.startFocusAndMetering(action)
+            metering.addListener({
                 try {
-                    val ok = future.get().isFocusSuccessful
-                    result(if (mode == 1) true else ok,
-                        if (mode == 1) "AE metering requested" else if (ok) "Focus OK" else "AF not confirmed")
-                } catch (e: Exception) { result(false, e.message ?: "Metering failed") }
+                    val focusSucceeded = metering.get().isFocusSuccessful
+                    if(usesAf && !focusSucceeded) {
+                        result(false, "AF did not report focus lock; subject may be soft")
+                        return@addListener
+                    }
+                    if (usesAe) {
+                        val options = CaptureRequestOptions.Builder().setCaptureRequestOption(
+                            CaptureRequest.CONTROL_AE_LOCK, exposureLock
+                        ).build()
+                        val applied = Camera2CameraControl.from(c.cameraControl)
+                            .addCaptureRequestOptions(options)
+                        applied.addListener({
+                            try {
+                                applied.get()
+                                result(true, if(exposureLock)
+                                    "AF/AE region applied; AE lock requested (verify exposure visually)"
+                                    else "AE region applied; auto exposure remains adaptive")
+                            } catch(e: Exception) {
+                                result(false,"AE state change failed: ${e.message}")
+                            }
+                        }, ContextCompat.getMainExecutor(this))
+                    } else {
+                        result(true, if (focusLock) "AF scan reported success; fixed until reset"
+                            else "AF scan reported success; returns to continuous")
+                    }
+                } catch(e: Exception) {
+                    result(false,"Metering request failed: ${e.message}")
+                }
             }, ContextCompat.getMainExecutor(this))
-        } catch (e: Exception) { result(false, e.message ?: "Metering failed") }
+        } catch(e: Exception) { result(false, e.message ?: "Camera metering failed") }
     }
 
     private val nextTick = Runnable { captureWhenAllowed() }
