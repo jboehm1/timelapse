@@ -20,6 +20,9 @@ import android.view.MotionEvent
 import android.view.KeyEvent
 import android.graphics.Color
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.SeekBar
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
@@ -58,6 +61,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var timeEnd: EditText
     private lateinit var dayOnly: CheckBox
     private lateinit var focusMode: Spinner
+    private lateinit var targetOverlay: MeteringOverlay
+    private lateinit var keepFocus: CheckBox
+    private lateinit var keepExposure: CheckBox
+    private var selectionRadius = 0.12f
     private lateinit var lens: Spinner
     private var availableLenses: List<Pair<String,String>> = emptyList()
     private lateinit var effect: Spinner
@@ -267,18 +274,20 @@ class MainActivity : ComponentActivity() {
         val main = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(16, 12, 16, 12) }
         preview = PreviewView(this).apply {
             scaleType = PreviewView.ScaleType.FILL_CENTER
-            setOnTouchListener { _, event ->
-                if (event.action == MotionEvent.ACTION_UP) {
-                    val mode = focusMode.selectedItemPosition
-                    service?.meterAt(meteringPointFactory.createPoint(event.x, event.y), mode) { _, message ->
-                        runOnUiThread { refreshStatus(message) }
-                    } ?: refreshStatus("Start capture for touch AF/AE preview")
-                    performClick()
-                }
-                true
+        }
+        targetOverlay = MeteringOverlay(this).apply {
+            onSelect = { target, marker ->
+                val adjusted = marker.copy(size = selectionRadius)
+                setMarker(target, adjusted)
+                saveMeteringSelection()
+                applyMeteringSelection(target, adjusted)
             }
         }
-        main.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        val previewHolder = FrameLayout(this)
+        previewHolder.addView(preview, FrameLayout.LayoutParams(-1,-1))
+        previewHolder.addView(targetOverlay, FrameLayout.LayoutParams(-1,-1))
+        main.addView(previewHolder,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         status = TextView(this).apply { gravity = Gravity.CENTER_VERTICAL; minHeight = 45; textSize = 13f }
         main.addView(status)
         val scroll = ScrollView(this)
@@ -337,8 +346,53 @@ class MainActivity : ComponentActivity() {
         lens = spinner(availableLenses.map { it.second }.ifEmpty { listOf("Unavailable") }, lensesRow)
         controls.addView(lensesRow)
         val focusRow = row()
-        focusMode = spinner(listOf("Tap focus", "Tap exposure", "Tap both"), focusRow)
+        focusMode = spinner(listOf("EDIT Focus (green)", "EDIT Exposure (yellow)", "EDIT Both"), focusRow)
         controls.addView(focusRow)
+        val locksRow = row()
+        keepFocus = CheckBox(this).apply { text="Lock focus (AF)" ; isChecked = true }
+        keepExposure = CheckBox(this).apply { text="Lock exposure (AE)"; isChecked = false }
+        locksRow.addView(keepFocus)
+        locksRow.addView(keepExposure)
+        controls.addView(locksRow)
+        val zoneRow = row()
+        zoneRow.addView(TextView(this).apply { text = "Zone size 2%-50%"; gravity=Gravity.CENTER_VERTICAL })
+        zoneRow.addView(SeekBar(this).apply {
+            max = 48
+            progress = 10
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                    selectionRadius = (p + 2) / 100f
+                }
+                override fun onStartTrackingTouch(s: SeekBar?) {}
+                override fun onStopTrackingTouch(s: SeekBar?) {}
+            })
+        }, LinearLayout.LayoutParams(0,-2,1f))
+        controls.addView(zoneRow)
+        controls.addView(TextView(this).apply {
+            text = "Tap independent preview zones. AF lock is persistent when supported; AE lock freezes outdoor brightness and is generally NOT recommended."
+            textSize = 12f
+        })
+        focusMode.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+            override fun onItemSelected(p: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                targetOverlay.target = listOf(MeteringOverlay.Target.FOCUS,
+                    MeteringOverlay.Target.EXPOSURE,MeteringOverlay.Target.BOTH)[pos]
+            }
+        }
+        keepFocus.setOnCheckedChangeListener { _, _ -> saveMeteringSelection() }
+        keepExposure.setOnCheckedChangeListener { _, _ -> saveMeteringSelection() }
+        lens.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+            override fun onItemSelected(p: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                restoreMeteringSelection()
+            }
+        }
+        projects.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+            override fun onItemSelected(p: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                restoreMeteringSelection()
+            }
+        }
         val captureRow = row()
         button("▶ Start", captureRow) { startCapture() }
         button("■ Stop", captureRow) { stopCapture() }
@@ -390,6 +444,7 @@ class MainActivity : ComponentActivity() {
             textSize = 12f
         })
         setContentView(main)
+        restoreMeteringSelection()
         refreshStatus()
     }
 
@@ -433,6 +488,81 @@ class MainActivity : ComponentActivity() {
     private fun attachPreview() {
         service?.setPreviewSurface(preview.surfaceProvider)
     }
+
+
+    private fun meterPrefsKey(): String {
+        val project = selectedProject()?.name ?: "default"
+        val lensId = if (::lens.isInitialized)
+            availableLenses.getOrNull(lens.selectedItemPosition)?.first ?: "back"
+            else "back"
+        return "$project:$lensId"
+    }
+
+    /** Store user intent; PENDING does not assert the sensor accepted a metering region. */
+    private fun saveMeteringSelection() {
+        if (!::targetOverlay.isInitialized) return
+        val prefs = getSharedPreferences("metering", MODE_PRIVATE)
+        val key = meterPrefsKey()
+        prefs.edit().apply {
+            targetOverlay.focus?.let {
+                putFloat("$key:afX",it.x); putFloat("$key:afY",it.y)
+                putFloat("$key:afSize",it.size)
+            }
+            targetOverlay.exposure?.let {
+                putFloat("$key:aeX",it.x); putFloat("$key:aeY",it.y)
+                putFloat("$key:aeSize",it.size)
+            }
+            putBoolean("$key:afLock",keepFocus.isChecked)
+            putBoolean("$key:aeLock",keepExposure.isChecked)
+        }.apply()
+    }
+
+    private fun restoreMeteringSelection() {
+        if (!::targetOverlay.isInitialized || !::keepFocus.isInitialized) return
+        val prefs = getSharedPreferences("metering", MODE_PRIVATE)
+        val key = meterPrefsKey()
+        fun marker(prefix:String): MeteringOverlay.Marker? =
+            if (prefs.contains("$key:${prefix}X"))
+                MeteringOverlay.Marker(
+                    prefs.getFloat("$key:${prefix}X",0.5f).coerceIn(0f,1f),
+                    prefs.getFloat("$key:${prefix}Y",0.5f).coerceIn(0f,1f),
+                    prefs.getFloat("$key:${prefix}Size",0.12f).coerceIn(0.02f,0.5f),
+                    "PENDING"
+                ) else null
+        targetOverlay.restore(marker("af"),marker("ae"))
+        keepFocus.isChecked = prefs.getBoolean("$key:afLock",true)
+        keepExposure.isChecked = prefs.getBoolean("$key:aeLock",false)
+    }
+
+    private fun applyMeteringSelection(target: MeteringOverlay.Target, marker: MeteringOverlay.Marker) {
+        val meter = service ?: run {
+            targetOverlay.setFeedback(target,"PENDING")
+            refreshStatus("Target saved; start capture to apply it")
+            return
+        }
+        if(preview.width <= 0 || preview.height <= 0) {
+            targetOverlay.setFeedback(target,"PENDING")
+            return
+        }
+        val point = preview.meteringPointFactory.createPoint(
+            marker.x * preview.width, marker.y * preview.height, marker.size)
+        val mode = when(target) {
+            MeteringOverlay.Target.FOCUS -> 0
+            MeteringOverlay.Target.EXPOSURE -> 1
+            MeteringOverlay.Target.BOTH -> 2
+        }
+        targetOverlay.setFeedback(target,"REQUESTED")
+        meter.meterAt(point, mode,
+            keepFocus.isChecked && target != MeteringOverlay.Target.EXPOSURE,
+            keepExposure.isChecked && target != MeteringOverlay.Target.FOCUS) { success, message ->
+            runOnUiThread {
+                targetOverlay.setFeedback(target,if(success) "APPLIED" else "FAILED")
+                refreshStatus(message)
+            }
+        }
+    }
+
+
 
     private fun exportVideo() {
         if (exporting || service?.status?.startsWith("CAPTURING") == true) {
