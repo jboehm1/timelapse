@@ -33,6 +33,9 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
+import android.util.Size
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.NotificationCompat
@@ -54,6 +57,9 @@ import java.util.concurrent.Executors
 class CaptureService : LifecycleService() {
     companion object {
         const val ACTION_START = "eu.example.constructionlapse.START"
+        const val ACTION_PREVIEW = "eu.example.constructionlapse.PREVIEW"
+        const val ACTION_RELEASE_PREVIEW = "eu.example.constructionlapse.RELEASE_PREVIEW"
+
         const val ACTION_STOP = "eu.example.constructionlapse.STOP"
         const val ACTION_SCHEDULE_ALARM = "eu.example.constructionlapse.SCHEDULE_ALARM"
         @Volatile var activeService: CaptureService? = null
@@ -61,6 +67,9 @@ class CaptureService : LifecycleService() {
         const val EXTRA_PROJECT = "project"
         const val EXTRA_INTERVAL = "interval"
         const val EXTRA_CAMERA_ID = "camera_id"
+        const val EXTRA_PHOTO_WIDTH = "photo_width"
+        const val EXTRA_PHOTO_HEIGHT = "photo_height"
+
         const val EXTRA_DAY_ONLY = "day_only"
         const val EXTRA_FROM = "day_start"
         const val EXTRA_TO = "day_end"
@@ -85,6 +94,14 @@ class CaptureService : LifecycleService() {
     private var pendingPreviewRebind = false
     private var previewProvider: SurfaceProvider? = null
     private var running = false
+    private var previewOnly = false
+    val isCapturing: Boolean get() = running && !previewOnly
+    val isPreviewing: Boolean get() = running && previewOnly
+    var actualPhotoSize: String = "Not captured yet"
+        private set
+    private var photoTargetWidth = 0
+    private var photoTargetHeight = 0
+
     private var inFlight = false
     private var lastAttemptElapsed = 0L
     private var captureGeneration = 0L
@@ -127,9 +144,31 @@ class CaptureService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_STOP -> stopCaptureAndService()
+            ACTION_RELEASE_PREVIEW -> if(previewOnly) stopCaptureAndService()
+            ACTION_PREVIEW -> {
+                if (!running) {
+                    try {
+                        startForeground(NOTIFICATION_ID, notification("Camera preview"),
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+                        requestedCameraId = intent.getStringExtra(EXTRA_CAMERA_ID)
+                        photoTargetWidth = 0; photoTargetHeight = 0
+                        running = true
+                        previewOnly = true
+                        bindCamera()
+                    } catch(e:Exception) {
+                        state("Camera preview unavailable: ${e.message}")
+                        stopCaptureAndService()
+                    }
+                }
+            }
             ACTION_START -> {
-                // Ignore duplicates to preserve the in-flight project and frame counter.
-                if (running) return START_NOT_STICKY
+                // A running preview can upgrade into capture without closing the activity.
+                if (running && !previewOnly) return START_NOT_STICKY
+                if (previewOnly) {
+                    try { cameraProvider?.unbindAll() } catch (_:Exception) {}
+                    cameraBound = false
+                    previewOnly = false
+                }
                 // No silent startup from BOOT_COMPLETED; callers must start from visible activity.
                 try {
                     startForeground(NOTIFICATION_ID, notification("Starting"),
@@ -140,6 +179,9 @@ class CaptureService : LifecycleService() {
                     require(dir.canonicalFile.parentFile == root.canonicalFile && dir.isDirectory)
                     project = dir
                     requestedCameraId = intent.getStringExtra(EXTRA_CAMERA_ID)
+                    photoTargetWidth = intent.getIntExtra(EXTRA_PHOTO_WIDTH, 0)
+                    photoTargetHeight = intent.getIntExtra(EXTRA_PHOTO_HEIGHT, 0)
+                    actualPhotoSize = "Awaiting first JPEG"
                     intervalMs = intent.getLongExtra(EXTRA_INTERVAL, 20_000L).coerceIn(1_000L, 3_600_000L)
                     val dayOnly = intent.getBooleanExtra(EXTRA_DAY_ONLY, false)
                     val from = LocalTime.parse(intent.getStringExtra(EXTRA_FROM) ?: "07:00")
@@ -214,12 +256,20 @@ class CaptureService : LifecycleService() {
                 val provider = future.get()
                 cameraProvider = provider
                 pendingCameraRebind = false
-                imageCapture = ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .setJpegQuality(95)
-                    .build()
+                imageCapture = ImageCapture.Builder().apply {
+                    setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                    setJpegQuality(95)
+                    if (photoTargetWidth > 0 && photoTargetHeight > 0) {
+                        val desired = Size(photoTargetWidth, photoTargetHeight)
+                        setResolutionSelector(ResolutionSelector.Builder()
+                            .setResolutionStrategy(ResolutionStrategy(desired,
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+                            .build())
+                    }
+                }.build()
                 connectUseCases()
-                state("CAPTURING ready")
+                state(if (previewOnly) "PREVIEW — choose AF / AE zones" else
+                    "CAPTURING ready · requested ${photoTargetWidth}×${photoTargetHeight}")
             } catch (e: Exception) {
                 state("RECOVERING camera init: ${e.message}")
                 cameraFailure()
@@ -432,7 +482,7 @@ class CaptureService : LifecycleService() {
     }
 
     private fun captureWhenAllowed() {
-        if (!running) return
+        if (!isCapturing) return
         val dir = project ?: return
         val power = getSystemService(POWER_SERVICE) as PowerManager
         val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
@@ -505,7 +555,7 @@ class CaptureService : LifecycleService() {
     }
 
     fun requestImmediateFrame() {
-        if (running && !inFlight) {
+        if (isCapturing && !inFlight) {
             deadlineElapsed = SystemClock.elapsedRealtime()
             scheduleNext(0)
         }
@@ -558,6 +608,8 @@ class CaptureService : LifecycleService() {
                     // Decode only image bounds (no full bitmap allocated).
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeFile(pending.absolutePath, bounds)
+                    if (bounds.outWidth > 0 && bounds.outHeight > 0)
+                        actualPhotoSize = "${bounds.outWidth} × ${bounds.outHeight}"
                     val saved = bounds.outWidth > 0 && bounds.outHeight > 0 && runCatching {
                         frameStore?.commit(pending, "${base}.jpg", System.currentTimeMillis())
                             ?: error("FrameStore unavailable")
@@ -651,6 +703,7 @@ class CaptureService : LifecycleService() {
 
     private fun stopCaptureAndService() {
         running = false
+        previewOnly = false
         pendingRetryDelay = null
         handler.removeCallbacks(nextTick)
         disarmWatchdog()
