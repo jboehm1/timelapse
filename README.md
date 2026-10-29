@@ -28,3 +28,7 @@ Velocity Lapse is a **feature reference**, not a code source. Do **not** commit 
 
 ## Builds
 Pure JVM policy checks run via `bash tools/test-policy.sh` (requires Kotlin CLI and JDK 17), and GitHub Actions runs them on pushes/PRs. The Android application/build pipeline has **not** been migrated into this new repository. A green JVM suite is not proof of Samsung S21 camera reliability. An APK isn't production-ready until the device tests in the spec pass.
+
+
+## Repository visibility and build availability (2026-10-29)
+The repository is currently **private**. Recent GitHub Actions runs failed before starting any runner steps, so those failures provide **no proof** about Kotlin/Android compilation; they are consistent with runner allocation or account billing/usage restrictions. Do not claim the debug APK was built. For proprietary/commercial ambitions, keep this repository private and use a developer machine, self-hosted runner or paid hosted minutes; public runners are only free when the **repository is public**.
