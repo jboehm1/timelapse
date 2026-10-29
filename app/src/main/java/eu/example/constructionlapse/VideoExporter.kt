@@ -3,6 +3,8 @@ package eu.example.constructionlapse
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PorterDuff
@@ -21,10 +23,21 @@ import android.opengl.GLUtils
 import android.view.Surface
 import java.io.File
 import java.io.FileDescriptor
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 enum class VideoEffect { NONE, MOTION_BLUR, LIGHT_TRAILS }
+enum class StampPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
+data class TimestampOverlay(
+    val format: String = "yyyy-MM-dd HH:mm:ss",
+    val fontSizePx: Int = 44,
+    val color: Int = Color.WHITE,
+    val position: StampPosition = StampPosition.BOTTOM_LEFT
+)
+
 
 /** Clean-room MP4 exporter; software temporal effects + OpenGL -> hardware video encoder. */
 object VideoExporter {
@@ -65,7 +78,9 @@ object VideoExporter {
     fun encode(
         files: List<File>, fd: FileDescriptor, width: Int, height: Int, fps: Int,
         effect: VideoEffect, window: Int, bitrate: Int,
-        mime: String = MediaFormat.MIMETYPE_VIDEO_AVC, progress: (Int) -> Unit
+        mime: String = MediaFormat.MIMETYPE_VIDEO_AVC,
+        timestamp: TimestampOverlay? = null,
+        progress: (Int) -> Unit
     ) {
         require(files.size >= 2 && fps in 1..60)
         require(width > 0 && height > 0 && width % 2 == 0 && height % 2 == 0)
@@ -132,7 +147,7 @@ object VideoExporter {
                 }
             }
             files.indices.forEach { i ->
-                val frame = makeFrame(files,i,width,height,effect,window)
+                val frame = makeFrame(files,i,width,height,effect,window,timestamp)
                 try {
                     renderer.render(frame, i.toLong() * 1_000_000_000L / fps)
                 } finally { frame.recycle() }
@@ -153,7 +168,7 @@ object VideoExporter {
     /** Source frames are immutable. Only a single output bitmap is kept. */
     private fun makeFrame(
         frames: List<File>, index: Int, width: Int, height: Int,
-        effect: VideoEffect, window: Int
+        effect: VideoEffect, window: Int, timestamp: TimestampOverlay?
     ): Bitmap {
         val radius = window / 2
         val samples = if(effect == VideoEffect.NONE) index..index
@@ -175,6 +190,27 @@ object VideoExporter {
                 count++
             }
             paint.xfermode = null
+            if(timestamp != null) {
+                val stampMillis = frames[index].name.substringAfterLast('_')
+                    .substringBefore('.').toLongOrNull() ?: frames[index].lastModified()
+                val text = SimpleDateFormat(timestamp.format, Locale.getDefault())
+                    .format(Date(stampMillis))
+                val typography = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = timestamp.color
+                    textSize = timestamp.fontSizePx.coerceIn(12, 300).toFloat()
+                    typeface = Typeface.DEFAULT_BOLD
+                    setShadowLayer(3f, 1.5f, 1.5f, Color.BLACK)
+                }
+                val margin = maxOf(12f, width * 0.025f)
+                val textWidth = typography.measureText(text)
+                val x = if (timestamp.position == StampPosition.TOP_RIGHT ||
+                            timestamp.position == StampPosition.BOTTOM_RIGHT)
+                    (width - margin - textWidth).coerceAtLeast(margin) else margin
+                val y = if (timestamp.position == StampPosition.TOP_LEFT ||
+                            timestamp.position == StampPosition.TOP_RIGHT)
+                    margin + typography.textSize else height - margin
+                canvas.drawText(text,x,y,typography)
+            }
             return out
         } catch(e: Throwable) {
             out.recycle()
