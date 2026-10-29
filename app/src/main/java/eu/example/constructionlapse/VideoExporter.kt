@@ -94,8 +94,8 @@ object VideoExporter {
                         }
                         MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                             check(!muxerStarted)
-                            track = muxer.addTrack(encoder.outputFormat)
-                            muxer.start()
+                            track = muxer!!.addTrack(encoder.outputFormat)
+                            muxer!!.start()
                             muxerStarted = true
                         }
                         else -> if(index >= 0) {
@@ -105,7 +105,7 @@ object VideoExporter {
                                 check(muxerStarted && track >= 0)
                                 encoded.position(info.offset)
                                 encoded.limit(info.offset + info.size)
-                                muxer.writeSampleData(track, encoded, info)
+                                muxer!!.writeSampleData(track, encoded, info)
                             }
                             val eos = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
                             encoder.releaseOutputBuffer(index, false)
