@@ -1,0 +1,23 @@
+name: Pure Kotlin reliability policy tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Kotlin CLI
+        run: |
+          curl -fsSL -o kotlin-compiler.zip https://github.com/JetBrains/kotlin/releases/download/v2.0.21/kotlin-compiler-2.0.21.zip
+          unzip -q kotlin-compiler.zip
+          echo "$PWD/kotlinc/bin" >> "$GITHUB_PATH"
+      - run: bash tools/test-policy.sh
