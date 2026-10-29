@@ -13,7 +13,7 @@ Independent, **reliability-first** timelapse application for construction sites,
 - Safety before frame rate: no unbounded queues, no aggressive automatic restarts, no data loss on a failed export, no OS permission bypass.
 
 ## Honest status
-**Project bootstrap / pre-alpha.** Requirements and validation policy are being established. Android builds, hardware compatibility, night wake-up and multi-day reliability must be measured on real hardware before advertising them as supported.
+**Foundation merged, pre-alpha.** A pure Kotlin safety/scheduling policy and JVM checks are in [core/CapturePolicy.kt](core/CapturePolicy.kt), with [GitHub CI](.github/workflows/policy.yml) passing. **There is not yet a working Android app / installable APK in this repository.** Camera foreground service, screen-off wake-up and multi-day capture remain specification and device-testing work; never advertise them as implemented.
 
 ## Required documents
 - **[Product contract / acceptance criteria](docs/PROJECT_SPEC.md)** — authoritative.
@@ -26,4 +26,4 @@ Independent, **reliability-first** timelapse application for construction sites,
 Velocity Lapse is a **feature reference**, not a code source. Do **not** commit its proprietary APK, resources or decompiled code into this public repository. Use user-observed UI and public documentation to independently implement equivalent behavior.
 
 ## Builds
-Builds will be enabled through the GitHub Actions workflow once the Android scaffold is in place. A green JVM test suite is not proof of Samsung S21 camera reliability. An APK isn't production-ready until the device tests in the spec pass.
+Pure JVM policy checks run via `bash tools/test-policy.sh` (requires Kotlin CLI and JDK 17), and GitHub Actions runs them on pushes/PRs. The Android application/build pipeline has **not** been migrated into this new repository. A green JVM suite is not proof of Samsung S21 camera reliability. An APK isn't production-ready until the device tests in the spec pass.
