@@ -81,6 +81,7 @@ class CaptureService : LifecycleService() {
     private var inFlight = false
     private var lastAttemptElapsed = 0L
     private var captureGeneration = 0L
+    private var latestThermalStatus = 0
     private var watchdog: Runnable? = null
     private var deadlineElapsed = 0L
     private var intervalMs = 20_000L
@@ -272,6 +273,7 @@ class CaptureService : LifecycleService() {
         val plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
         val stat = StatFs(dir.absolutePath)
         val thermal = power.currentThermalStatus
+        latestThermalStatus = thermal
         val decision = policy.evaluate(
             SafetySnapshot(Instant.now(), thermal, stat.availableBytes,
                 stat.totalBytes, percent, plugged != 0, recoveryBlocked),
@@ -287,10 +289,6 @@ class CaptureService : LifecycleService() {
                     return
                 }
                 if (inFlight) { scheduleNext(2_000); return }
-                val minInterval = policy.effectiveIntervalMs(intervalMs, thermal)
-                if (minInterval > intervalMs && deadlineElapsed < SystemClock.elapsedRealtime() + (minInterval-intervalMs)) {
-                    deadlineElapsed = SystemClock.elapsedRealtime() + (minInterval-intervalMs)
-                }
                 val now = SystemClock.elapsedRealtime()
                 if (now < deadlineElapsed) { scheduleNext(deadlineElapsed - now); return }
                 takePhoto()
@@ -452,8 +450,9 @@ class CaptureService : LifecycleService() {
             return
         }
         val now = SystemClock.elapsedRealtime()
+        val safeInterval = policy.effectiveIntervalMs(intervalMs, latestThermalStatus)
         val elapsed = (now - deadlineElapsed).coerceAtLeast(0)
-        deadlineElapsed += ((elapsed / intervalMs) + 1L) * intervalMs
+        deadlineElapsed += ((elapsed / safeInterval) + 1L) * safeInterval
         scheduleNext(deadlineElapsed - now)
     }
 
