@@ -7,6 +7,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
+import java.security.MessageDigest
 
 /** Filesystem-only, Android-free frame durability layer (one project directory). */
 class FrameStore(private val directory: File) {
@@ -88,11 +89,50 @@ class FrameStore(private val directory: File) {
             }
         }
         val frames = originals()
+        val known = journalHashes().keys
+        for (frame in frames) if (frame.name !in known) record(frame, frame.lastModified())
         return Recovery(promoted, quarantined, frames.size, nextId())
     }
 
+    /** Full integrity audit is deliberately opt-in; it reads every image. */
+    fun auditOriginals(): List<String> {
+        val expected = journalHashes()
+        return originals().mapNotNull { image ->
+            val digest = expected[image.name]
+            if (digest == null || digest != sha256(image)) image.name else null
+        }
+    }
+
+    private fun journalHashes(): Map<String, String> {
+        val journal = File(directory, "frames.journal")
+        if (!journal.isFile) return emptyMap()
+        val hashes = mutableMapOf<String,String>()
+        journal.useLines { lines ->
+            for (line in lines) {
+                val parts = line.split('\t')
+                if (parts.size >= 5 && parts[0] == "FRAME" && parts[4].length == 64) {
+                    hashes[parts[1]] = parts[4]
+                }
+            }
+        }
+        return hashes
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                val count = input.read(buf)
+                if (count < 0) break
+                digest.update(buf, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
+    }
+
     private fun record(file: File, timestampMs: Long) {
-        val event = "FRAME\t${file.name}\t${file.length()}\t$timestampMs\n"
+        val event = "FRAME\t${file.name}\t${file.length()}\t$timestampMs\t${sha256(file)}\n"
         FileOutputStream(File(directory, "frames.journal"), true).use {
             it.write(event.toByteArray(Charsets.UTF_8))
             it.fd.sync()
