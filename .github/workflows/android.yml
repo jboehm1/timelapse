@@ -41,31 +41,38 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Android API 35
+      - name: Android API 36
         run: |
           set -euo pipefail
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
-      - name: Run Kotlin policy checks and build debug APK
+      - name: Compile and run unit tests before static lint
         shell: bash
         run: |
           set -euo pipefail
-          gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-build.log
-      - name: Upload build diagnostics even if compilation failed
+          gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-build.log
+      # Make the alpha installable even when static analysis discovers issues.
+      # The job still reports FAILURE if lint fails, so findings are not hidden.
+      - name: Upload debug APK from successful compile
+        uses: actions/upload-artifact@v4
+        with:
+          name: timelapse-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Android lint (release gate; retains red status on findings)
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :app:lintDebug --no-daemon 2>&1 | tee lint-build.log
+      - name: Upload build diagnostics and lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-build-diagnostics
           path: |
             gradle-build.log
+            lint-build.log
             app/build/reports/
           if-no-files-found: ignore
-          retention-days: 14
-      - name: Upload debug-signed APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: timelapse-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
           retention-days: 14
