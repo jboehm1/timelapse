@@ -1,18 +1,22 @@
 name: Android APK and unit tests
+
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
+
 permissions:
   contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Progress tracker consistency
@@ -21,24 +25,47 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # Reuse the Android SDK provisioning method proven in our SLAM app
+      # (jboehm1/VisualOdometry, feature/slam-explorer).
+      # Hosted Ubuntu runners already ship Android SDK; setup-android sometimes
+      # requests obsolete "tools" package and fails before actual compilation.
+      - name: Discover preinstalled Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          "$SDKMANAGER" --version
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11.1'
-      - name: Build debug APK and test (capture diagnostic logs)
+          gradle-version: '8.13'
+      - name: Android API 35
         run: |
-          set -o pipefail
-          gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug 2>&1 | tee gradle-build.log
-      - name: Upload build diagnostics even on failure
+          set -euo pipefail
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Run Kotlin policy checks and build debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :app:testDebugUnitTest :app:lintDebug :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-build.log
+      - name: Upload build diagnostics even if compilation failed
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-build-diagnostics
-          path: gradle-build.log
-          if-no-files-found: warn
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
+          path: |
+            gradle-build.log
+            app/build/reports/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload debug-signed APK
+        if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: timelapse-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
           retention-days: 14
