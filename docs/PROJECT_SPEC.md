@@ -85,3 +85,21 @@ Every PR shall state requirement IDs addressed, tests run, tests missing, failur
 
 ## 10. Mandatory full PRO functionality
 Every item in [PRO_PARITY.md](PRO_PARITY.md), **PRO-001 through PRO-018**, is a product requirement. PRO_PARITY is normative, and status is explicitly SPEC/IMPLEMENTED/DEVICE_VERIFIED; nothing there is optional merely because the app is alpha. Features are released only after the corresponding measurable acceptance criteria pass. Any external references are for functional comparison, not copying proprietary source or binaries.
+
+
+## 11. Independent camera setting regions and manual controls
+
+The exact binding interaction contract is [CAMERA_CONTROL_UX.md](CAMERA_CONTROL_UX.md). It is required for this product. Summary:
+
+- **CAM-007 (P0):** The preview offers independent persistent focus and exposure editing targets, showing two separate markers, chosen region size, and explicit hardware feedback. Selecting one target must not silently shift or reset the other.
+- **CAM-008 (P0):** Focus accepts continuous autofocus, user-selected AF zone with optional long-lived lock, and manual diopter focus if supported by the lens. The camera capability range must be respected, and focus success is not inferred from a tap alone.
+- **CAM-009 (P0):** Exposure accepts matrix auto, point-based adaptive auto, optional exposure lock, and manual ISO/shutter on lenses supporting those controls. AE locking is NOT the default for changing outdoor daylight. Focus must not be modified by an AE-only tap.
+- **CAM-010 (P1):** Independent white balance mode (auto, lock, and manual only if supported). Surface actual supported values, no pretend sliders.
+- **CAM-011 (P0):** Focus/exposure regions and lock intentions persist per project and per lens, with restore/verification on camera rebinding and app restart. A persisted UI marker is not proof hardware metering was successfully restored.
+- **CAM-012 (P0):** The UI distinguishes planned, user-requested, hardware-applied and visually verified states; unsupported controls and unstable firmware behavior must be displayed clearly.
+
+**Device quality gates:** cameraX focus/metering state, Camera2 AF/AE/AWB region counts, true AE lock support, physical focus range in diopters, accurate preview-to-sensor coordinate transform, start/stop and scheduled rebind behavior on S21.
+
+## 12. Commercialisation and repo visibility
+
+This source is currently in a **public** GitHub repository for no-metered-minutes CI on standard GitHub-hosted runners; that is not a commitment to an open-source license. Keep proprietary credentials, signing keys and third-party APKs out of Git. Any code already exposed publicly may have been copied or archived even if future commits move to a private repo. A later closed-source product should segregate confidential software and assets **before** adding them to public history. Licensing/commercial strategy is a separate owner decision. Public GitHub hosting does not imply permission for others to reuse copyright-protected code in the absence of a license, but visibility increases practical copy risk.
