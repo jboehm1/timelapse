@@ -379,8 +379,43 @@ class MainActivity : ComponentActivity() {
                     MeteringOverlay.Target.EXPOSURE,MeteringOverlay.Target.BOTH)[pos]
             }
         }
-        keepFocus.setOnCheckedChangeListener { _, _ -> saveMeteringSelection() }
-        keepExposure.setOnCheckedChangeListener { _, _ -> saveMeteringSelection() }
+        keepFocus.setOnCheckedChangeListener { _, _ ->
+            saveMeteringSelection()
+            targetOverlay.focus?.let { applyMeteringSelection(MeteringOverlay.Target.FOCUS,it) }
+        }
+        keepExposure.setOnCheckedChangeListener { _, _ ->
+            saveMeteringSelection()
+            targetOverlay.exposure?.let { applyMeteringSelection(MeteringOverlay.Target.EXPOSURE,it) }
+        }
+        val manualFocusRow = row()
+        val manualFocusD = labeledEdit("Focus D ", "0.5", manualFocusRow)
+        button("Set MF", manualFocusRow) {
+            val d = manualFocusD.text.toString().toFloatOrNull()
+            if (d == null || d < 0f) refreshStatus("Enter focus distance in diopters (0=infinity)")
+            else service?.manualFocus(d) { _,message -> runOnUiThread { refreshStatus(message) } }
+                ?: refreshStatus("Camera not running")
+        }
+        button("Auto AF", manualFocusRow) {
+            service?.resetAutofocus { _,message -> runOnUiThread { refreshStatus(message) } }
+                ?: refreshStatus("Camera not running")
+        }
+        controls.addView(manualFocusRow)
+        val manualExposureRow = row()
+        val manualIso = labeledEdit("ISO ", "100", manualExposureRow)
+        val manualShutter = labeledEdit("Shutter ms ", "10", manualExposureRow)
+        button("Set AE manual",manualExposureRow) {
+            val iso = manualIso.text.toString().toIntOrNull()
+            val ms = manualShutter.text.toString().toFloatOrNull()
+            if (iso == null || ms == null || ms <= 0 || !ms.isFinite())
+                refreshStatus("Enter valid ISO and exposure milliseconds")
+            else service?.manualExposure(iso,ms) { _,message -> runOnUiThread { refreshStatus(message) } }
+                ?: refreshStatus("Camera not running")
+        }
+        button("Auto AE",manualExposureRow) {
+            service?.resetAutoExposure { _,message -> runOnUiThread { refreshStatus(message) } }
+                ?: refreshStatus("Camera not running")
+        }
+        controls.addView(manualExposureRow)
         lens.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(p: AdapterView<*>?) {}
             override fun onItemSelected(p: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
