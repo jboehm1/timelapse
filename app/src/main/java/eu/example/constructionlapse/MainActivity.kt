@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.os.IBinder
 import android.provider.MediaStore
 import android.view.Gravity
@@ -74,6 +75,96 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { granted -> refreshStatus(if (granted) "Camera ready" else "Camera permission denied") }
 
+    private val importFolder = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { tree ->
+        if (tree == null) return@registerForActivityResult
+        if (exporting || (service?.status?.startsWith("CAPTURING") == true)) {
+            refreshStatus("Stop capture/export before importing"); return@registerForActivityResult
+        }
+        val dir = selectedProject() ?: run { refreshStatus("Create a project first"); return@registerForActivityResult }
+        exporting = true
+        exporter.execute {
+            var count = 0
+            try {
+                val rootId = DocumentsContract.getTreeDocumentId(tree)
+                val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, rootId)
+                val items = mutableListOf<Pair<String,String>>()
+                contentResolver.query(children,
+                    arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                        DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                        DocumentsContract.Document.COLUMN_MIME_TYPE), null, null, null)?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        val name = cursor.getString(1)
+                        val mime = cursor.getString(2) ?: ""
+                        if (mime == "image/jpeg" || mime == "image/png" ||
+                            name.endsWith(".jpg", true) || name.endsWith(".jpeg", true) ||
+                            name.endsWith(".png", true)) items.add(name to id)
+                    }
+                } ?: throw IOException("Cannot enumerate source folder")
+                items.sortWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.first })
+                var nextId = (dir.listFiles()?.mapNotNull {
+                    it.name.substringAfter("frame_", "").substringBefore("_").toLongOrNull()
+                }?.maxOrNull() ?: 0L) + 1L
+                for ((name,id) in items) {
+                    val ext = if (name.endsWith(".png",true)) "png" else "jpg"
+                    val target = File(dir, "frame_${(nextId++).toString().padStart(10,'0')}_import.$ext")
+                    val partial = File(dir, "${target.name}.partial")
+                    try {
+                        val source = DocumentsContract.buildDocumentUriUsingTree(tree, id)
+                        contentResolver.openInputStream(source)?.use { input ->
+                            partial.outputStream().use { output -> input.copyTo(output) }
+                        } ?: throw IOException("Cannot read $name")
+                        if (partial.length() < 50 || !partial.renameTo(target))
+                            throw IOException("Failed to complete $name")
+                        count++
+                    } catch (e: Exception) {
+                        partial.delete()
+                        throw e
+                    }
+                    if (count % 50 == 0) runOnUiThread { refreshStatus("Imported $count frames") }
+                }
+                runOnUiThread { refreshStatus("Imported $count frames into ${dir.name}") }
+            } catch (e: Exception) {
+                runOnUiThread { refreshStatus("Import failed after $count frames: ${e.message}") }
+            } finally { exporting = false }
+        }
+    }
+
+    private val exportSequence = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { tree ->
+        if (tree == null || exporting) return@registerForActivityResult
+        if (service?.status?.startsWith("CAPTURING") == true) {
+            refreshStatus("Stop capture before exporting"); return@registerForActivityResult
+        }
+        val frames = frameFiles()
+        if (frames.isEmpty()) { refreshStatus("No frames to export"); return@registerForActivityResult }
+        exporting = true
+        exporter.execute {
+            var count = 0
+            try {
+                val parent = DocumentsContract.buildDocumentUriUsingTree(
+                    tree, DocumentsContract.getTreeDocumentId(tree))
+                for (file in frames) {
+                    val mime = if(file.name.endsWith(".png",true)) "image/png" else "image/jpeg"
+                    val item = DocumentsContract.createDocument(
+                        contentResolver,parent,mime,file.name)
+                        ?: throw IOException("Cannot create ${file.name}")
+                    contentResolver.openOutputStream(item)?.use { output ->
+                        file.inputStream().use { input -> input.copyTo(output) }
+                    } ?: throw IOException("Cannot write ${file.name}")
+                    count++
+                    if(count % 25 == 0) runOnUiThread { refreshStatus("Exported $count/${frames.size}") }
+                }
+                runOnUiThread { refreshStatus("Exported $count individual images") }
+            } catch (e: Exception) {
+                runOnUiThread { refreshStatus("Export interrupted after $count frames: ${e.message}") }
+            } finally { exporting = false }
+        }
+    }
+
     private val exportZip = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
@@ -137,7 +228,7 @@ class MainActivity : ComponentActivity() {
         return File(root(), n).takeIf { it.isDirectory }
     }
     private fun frameFiles(): List<File> = selectedProject()?.listFiles {
-        it.isFile && (it.name.endsWith(".jpg", true) || it.name.endsWith(".jpeg", true))
+        it.isFile && (it.name.endsWith(".jpg", true) || it.name.endsWith(".jpeg", true) || it.name.endsWith(".png", true))
     }?.sortedBy { it.name } ?: emptyList()
 
     private fun selectProjects(name: String? = null) {
@@ -238,6 +329,10 @@ class MainActivity : ComponentActivity() {
             } else exportZip.launch("${selectedProject()?.name ?: "timelapse"}.zip")
         }
         button("MP4 export", exportRow) { exportVideo() }
+        val moreExport = row()
+        button("Import folder", moreExport) { importFolder.launch(null) }
+        button("Images folder", moreExport) { exportSequence.launch(null) }
+        controls.addView(moreExport)
         controls.addView(exportRow)
         controls.addView(TextView(this).apply {
             text = "ALPHA — More PRO modes are SPECIFIED, not yet available. Do not rely on unattended 7-day operation before device validation."
@@ -286,7 +381,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun exportVideo() {
-        if (exporting) return
+        if (exporting || service?.status?.startsWith("CAPTURING") == true) {
+            refreshStatus("Stop capture/export before MP4 export"); return
+        }
         val photos = frameFiles()
         if (photos.size < 2) { refreshStatus("At least 2 frames needed"); return }
         val (w,h) = if (resolution.selectedItemPosition == 0) 1920 to 1080 else 3840 to 2160
