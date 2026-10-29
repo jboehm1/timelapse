@@ -262,6 +262,7 @@ class CaptureService : LifecycleService() {
                     if (photoTargetWidth > 0 && photoTargetHeight > 0) {
                         val desired = Size(photoTargetWidth, photoTargetHeight)
                         setResolutionSelector(ResolutionSelector.Builder()
+                            .setAllowedResolutionMode(ResolutionSelector.PREFER_HIGHER_RESOLUTION_OVER_CAPTURE_RATE)
                             .setResolutionStrategy(ResolutionStrategy(desired,
                                 ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
                             .build())
@@ -278,6 +279,13 @@ class CaptureService : LifecycleService() {
     }
 
     /** Visible UI may attach/detach preview without owning camera lifecycle. */
+    /** Lens changes apply only to PREVIEW; active captures keep a stable framing. */
+    fun changePreviewLens(id: String) {
+        if (!isPreviewing || inFlight || requestedCameraId == id) return
+        requestedCameraId = id
+        connectUseCases()
+    }
+
     fun setPreviewSurface(surface: SurfaceProvider?) {
         if (previewProvider === surface) return
         previewProvider = surface
