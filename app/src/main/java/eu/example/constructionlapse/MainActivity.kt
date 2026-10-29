@@ -17,6 +17,8 @@ import android.hardware.camera2.CameraManager
 import android.provider.MediaStore
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.KeyEvent
+import android.graphics.Color
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -64,6 +66,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var codec: Spinner
     private var codecOptions: List<Pair<String,String>> = emptyList()
     private lateinit var resolution: Spinner
+    private lateinit var stampEnabled: CheckBox
+    private lateinit var stampPattern: EditText
+    private lateinit var stampPosition: Spinner
+    private lateinit var stampColor: Spinner
+    private lateinit var stampSize: EditText
     private var projectNames: List<String> = emptyList()
 
     private val connection = object : ServiceConnection {
@@ -349,6 +356,23 @@ class MainActivity : ComponentActivity() {
         codecOptions = VideoExporter.availableCodecs()
         codec = spinner(if (codecOptions.isEmpty()) listOf("No encoders") else codecOptions.map { it.second }, codecsRow)
         controls.addView(codecsRow)
+        val stampRow = row()
+        stampEnabled = CheckBox(this).apply { text = "Timestamp video" }
+        stampRow.addView(stampEnabled)
+        stampPattern = EditText(this).apply {
+            isSingleLine = true; setText("yyyy-MM-dd HH:mm:ss")
+        }
+        stampRow.addView(stampPattern, LinearLayout.LayoutParams(0,-2,1f))
+        controls.addView(stampRow)
+        val stampOptions = row()
+        stampPosition = spinner(listOf("Bottom Left","Bottom Right","Top Left","Top Right"),stampOptions)
+        stampColor = spinner(listOf("White","Yellow","Black"),stampOptions)
+        stampSize = EditText(this).apply {
+            setText("44"); isSingleLine = true
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        }
+        stampOptions.addView(stampSize,LinearLayout.LayoutParams(0,-2,0.5f))
+        controls.addView(stampOptions)
         val exportRow = row()
         button("Photos ZIP", exportRow) {
             if (service?.status?.startsWith("CAPTURING") == true) {
@@ -420,6 +444,13 @@ class MainActivity : ComponentActivity() {
         val rate = listOf(30,24,25,60)[fps.selectedItemPosition]
         val effectSelected = VideoEffect.entries[effect.selectedItemPosition]
         val bitrate = VideoExporter.bitrateFor(w,h,rate,quality.selectedItemPosition)
+        val overlay = if (!stampEnabled.isChecked) null else {
+            val color = listOf(Color.WHITE,Color.YELLOW,Color.BLACK)[stampColor.selectedItemPosition]
+            val position = listOf(StampPosition.BOTTOM_LEFT,StampPosition.BOTTOM_RIGHT,
+                StampPosition.TOP_LEFT,StampPosition.TOP_RIGHT)[stampPosition.selectedItemPosition]
+            TimestampOverlay(stampPattern.text.toString(),
+                stampSize.text.toString().toIntOrNull()?.coerceIn(12,300) ?: 44,color,position)
+        }
         val mime = codecOptions.getOrNull(codec.selectedItemPosition)?.first
             ?: run { refreshStatus("No compatible encoder"); return }
         if (!VideoExporter.canEncode(w,h,rate,mime)) {
@@ -439,7 +470,7 @@ class MainActivity : ComponentActivity() {
                 uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
                     ?: throw IOException("Cannot create video")
                 contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
-                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,5,bitrate,mime) {
+                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,5,bitrate,mime,overlay) {
                         if (it % 20 == 0) runOnUiThread { refreshStatus("Encoded $it/${photos.size}") }
                     }
                 } ?: throw IOException("Output unavailable")
