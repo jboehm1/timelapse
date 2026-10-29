@@ -31,6 +31,9 @@ fun main() {
         check(File(root,"frames.journal").readLines().size == 3)
         check(store.recover().promoted == 0)
         check(store.recover().quarantined == 0)
+        check(store.auditOriginals().isEmpty())
+        done.writeBytes(jpg + byteArrayOf(1))
+        check(store.auditOriginals().contains(done.name))
         check(runCatching { store.commit(File(root,"evil"),"../bad.jpg",0) }.isFailure)
         println("PASS: FrameStore original preservation, atomic publish, resume, quarantine, journal")
     } finally { root.deleteRecursively() }
