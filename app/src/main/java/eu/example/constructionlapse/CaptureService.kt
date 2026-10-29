@@ -129,10 +129,10 @@ class CaptureService : LifecycleService() {
                     schedule = DayWindow(enabled = dayOnly, start = from, end = until,
                         zone = ZoneId.systemDefault())
                     nextId = ((dir.listFiles()?.mapNotNull {
-                        it.name.takeIf { name -> name.endsWith(".jpg") }
+                        it.name.takeIf { name -> name.endsWith(".jpg") || name.endsWith(".png") || name.endsWith(".jpeg") }
                             ?.substringAfter("frame_")?.substringBefore("_")?.toLongOrNull()
                     }?.maxOrNull() ?: 0L) + 1L)
-                    captureCount = dir.listFiles { it -> it.name.endsWith(".jpg") }?.size?.toLong() ?: 0L
+                    captureCount = dir.listFiles { it -> it.name.endsWith(".jpg") || it.name.endsWith(".png") || it.name.endsWith(".jpeg") }?.size?.toLong() ?: 0L
                     running = true
                     pendingRetryDelay = null
                     recoveryBlocked = false
