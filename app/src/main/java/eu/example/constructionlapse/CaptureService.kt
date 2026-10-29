@@ -606,8 +606,7 @@ class CaptureService : LifecycleService() {
         }
         val now = SystemClock.elapsedRealtime()
         val safeInterval = policy.effectiveIntervalMs(intervalMs, latestThermalStatus)
-        val elapsed = (now - deadlineElapsed).coerceAtLeast(0)
-        deadlineElapsed += ((elapsed / safeInterval) + 1L) * safeInterval
+        deadlineElapsed = TimelapseLogic.nextDeadlineMs(deadlineElapsed, now, safeInterval)
         scheduleNext(deadlineElapsed - now)
     }
 
