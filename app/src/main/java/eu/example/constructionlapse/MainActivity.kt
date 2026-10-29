@@ -496,6 +496,197 @@ class MainActivity : ComponentActivity() {
         refreshStatus()
     }
 
+
+    /** Capture-first layout. Detailed controls are still available in a scrollable bottom sheet. */
+    private fun redesignUi() {
+        val density = resources.displayMetrics.density
+        fun dp(value:Int) = (value*density + 0.5f).toInt()
+        val navy = Color.rgb(11,18,31)
+        val panel = Color.rgb(24,34,51)
+        val cyan = Color.rgb(73,205,244)
+        val grey = Color.rgb(170,190,210)
+        fun round(color:Int,radius:Int=14):GradientDrawable =
+            GradientDrawable().apply {setColor(color);cornerRadius=dp(radius).toFloat()}
+        fun text(s:String,sp:Float,color:Int):TextView = TextView(this).apply {
+            text=s;textSize=sp;setTextColor(color);gravity=Gravity.CENTER_VERTICAL
+        }
+        val root=(findViewById<ViewGroup>(android.R.id.content).getChildAt(0) as LinearLayout)
+        val cameraView=root.getChildAt(0) as FrameLayout
+        val currentStatus=root.getChildAt(1)
+        val settingsScroll=root.getChildAt(2) as ScrollView
+        root.removeAllViews()
+        root.setBackgroundColor(navy)
+        window.statusBarColor=navy
+        window.navigationBarColor=navy
+
+        // Reuse existing bound controls: layout changes cannot disconnect the capture logic.
+        val settingsControls=settingsScroll.getChildAt(0) as LinearLayout
+        val formatLine=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+        formatLine.addView(text("Original photo resolution",13f,Color.DKGRAY))
+        photoResolution=Spinner(this)
+        formatLine.addView(photoResolution,LinearLayout.LayoutParams(-1,dp(48)))
+        formatLine.addView(text(
+            "MAX is the largest JPEG that Android exposes to third-party apps, not necessarily Samsung's private sensor mode.",
+            12f,Color.DKGRAY))
+        settingsControls.addView(formatLine,4)
+        val children=(0 until settingsControls.childCount).map {settingsControls.getChildAt(it)}
+        settingsControls.removeAllViews()
+        settingsControls.setPadding(dp(18),0,dp(18),dp(36))
+        fun section(title:String,start:Int,end:Int) {
+            val heading=text(title,17f,Color.rgb(20,42,68)).apply {
+                setTypeface(null,android.graphics.Typeface.BOLD)
+                setPadding(0,dp(20),0,dp(9))
+            }
+            settingsControls.addView(heading,LinearLayout.LayoutParams(-1,dp(58)))
+            for(i in start..end) {
+                if(i>=children.size) break
+                val view=children[i]
+                settingsControls.addView(view,LinearLayout.LayoutParams(-1,-2))
+            }
+        }
+        section("01   PROJECT & SCHEDULE",0,2)
+        section("02   LENS & PHOTO QUALITY",3,4)
+        section("03   FOCUS & EXPOSURE",5,10)
+        section("04   CAPTURE COMMANDS",11,11)
+        section("05   VIDEO & EXPORT",12,children.size-1)
+        settingsScroll.setBackgroundColor(Color.rgb(249,251,253))
+        settingsDialog=android.app.Dialog(this)
+        settingsDialog.setContentView(settingsScroll)
+        settingsDialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(-1,(resources.displayMetrics.heightPixels*.86f).toInt())
+            setGravity(Gravity.BOTTOM)
+        }
+
+        val header=LinearLayout(this).apply {
+            orientation=LinearLayout.HORIZONTAL
+            gravity=Gravity.CENTER_VERTICAL
+            setPadding(dp(18),dp(6),dp(15),dp(6))
+        }
+        header.addView(text("TIMELAPSE",19f,Color.WHITE).apply {
+            setTypeface(null,android.graphics.Typeface.BOLD);letterSpacing=.10f
+        },LinearLayout.LayoutParams(0,dp(46),1f))
+        header.addView(text("+ PROJECT",13f,cyan).apply {
+            background=round(panel)
+            gravity=Gravity.CENTER
+            setPadding(dp(14),0,dp(14),0)
+            setOnClickListener{newProject()}
+        },LinearLayout.LayoutParams(-2,dp(41)))
+        root.addView(header,LinearLayout.LayoutParams(-1,dp(59)))
+
+        photoBadge=text("PHOTO · MAX",12f,Color.WHITE).apply {
+            setTypeface(null,android.graphics.Typeface.BOLD)
+        }
+        val topBadge=LinearLayout(this).apply{
+            orientation=LinearLayout.HORIZONTAL
+            gravity=Gravity.CENTER_VERTICAL
+            background=round(Color.argb(216,11,18,31),12)
+            setPadding(dp(13),0,dp(13),0)
+        }
+        topBadge.addView(photoBadge,LinearLayout.LayoutParams(0,dp(42),1f))
+        topBadge.addView(text("⊞ GRID",12f,cyan).apply {
+            gravity=Gravity.CENTER
+            setOnClickListener {
+                targetOverlay.showGrid=!targetOverlay.showGrid
+                this.text=if(targetOverlay.showGrid)"⊞ GRID ON" else "⊞ GRID"
+            }
+        },LinearLayout.LayoutParams(dp(82),dp(42)))
+        cameraView.addView(topBadge,FrameLayout.LayoutParams(-1,dp(50),Gravity.TOP).apply {
+            setMargins(dp(8),dp(8),dp(8),0)
+        })
+        val touchBar=LinearLayout(this).apply{
+            gravity=Gravity.CENTER_VERTICAL;orientation=LinearLayout.HORIZONTAL
+            setPadding(dp(8),dp(6),dp(8),dp(6))
+            background=round(Color.argb(220,11,18,31),13)
+        }
+        fun quick(name:String,action:()->Unit){
+            touchBar.addView(text(name,13f,Color.WHITE).apply{
+                gravity=Gravity.CENTER
+                background=round(panel,9)
+                setOnClickListener{action()}
+            },LinearLayout.LayoutParams(0,dp(42),1f).apply{marginEnd=dp(5)})
+        }
+        quick("◎  FOCUS") {
+            focusMode.setSelection(0)
+            targetOverlay.target=MeteringOverlay.Target.FOCUS
+            refreshStatus("Tap the subject for focus")
+        }
+        quick("◉  EXPOSURE") {
+            focusMode.setSelection(1)
+            targetOverlay.target=MeteringOverlay.Target.EXPOSURE
+            refreshStatus("Tap a different spot for exposure")
+        }
+        cameraView.addView(touchBar,FrameLayout.LayoutParams(-1,dp(57),Gravity.BOTTOM).apply {
+            setMargins(dp(10),0,dp(10),dp(9))
+        })
+        root.addView(cameraView,LinearLayout.LayoutParams(-1,0,1f))
+
+        val bottom=LinearLayout(this).apply {
+            orientation=LinearLayout.VERTICAL; setPadding(dp(14),dp(8),dp(8),dp(16))
+            setBackgroundColor(panel)
+        }
+        val overview=LinearLayout(this).apply{
+            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+        }
+        val name=text("PROJECT •",11f,grey)
+        overview.addView(name,LinearLayout.LayoutParams(dp(85),dp(40)))
+        val projectTitle=text("Select or create a project",14f,Color.WHITE)
+        overview.addView(projectTitle,LinearLayout.LayoutParams(0,dp(40),1f))
+        projectTitle.setOnClickListener{settingsDialog.show()}
+        bottom.addView(overview)
+        val statusHolder=currentStatus as TextView
+        statusHolder.setTextColor(grey)
+        statusHolder.textSize=12f
+        statusHolder.setPadding(dp(4),0,dp(4),0)
+        bottom.addView(statusHolder,LinearLayout.LayoutParams(-1,dp(47)))
+        val buttonRow=LinearLayout(this).apply {
+            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+        }
+        fun actionButton(title:String,highlight:Boolean,onTap:()->Unit):Button {
+            val b=Button(this).apply{
+                isAllCaps=false
+                text=title;textSize=13f
+                setTextColor(if(highlight) navy else Color.WHITE)
+                background=round(if(highlight)cyan else Color.rgb(46,61,84))
+                setOnClickListener{onTap()}
+            }
+            buttonRow.addView(b,LinearLayout.LayoutParams(0,dp(53),1f).apply{marginEnd=dp(7)})
+            return b
+        }
+        mainRecordButton=actionButton("●  START",true){startCapture()}
+        actionButton("■  STOP",false){stopCapture()}
+        actionButton("⚙  SETTINGS",false){settingsDialog.show()}
+        bottom.addView(buttonRow)
+        root.addView(bottom,LinearLayout.LayoutParams(-1,-2))
+
+        // On selection, report all sensor sizes; user can choose truly highest.
+        lens.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(p:AdapterView<*>?){}
+            override fun onItemSelected(p:AdapterView<*>?,v:android.view.View?,index:Int,id:Long){
+                restoreMeteringSelection()
+                updatePhotoResolutions()
+                availableLenses.getOrNull(index)?.first?.let{service?.changePreviewLens(it)}
+            }
+        }
+        updatePhotoResolutions()
+        projectTitle.text="Projects → Settings"
+    }
+
+    private fun updatePhotoResolutions() {
+        if(!::photoResolution.isInitialized || !::lens.isInitialized)return
+        val lensId=availableLenses.getOrNull(lens.selectedItemPosition)?.first
+        val manager=getSystemService(CAMERA_SERVICE) as CameraManager
+        supportedPhotoSizes=if(lensId==null)emptyList() else PhotoResolutionCatalog.query(manager,lensId)
+        val labels=if(supportedPhotoSizes.isEmpty())listOf("Automatic (camera default)") else
+            supportedPhotoSizes.mapIndexed {i,v->
+                (if(i==0)"MAX • " else "") + v.caption
+            }
+        val adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,labels)
+        photoResolution.adapter=adapter
+        val max=supportedPhotoSizes.firstOrNull()
+        photoBadge.text=if(max==null)"PHOTO · AUTO" else "PHOTO · MAX " + max.caption
+    }
+
     private fun startCapture() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
