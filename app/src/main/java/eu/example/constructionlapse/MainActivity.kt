@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var lens: Spinner
     private var availableLenses: List<Pair<String,String>> = emptyList()
     private lateinit var effect: Spinner
+    private lateinit var blurStrength: Spinner
     private lateinit var fps: Spinner
     private lateinit var quality: Spinner
     private lateinit var codec: Spinner
@@ -124,9 +125,8 @@ class MainActivity : ComponentActivity() {
                     }
                 } ?: throw IOException("Cannot enumerate source folder")
                 items.sortWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.first })
-                var nextId = (dir.listFiles()?.mapNotNull {
-                    it.name.substringAfter("frame_", "").substringBefore("_").toLongOrNull()
-                }?.maxOrNull() ?: 0L) + 1L
+                val frameStore = FrameStore(dir)
+                var nextId = frameStore.nextId()
                 for ((name,id) in items) {
                     val ext = if (name.endsWith(".png",true)) "png" else "jpg"
                     val target = File(dir, "frame_${(nextId++).toString().padStart(10,'0')}_import.$ext")
@@ -136,11 +136,10 @@ class MainActivity : ComponentActivity() {
                         contentResolver.openInputStream(source)?.use { input ->
                             partial.outputStream().use { output -> input.copyTo(output) }
                         } ?: throw IOException("Cannot read $name")
-                        if (partial.length() < 50 || !partial.renameTo(target))
-                            throw IOException("Failed to complete $name")
+                        frameStore.commit(partial,target.name,System.currentTimeMillis())
                         count++
                     } catch (e: Exception) {
-                        partial.delete()
+                        // Leave original import staging for eventual recovery/quarantine.
                         throw e
                     }
                     if (count % 50 == 0) runOnUiThread { refreshStatus("Imported $count frames") }
@@ -437,6 +436,13 @@ class MainActivity : ComponentActivity() {
         effect = spinner(listOf("None", "Motion Blur", "Light Trails"), effectRow)
         fps = spinner(listOf("30 fps", "24 fps", "25 fps", "60 fps"), effectRow)
         controls.addView(effectRow)
+        val strengthRow = row()
+        strengthRow.addView(TextView(this).apply {
+            text = "Effect window"; gravity = Gravity.CENTER_VERTICAL
+        })
+        blurStrength = spinner(listOf("1 frame","3 frames","5 frames","7 frames","9 frames"), strengthRow)
+        blurStrength.setSelection(2)
+        controls.addView(strengthRow)
         val codecRow = row()
         resolution = spinner(listOf("1080p", "4K (test)", "8K (test)"), codecRow)
         quality = spinner(listOf("Auto bitrate", "Low", "Medium", "High"), codecRow)
@@ -635,7 +641,8 @@ class MainActivity : ComponentActivity() {
                 uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
                     ?: throw IOException("Cannot create video")
                 contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
-                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,5,bitrate,mime,overlay) {
+                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,
+                        listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay) {
                         if (it % 20 == 0) runOnUiThread { refreshStatus("Encoded $it/${photos.size}") }
                     }
                 } ?: throw IOException("Output unavailable")
