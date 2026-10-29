@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
       - name: Run Kotlin policy checks and build debug APK
         shell: bash
         run: |
