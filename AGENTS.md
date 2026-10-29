@@ -2,7 +2,7 @@
 
 This file is binding for all changes to this repository.
 
-1. Read **README.md** and **docs/PROJECT_SPEC.md** completely before touching code. Read **docs/ARCHITECTURE.md** and **docs/TEST_PLAN.md** for any camera, scheduler, export or lifecycle change.
+1. Read **README.md** and **docs/PROJECT_SPEC.md** completely before touching code. Read **docs/PRO_PARITY.md** for the complete PRO feature contract; read **docs/ARCHITECTURE.md** and **docs/TEST_PLAN.md** for any camera, scheduler, export or lifecycle change.
 2. Treat the requirement IDs in PROJECT_SPEC as the source of truth. Changes to requirements require a documented decision in the same PR, not silent feature changes.
 3. Never claim a feature is implemented, verified or production-ready unless the corresponding tests and evidence are linked. Distinguish: proposed / implemented / compiled / emulator-tested / device-tested / soak-tested.
 4. Reliability and preservation of original frames override visual effects, FPS, exact timing and power efficiency. Do not drop or overwrite valid originals to recover from an export error.
