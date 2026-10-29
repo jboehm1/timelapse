@@ -20,6 +20,7 @@ import android.view.MotionEvent
 import android.view.KeyEvent
 import android.graphics.Color
 import android.view.ViewGroup
+import android.graphics.drawable.GradientDrawable
 import android.widget.FrameLayout
 import android.widget.SeekBar
 import android.widget.AdapterView
@@ -73,6 +74,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var quality: Spinner
     private lateinit var codec: Spinner
     private var codecOptions: List<Pair<String,String>> = emptyList()
+    private lateinit var photoResolution: Spinner
+    private lateinit var photoBadge: TextView
+    private var supportedPhotoSizes: List<PhotoResolution> = emptyList()
+    private lateinit var settingsDialog: android.app.Dialog
+    private lateinit var mainRecordButton: Button
     private lateinit var resolution: Spinner
     private lateinit var stampEnabled: CheckBox
     private lateinit var stampPattern: EditText
@@ -212,6 +218,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         createUi()
+        redesignUi()
         selectProjects()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) cameraPermission.launch(Manifest.permission.CAMERA)
