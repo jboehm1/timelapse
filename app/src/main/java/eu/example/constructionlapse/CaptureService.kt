@@ -1,5 +1,6 @@
 package eu.example.constructionlapse
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -32,6 +33,7 @@ import androidx.lifecycle.LifecycleService
 import java.io.File
 import java.time.Instant
 import java.time.LocalTime
+import java.time.ZonedDateTime
 import java.time.ZoneId
 import java.util.concurrent.Executors
 
@@ -44,6 +46,9 @@ class CaptureService : LifecycleService() {
     companion object {
         const val ACTION_START = "eu.example.constructionlapse.START"
         const val ACTION_STOP = "eu.example.constructionlapse.STOP"
+        const val ACTION_SCHEDULE_ALARM = "eu.example.constructionlapse.SCHEDULE_ALARM"
+        @Volatile var activeService: CaptureService? = null
+            private set
         const val EXTRA_PROJECT = "project"
         const val EXTRA_INTERVAL = "interval"
         const val EXTRA_DAY_ONLY = "day_only"
@@ -66,6 +71,8 @@ class CaptureService : LifecycleService() {
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
+    private var cameraBound = false
+    private var pendingPreviewRebind = false
     private var previewProvider: SurfaceProvider? = null
     private var running = false
     private var inFlight = false
@@ -90,6 +97,7 @@ class CaptureService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
+        activeService = this
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(NotificationChannel(CHANNEL_ID, "Timelapse capture",
                 NotificationManager.IMPORTANCE_LOW))
@@ -188,7 +196,9 @@ class CaptureService : LifecycleService() {
     fun setPreviewSurface(surface: SurfaceProvider?) {
         if (previewProvider === surface) return
         previewProvider = surface
-        if (running && cameraProvider != null) connectUseCases()
+        if (running && cameraProvider != null) {
+            if (inFlight) pendingPreviewRebind = true else connectUseCases()
+        }
     }
 
     private fun connectUseCases() {
@@ -203,8 +213,10 @@ class CaptureService : LifecycleService() {
                 p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, image)
             else
                 p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, image, preview)
+            cameraBound = true
         } catch (e: Exception) {
             camera = null
+            cameraBound = false
             state("RECOVERING bind: ${e.message}")
             cameraFailure()
         }
@@ -256,6 +268,11 @@ class CaptureService : LifecycleService() {
             CaptureDecision.CAPTURE -> {
                 state("CAPTURING ${captureCount} saved, ${errorCount} errors")
                 ensureWakeLock(power)
+                if (!cameraBound && imageCapture != null) {
+                    connectUseCases()
+                    scheduleNext(2000)
+                    return
+                }
                 if (inFlight) { scheduleNext(2_000); return }
                 val now = SystemClock.elapsedRealtime()
                 if (now < deadlineElapsed) { scheduleNext(deadlineElapsed - now); return }
@@ -264,7 +281,13 @@ class CaptureService : LifecycleService() {
             CaptureDecision.NIGHT_STANDBY -> {
                 state("NIGHT_STANDBY display may be OFF")
                 releaseWakeLock()
-                // A sleeping Android device may defer the next Handler tick: exact wake not guaranteed.
+                if (!inFlight && cameraBound) {
+                    cameraProvider?.unbindAll()
+                    camera = null
+                    cameraBound = false
+                }
+                scheduleMorningWakeAlarm()
+                // Android Doze may delay Handler ticks; AlarmManager also requests a wake.
                 scheduleNext(60_000)
             }
             else -> {
@@ -321,6 +344,10 @@ class CaptureService : LifecycleService() {
                             getSharedPreferences("lapse", MODE_PRIVATE).edit()
                                 .putString("lastProject", dir.name).apply()
                         } else cameraFailure()
+                        if (pendingPreviewRebind) {
+                            pendingPreviewRebind = false
+                            connectUseCases()
+                        }
                         advanceDeadline()
                     }
                 }
@@ -368,12 +395,34 @@ class CaptureService : LifecycleService() {
         scheduleNext(deadlineElapsed - now)
     }
 
+    /** Schedule a best-effort wake, not a guarantee of exact 07:00 under Doze. */
+    private fun scheduleMorningWakeAlarm() {
+        if (!schedule.enabled) return
+        val zone = schedule.zone
+        val now = ZonedDateTime.now(zone)
+        var morning = now.toLocalDate().atTime(schedule.start).atZone(zone)
+        if (!morning.isAfter(now)) morning = morning.plusDays(1)
+        val manager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, morning.toInstant().toEpochMilli(), wakeIntent())
+    }
+
+    private fun wakeIntent(): PendingIntent = PendingIntent.getBroadcast(this, 4,
+        Intent(this, ScheduleReceiver::class.java).apply { action = ACTION_SCHEDULE_ALARM },
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    /** Alarm receiver calls only into this still-active service; never cold-starts a camera FGS. */
+    fun onScheduledWake() {
+        if (running) scheduleNext(0)
+    }
+
     private fun stopCaptureAndService() {
         running = false
         pendingRetryDelay = null
         handler.removeCallbacks(nextTick)
         releaseWakeLock()
         try { cameraProvider?.unbindAll() } catch (_: Exception) {}
+        cameraBound = false
+        (getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(wakeIntent())
         imageCapture = null
         camera = null
         state("STOPPED")
@@ -386,6 +435,7 @@ class CaptureService : LifecycleService() {
         handler.removeCallbacks(nextTick)
         releaseWakeLock()
         cameraExecutor.shutdown()
+        if (activeService === this) activeService = null
         super.onDestroy()
     }
 }
