@@ -21,6 +21,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 
 ## Tableau de bord actuel
 
+<!-- PROGRESS-SCORE-START -->
+
 **Progression pondérée estimée : 14 %** — **10/233 tâches à 100 %** (documents / politique uniquement). Aucun **gate** prototype Android n'est encore validé. **Les workflows GitHub Actions de la PR #2 échouent avant l'allocation de runner ; aucun APK n'a été produit.** Ce constat n'est pas un échec démontré du compilateur Kotlin.
 
 | Domaine | Tâches | Score pondéré |
@@ -36,6 +38,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
 | J — Tests, mesures, robustesse validée et release | 24 | **2 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **54 %** |
+
+<!-- PROGRESS-SCORE-END -->
 
 ## Ordre de développement contraignant
 
@@ -56,6 +60,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 - A-07 : dépôt **privé** ; runner local/self-hosted recommandé pour conserver contrôle du code et de la consommation GitHub Actions.
 
 ## Checklist détaillée (toutes tâches à 100 % requises)
+
+<!-- PROGRESS-LIST-START -->
 
 ### A. Build, outils, CI et livraison — 6 %
 
@@ -344,6 +350,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | K-16 | P1 | **0 %** | Registre preuves test appareils | OS, build, hash APK, logs et mesures |
 | [ ] | K-17 | P1 | **0 %** | Checklist release sécurité/qualité | Barrières bloquantes explicites |
 | [ ] | K-18 | P1 | **0 %** | Inventaire dépendances et licences | SBOM lisible et contrôlé |
+
+<!-- PROGRESS-LIST-END -->
 
 ## Changement de pourcentages / discipline de développement
 
