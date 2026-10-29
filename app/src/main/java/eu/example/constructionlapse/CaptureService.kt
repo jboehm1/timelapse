@@ -309,6 +309,100 @@ class CaptureService : LifecycleService() {
         } catch(e: Exception) { result(false, e.message ?: "Camera metering failed") }
     }
 
+    /** Actual Camera2 controls, never simulated image processing. */
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun manualFocus(diopters: Float, result: (Boolean, String) -> Unit) {
+        val current = camera ?: run { result(false,"Camera is not active");return }
+        try {
+            val maxD = Camera2CameraInfo.from(current.cameraInfo)
+                .getCameraCharacteristic(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE)
+                ?: 0f
+            if (maxD <= 0f || diopters !in 0f..maxD) {
+                result(false,"Manual focus unsupported or out of range: 0–${maxD} diopters")
+                return
+            }
+            val options = CaptureRequestOptions.Builder()
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,CaptureRequest.CONTROL_AF_MODE_OFF)
+                .setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE,diopters)
+                .build()
+            val future = Camera2CameraControl.from(current.cameraControl).addCaptureRequestOptions(options)
+            future.addListener({
+                try {
+                    future.get()
+                    result(true,"Requested manual focus ${diopters} D (image sharpness not verified)")
+                } catch(e:Exception) { result(false,"Manual focus failed: ${e.message}") }
+            },ContextCompat.getMainExecutor(this))
+        } catch(e:Exception) {result(false,"Manual focus unavailable: ${e.message}")}
+    }
+
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun resetAutofocus(result: (Boolean,String) -> Unit) {
+        val current = camera ?: run {result(false,"Camera is not active");return}
+        try {
+            val options = CaptureRequestOptions.Builder()
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE).build()
+            val future = Camera2CameraControl.from(current.cameraControl)
+                .addCaptureRequestOptions(options)
+            future.addListener({
+                try {
+                    future.get()
+                    current.cameraControl.cancelFocusAndMetering()
+                    result(true,"Continuous AF requested")
+                } catch(e:Exception){result(false,"Restore AF failed: ${e.message}")}
+            },ContextCompat.getMainExecutor(this))
+        } catch(e:Exception){result(false,"Cannot reset AF: ${e.message}")}
+    }
+
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun manualExposure(iso:Int, shutterMs:Float, result:(Boolean,String)->Unit) {
+        val current = camera ?: run {result(false,"Camera is not active");return}
+        try {
+            val info = Camera2CameraInfo.from(current.cameraInfo)
+            val caps = info.getCameraCharacteristic(
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)?.toSet().orEmpty()
+            if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR !in caps) {
+                result(false,"Manual sensor exposure is not available on this lens");return
+            }
+            val isoRange = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+            val shutterRange = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
+            val nanos = (shutterMs.toDouble()*1_000_000.0).toLong()
+            if (isoRange == null || shutterRange == null ||
+                !isoRange.contains(iso) || !shutterRange.contains(nanos)) {
+                result(false,"ISO/shutter outside supported lens range");return
+            }
+            val options = CaptureRequestOptions.Builder()
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE,CaptureRequest.CONTROL_AE_MODE_OFF)
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK,false)
+                .setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY,iso)
+                .setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME,nanos)
+                .build()
+            val future = Camera2CameraControl.from(current.cameraControl)
+                .addCaptureRequestOptions(options)
+            future.addListener({
+                try {future.get();result(true,"Requested ISO $iso / ${shutterMs} ms")}
+                catch(e:Exception){result(false,"Manual exposure failed: ${e.message}")}
+            },ContextCompat.getMainExecutor(this))
+        } catch(e:Exception){result(false,"Manual exposure unavailable: ${e.message}")}
+    }
+
+    @OptIn(ExperimentalCamera2Interop::class)
+    fun resetAutoExposure(result:(Boolean,String)->Unit) {
+        val current = camera ?: run {result(false,"Camera is not active");return}
+        try {
+            val options = CaptureRequestOptions.Builder()
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_ON)
+                .setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK,false).build()
+            val future = Camera2CameraControl.from(current.cameraControl)
+                .addCaptureRequestOptions(options)
+            future.addListener({
+                try {future.get();result(true,"Adaptive auto exposure requested")}
+                catch(e:Exception){result(false,"AE restore failed: ${e.message}")}
+            },ContextCompat.getMainExecutor(this))
+        } catch(e:Exception){result(false,"Cannot reset AE: ${e.message}")}
+    }
+
     private val nextTick = Runnable { captureWhenAllowed() }
     private fun scheduleNext(delayMs: Long) {
         handler.removeCallbacks(nextTick)
