@@ -24,7 +24,7 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 - Safety before frame rate: no unbounded queues, no aggressive automatic restarts, no data loss on a failed export, no OS permission bypass.
 
 ## Honest status
-**Foundation merged, pre-alpha.** A pure Kotlin safety/scheduling policy and JVM checks are in [core/CapturePolicy.kt](core/CapturePolicy.kt), with [GitHub CI](.github/workflows/policy.yml) passing. **There is not yet a working Android app / installable APK in this repository.** Camera foreground service, screen-off wake-up and multi-day capture remain specification and device-testing work; never advertise them as implemented.
+**Pre-alpha (uncompiled Android prototype).** The feature branch contains Android CameraX capture/service/UI and export source, but **NO BUILT OR DEVICE-VALIDATED APK**. Pure-JVM policies, frame-integrity code and temporal blur-window logic have passed local Kotlin smoke tests. The GitHub Actions jobs in this private repository fail **before a runner starts**; those failures are not a successful Android build. Screen-off recording, automatic morning wake-up and multi-day endurance are unverified and must not be advertised as supported.
 
 ## Required documents
 - **[Product contract / acceptance criteria](docs/PROJECT_SPEC.md)** — authoritative.
