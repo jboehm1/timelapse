@@ -28,11 +28,11 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **6 %** |
-| B — Projets, Photolapse, import et stockage | 19 | **12 %** |
+| B — Projets, Photolapse, import et stockage | 19 | **14 %** |
 | C — Capture caméra, objectifs, format et qualité | 22 | **10 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **10 %** |
-| F — Fiabilité, sécurité matérielle et récupération | 30 | **7 %** |
+| F — Fiabilité, sécurité matérielle et récupération | 30 | **10 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **16 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **7 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
@@ -85,7 +85,7 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | A-16 | P1 | **0 %** | Contrôle des avertissements lint/static analysis | Lint + analyse statique sans défaut majeur |
 | [ ] | A-17 | P2 | **0 %** | Construction reproductible/hachage | Build déterministe comparé en CI locale |
 
-### B. Projets, Photolapse, import et stockage — 12 %
+### B. Projets, Photolapse, import et stockage — 14 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -98,8 +98,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | B-07 | P0 | **25 %** | Export ZIP facultatif | Archive exacte validée par comparaison de hashes |
 | [ ] | B-08 | P0 | **25 %** | Stockage interne fichiers originaux | Photos accessibles au projet après relance |
 | [ ] | B-09 | P0 | **10 %** | Stockage SD/USB externe via SAF | Persistance URI et gestion du média retiré |
-| [ ] | B-10 | P0 | **10 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
-| [ ] | B-11 | P0 | **10 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
+| [ ] | B-10 | P0 | **25 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
+| [ ] | B-11 | P0 | **25 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
 | [ ] | B-12 | P0 | **10 %** | Détection stockage plein et quotas | Arrêt sûr avant seuil avec notification |
 | [ ] | B-13 | P1 | **0 %** | Estimation stockage restant en jours | Prévision avec taille réelle des dernières images |
 | [ ] | B-14 | P0 | **0 %** | Éviter doublons import et reprendre | Index conservé, aucune photo originale écrasée |
@@ -189,7 +189,7 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | E-19 | P2 | **0 %** | Pilotage appareils gérés/kiosk optionnel | Documentation et tests device-owner |
 | [ ] | E-20 | P1 | **0 %** | Comparaison consommation 24h 3 stratégies | Graphes Wh nuit noire/écran OFF/caméra idle |
 
-### F. Fiabilité, sécurité matérielle et récupération — 7 %
+### F. Fiabilité, sécurité matérielle et récupération — 10 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -202,8 +202,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | F-07 | P0 | **10 %** | Prévention ANR UI | Encodeur et I/O hors thread UI validés |
 | [ ] | F-08 | P0 | **10 %** | Prévention OOM/mémoire bornée | 48h sans croissance mémoire significative |
 | [ ] | F-09 | P0 | **10 %** | File capture à taille bornée | Une image active; retard => skip et audit |
-| [ ] | F-10 | P0 | **10 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
-| [ ] | F-11 | P0 | **0 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
+| [ ] | F-10 | P0 | **25 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
+| [ ] | F-11 | P0 | **25 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
 | [ ] | F-12 | P0 | **10 %** | Photos originales immuables | Export raté ne modifie aucun hash source |
 | [ ] | F-13 | P0 | **0 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
 | [ ] | F-14 | P0 | **0 %** | Diagnostics exportables et consentement | ZIP anonymisé pour analyse |
@@ -215,7 +215,7 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | F-20 | P0 | **0 %** | Surveillance progression indépendamment UI | Démontre captures sans activité en avant-plan |
 | [ ] | F-21 | P1 | **0 %** | Recovery après permission retirée | Erreur claire sans boucle |
 | [ ] | F-22 | P1 | **0 %** | Eviter mise en veille optimisations OEM | Samsung policies testées et notifications adaptées |
-| [ ] | F-23 | P0 | **0 %** | Gestion stockage endommagé et JPEG tronqué | Fichier partiel détecté et quarantiné |
+| [ ] | F-23 | P0 | **25 %** | Gestion stockage endommagé et JPEG tronqué | Fichier partiel détecté et quarantiné |
 | [ ] | F-24 | P0 | **0 %** | Comptabilisation frames manquées | Journal taux et plus gros intervalle |
 | [ ] | F-25 | P1 | **0 %** | Gestion peu d'espace RAM et pressure | Dégrader sans perdre photos sauvegardées |
 | [ ] | F-26 | P1 | **0 %** | Concurrence capture/export/import | Capture prioritaire, aucune deadlock |
@@ -233,7 +233,7 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | G-03 | P0 | **25 %** | Vidéo sans effet (None) | Chaque image correspond à un original |
 | [ ] | G-04 | P0 | **25 %** | Motion Blur temporel | N images intégrées avec réglage force |
 | [ ] | G-05 | P0 | **25 %** | Light Trails | Composition max-luminance, intensité configurable |
-| [ ] | G-06 | P0 | **10 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
+| [ ] | G-06 | P0 | **25 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
 | [ ] | G-07 | P1 | **0 %** | Effet poids temporels et ghosting réglable | Réglages clairs vs moyenne brute |
 | [ ] | G-08 | P0 | **25 %** | Encodeur matériel MediaCodec/MediaMuxer | MP4 produit sans stall et métadonnées correctes |
 | [ ] | G-09 | P0 | **25 %** | Résolution 1080p | Sortie validée sur S21 |
