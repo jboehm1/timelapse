@@ -50,6 +50,7 @@ import java.util.concurrent.Executors
  * Start from visible Activity (Android 14+ CAMERA while-in-use permission).
  * All capture files belong to private app storage and are never automatically deleted.
  */
+@androidx.annotation.OptIn(markerClass = [ExperimentalCamera2Interop::class])
 class CaptureService : LifecycleService() {
     companion object {
         const val ACTION_START = "eu.example.constructionlapse.START"
