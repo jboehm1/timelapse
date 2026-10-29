@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "eu.example.constructionlapse"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "eu.example.constructionlapse"
