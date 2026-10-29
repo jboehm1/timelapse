@@ -103,3 +103,8 @@ The exact binding interaction contract is [CAMERA_CONTROL_UX.md](CAMERA_CONTROL_
 ## 12. Commercialisation and repo visibility
 
 As verified on GitHub on 2026-10-29, the repository is **private**. GitHub-hosted CI minutes in private repositories count toward the owner's plan allowance; do not assume public-repository free CI. If commercial proprietary development is intended, favor private storage plus local/self-hosted build runners. A separate public open-core component may be created deliberately if desired. Keep proprietary credentials, signing keys and third-party APKs out of Git. Any code already exposed publicly may have been copied or archived even if future commits move to a private repo. A later closed-source product should segregate confidential software and assets **before** adding them to public history. Licensing/commercial strategy is a separate owner decision. Public GitHub hosting does not imply permission for others to reuse copyright-protected code in the absence of a license, but visibility increases practical copy risk.
+
+
+## 13. Avancement global et strict suivi 100 %
+
+**[MASTER_TODO.md](MASTER_TODO.md)** est le tableau exhaustif de 233 sous-tâches (fonctionnalités, fiabilité, sécurité, tests, documentation, packaging) avec scores, priorités et critères de réussite. **MASTER_TODO.csv** est la source canonique modifiable ; exécuter `python tools/progress.py --write` après tout changement et `--check` lors de la validation. Les pourcentages de code non compilé ne dépassent pas 25 %, la certification longue sur S21 exige les preuves des tests réels. **Ne pas confondre la moyenne d'avancement avec la qualité de production.** Les exigences PRO-001..018 ainsi que CAM/EXP/REL sont des prérequis absolus pour 100 %.
