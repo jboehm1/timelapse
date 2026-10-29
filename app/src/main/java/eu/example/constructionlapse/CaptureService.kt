@@ -20,6 +20,8 @@ import android.os.StatFs
 import android.os.SystemClock
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.CameraFilter
+import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -51,6 +53,7 @@ class CaptureService : LifecycleService() {
             private set
         const val EXTRA_PROJECT = "project"
         const val EXTRA_INTERVAL = "interval"
+        const val EXTRA_CAMERA_ID = "camera_id"
         const val EXTRA_DAY_ONLY = "day_only"
         const val EXTRA_FROM = "day_start"
         const val EXTRA_TO = "day_end"
@@ -82,6 +85,7 @@ class CaptureService : LifecycleService() {
     private var captureCount = 0L
     private var nextId = 1L
     private var project: File? = null
+    private var requestedCameraId: String? = null
     private var schedule = DayWindow()
     private var wakeLock: PowerManager.WakeLock? = null
     private var wakeLockAcquiredAt = 0L
@@ -122,6 +126,7 @@ class CaptureService : LifecycleService() {
                     val dir = File(root, p)
                     require(dir.canonicalFile.parentFile == root.canonicalFile && dir.isDirectory)
                     project = dir
+                    requestedCameraId = intent.getStringExtra(EXTRA_CAMERA_ID)
                     intervalMs = intent.getLongExtra(EXTRA_INTERVAL, 20_000L).coerceIn(1_000L, 3_600_000L)
                     val dayOnly = intent.getBooleanExtra(EXTRA_DAY_ONLY, false)
                     val from = LocalTime.parse(intent.getStringExtra(EXTRA_FROM) ?: "07:00")
@@ -206,13 +211,18 @@ class CaptureService : LifecycleService() {
         val image = imageCapture ?: return
         try {
             p.unbindAll()
+            val selector = requestedCameraId?.let { id ->
+                CameraSelector.Builder().addCameraFilter(CameraFilter { infos ->
+                    infos.filter { info -> Camera2CameraInfo.from(info).cameraId == id }
+                }).build()
+            } ?: CameraSelector.DEFAULT_BACK_CAMERA
             val preview = previewProvider?.let { surface ->
                 Preview.Builder().build().also { it.setSurfaceProvider(surface) }
             }
             camera = if (preview == null)
-                p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, image)
+                p.bindToLifecycle(this, selector, image)
             else
-                p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, image, preview)
+                p.bindToLifecycle(this, selector, image, preview)
             cameraBound = true
         } catch (e: Exception) {
             camera = null
