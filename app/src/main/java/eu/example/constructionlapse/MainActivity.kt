@@ -12,6 +12,8 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.os.IBinder
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.provider.MediaStore
 import android.view.Gravity
 import android.view.MotionEvent
@@ -54,6 +56,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var timeEnd: EditText
     private lateinit var dayOnly: CheckBox
     private lateinit var focusMode: Spinner
+    private lateinit var lens: Spinner
+    private var availableLenses: List<Pair<String,String>> = emptyList()
     private lateinit var effect: Spinner
     private lateinit var fps: Spinner
     private lateinit var quality: Spinner
@@ -308,6 +312,23 @@ class MainActivity : ComponentActivity() {
         scheduleRow.addView(timeStart, LinearLayout.LayoutParams(0, -2, 1f))
         scheduleRow.addView(timeEnd, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(scheduleRow)
+        val lensesRow = row()
+        val manager = getSystemService(CAMERA_SERVICE) as CameraManager
+        availableLenses = manager.cameraIdList.mapNotNull { id ->
+            runCatching {
+                val ch = manager.getCameraCharacteristics(id)
+                val facing = when (ch.get(CameraCharacteristics.LENS_FACING)) {
+                    CameraCharacteristics.LENS_FACING_FRONT -> "Front"
+                    CameraCharacteristics.LENS_FACING_BACK -> "Back"
+                    else -> "External"
+                }
+                val mm = ch.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+                    ?.joinToString("/") { String.format(Locale.US, "%.1f",it) } ?: "?"
+                id to "$facing #$id ($mm mm)"
+            }.getOrNull()
+        }
+        lens = spinner(availableLenses.map { it.second }.ifEmpty { listOf("Unavailable") }, lensesRow)
+        controls.addView(lensesRow)
         val focusRow = row()
         focusMode = spinner(listOf("Tap focus", "Tap exposure", "Tap both"), focusRow)
         controls.addView(focusRow)
@@ -364,6 +385,9 @@ class MainActivity : ComponentActivity() {
                 action = CaptureService.ACTION_START
                 putExtra(CaptureService.EXTRA_PROJECT, p.name)
                 putExtra(CaptureService.EXTRA_INTERVAL, seconds * 1000L)
+                availableLenses.getOrNull(lens.selectedItemPosition)?.first?.let {
+                    putExtra(CaptureService.EXTRA_CAMERA_ID, it)
+                }
                 putExtra(CaptureService.EXTRA_DAY_ONLY, dayOnly.isChecked)
                 putExtra(CaptureService.EXTRA_FROM, timeStart.text.toString())
                 putExtra(CaptureService.EXTRA_TO, timeEnd.text.toString())
