@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             service = (binder as? CaptureService.LocalBinder)?.service()
             attachPreview()
+            requestCameraPreview()
             refreshStatus()
         }
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -100,7 +101,10 @@ class MainActivity : ComponentActivity() {
     }
     private val cameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> refreshStatus(if (granted) "Camera ready" else "Camera permission denied") }
+    ) { granted ->
+        refreshStatus(if (granted) "Camera ready" else "Camera permission denied")
+        if(granted) requestCameraPreview()
+    }
 
     private val importFolder = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -687,6 +691,20 @@ class MainActivity : ComponentActivity() {
         photoBadge.text=if(max==null)"PHOTO · AUTO" else "PHOTO · MAX " + max.caption
     }
 
+    private fun requestCameraPreview() {
+        if (ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED || service?.isCapturing==true ||
+            service?.isPreviewing==true) return
+        runCatching {
+            val intent=Intent(this,CaptureService::class.java).apply {
+                action=CaptureService.ACTION_PREVIEW
+                val id=availableLenses.getOrNull(lens.selectedItemPosition)?.first
+                if(id!=null)putExtra(CaptureService.EXTRA_CAMERA_ID,id)
+            }
+            ContextCompat.startForegroundService(this,intent)
+        }.onFailure { refreshStatus("Camera preview unavailable: " + it.message) }
+    }
+
     private fun startCapture() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
@@ -703,6 +721,10 @@ class MainActivity : ComponentActivity() {
                 action = CaptureService.ACTION_START
                 putExtra(CaptureService.EXTRA_PROJECT, p.name)
                 putExtra(CaptureService.EXTRA_INTERVAL, seconds * 1000L)
+                supportedPhotoSizes.getOrNull(photoResolution.selectedItemPosition)?.let {
+                    putExtra(CaptureService.EXTRA_PHOTO_WIDTH,it.width)
+                    putExtra(CaptureService.EXTRA_PHOTO_HEIGHT,it.height)
+                }
                 availableLenses.getOrNull(lens.selectedItemPosition)?.first?.let {
                     putExtra(CaptureService.EXTRA_CAMERA_ID, it)
                 }
@@ -855,8 +877,14 @@ class MainActivity : ComponentActivity() {
         }
     }
     private fun refreshStatus(message: String? = null) {
+        val s=service
         if (::status.isInitialized) status.text = message ?:
-            "${service?.status ?: "NOT CAPTURING"} · ${service?.savedCount ?: frameFiles().size} photos · ${service?.failures ?: 0} errors"
+            ((s?.status ?: "CAMERA READY") + " · " +
+                (s?.savedCount ?: frameFiles().size) + " photos · " +
+                (s?.failures ?: 0) + " errors" +
+                (s?.actualPhotoSize?.takeIf { it!="Not captured yet" }?.let { " · " + it } ?: ""))
+        if(::mainRecordButton.isInitialized)
+            mainRecordButton.text=if(s?.isCapturing==true)"●  RECORDING" else "●  START"
     }
     /** Hardware/Bluetooth remotes that send volume/camera media keys when UI is visible. */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
