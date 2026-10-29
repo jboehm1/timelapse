@@ -127,6 +127,8 @@ class CaptureService : LifecycleService() {
         when (intent?.action) {
             ACTION_STOP -> stopCaptureAndService()
             ACTION_START -> {
+                // Ignore duplicates to preserve the in-flight project and frame counter.
+                if (running) return START_NOT_STICKY
                 // No silent startup from BOOT_COMPLETED; callers must start from visible activity.
                 try {
                     startForeground(NOTIFICATION_ID, notification("Starting"),
@@ -143,19 +145,35 @@ class CaptureService : LifecycleService() {
                     val until = LocalTime.parse(intent.getStringExtra(EXTRA_TO) ?: "18:00")
                     schedule = DayWindow(enabled = dayOnly, start = from, end = until,
                         zone = ZoneId.systemDefault())
-                    val recovered = FrameStore(dir).also { frameStore = it }.recover()
-                    nextId = recovered.nextId
-                    captureCount = recovered.originals.toLong()
-                    if (recovered.promoted > 0 || recovered.quarantined > 0) {
-                        state("Recovered ${recovered.promoted} frames; ${recovered.quarantined} incomplete")
-                    }
+                    val store = FrameStore(dir)
+                    frameStore = store
                     running = true
                     pendingRetryDelay = null
                     recoveryBlocked = false
                     errorCount = 0
-                    deadlineElapsed = SystemClock.elapsedRealtime()
-                    bindCamera()
-                    scheduleNext(0L)
+                    state("INDEXING originals / recovering interrupted frames")
+                    // Scan and SHA256 repair may be slow for multi-day 10k+ photos.
+                    // Never block the Android main thread while rebuilding the project index.
+                    cameraExecutor.execute {
+                        val result = runCatching { store.recover() }
+                        handler.post {
+                            if (!running || project != dir) return@post
+                            if (result.isFailure) {
+                                state("NEEDS_USER_ACTION storage recovery: ${result.exceptionOrNull()?.message}")
+                                stopCaptureAndService()
+                                return@post
+                            }
+                            val recovered = result.getOrThrow()
+                            nextId = recovered.nextId
+                            captureCount = recovered.originals.toLong()
+                            if (recovered.promoted > 0 || recovered.quarantined > 0) {
+                                state("Recovered ${recovered.promoted} frames; ${recovered.quarantined} incomplete")
+                            }
+                            deadlineElapsed = SystemClock.elapsedRealtime()
+                            bindCamera()
+                            scheduleNext(0L)
+                        }
+                    }
                 } catch (e: Exception) {
                     state("NEEDS_USER_ACTION: ${e.message}")
                     stopCaptureAndService()
