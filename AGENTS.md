@@ -2,7 +2,7 @@
 
 This file is binding for all changes to this repository.
 
-1. Read **README.md**, **docs/PROJECT_SPEC.md**, and **docs/MASTER_TODO.md** completely before touching code. Read **docs/PRO_PARITY.md** for the complete PRO feature contract; read **docs/ARCHITECTURE.md** and **docs/TEST_PLAN.md** for any camera, scheduler, export or lifecycle change.
+1. Read **README.md**, **docs/PROJECT_SPEC.md**, **docs/MASTER_TODO.md**, and **docs/OPEN_SOURCE_REUSE.md** completely before touching code. Read **docs/PRO_PARITY.md** for the complete PRO feature contract; read **docs/ARCHITECTURE.md** and **docs/TEST_PLAN.md** for any camera, scheduler, export or lifecycle change.
 2. Treat the requirement IDs in PROJECT_SPEC as the source of truth. Changes to requirements require a documented decision in the same PR, not silent feature changes.
 3. Never claim a feature is implemented, verified or production-ready unless the corresponding tests and evidence are linked. Distinguish: proposed / implemented / compiled / emulator-tested / device-tested / soak-tested.
 4. Reliability and preservation of original frames override visual effects, FPS, exact timing and power efficiency. Do not drop or overwrite valid originals to recover from an export error.
@@ -27,3 +27,6 @@ This file is binding for all changes to this repository.
 - **Stable:** repeatable >=7-day soak under specified equipment and OS build, recovered frames measured, lifecycle/reboot limitations explicitly documented.
 
 No smartphone Android app can honestly guarantee literally zero missed frames through physical power loss, OS force-stop, hardware failure or shutdown.
+
+18. Before writing new camera, encoder, scheduling, storage or networking infrastructure, review OPEN_SOURCE_REUSE for existing official Apache/MIT alternatives. Source imports require upstream SHA, copyright, full license obligations and tests; reject GPL code unless the project owner explicitly chooses GPL-compatible distribution.
+19. Keep the pure-JVM FrameStore integrity and TimelapseLogic policy tests passing; their passing does NOT substitute for an Android APK and physical S21 test.
