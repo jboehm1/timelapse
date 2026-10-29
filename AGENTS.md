@@ -2,7 +2,7 @@
 
 This file is binding for all changes to this repository.
 
-1. Read **README.md** and **docs/PROJECT_SPEC.md** completely before touching code. Read **docs/PRO_PARITY.md** for the complete PRO feature contract; read **docs/ARCHITECTURE.md** and **docs/TEST_PLAN.md** for any camera, scheduler, export or lifecycle change.
+1. Read **README.md**, **docs/PROJECT_SPEC.md**, and **docs/MASTER_TODO.md** completely before touching code. Read **docs/PRO_PARITY.md** for the complete PRO feature contract; read **docs/ARCHITECTURE.md** and **docs/TEST_PLAN.md** for any camera, scheduler, export or lifecycle change.
 2. Treat the requirement IDs in PROJECT_SPEC as the source of truth. Changes to requirements require a documented decision in the same PR, not silent feature changes.
 3. Never claim a feature is implemented, verified or production-ready unless the corresponding tests and evidence are linked. Distinguish: proposed / implemented / compiled / emulator-tested / device-tested / soak-tested.
 4. Reliability and preservation of original frames override visual effects, FPS, exact timing and power efficiency. Do not drop or overwrite valid originals to recover from an export error.
@@ -17,7 +17,8 @@ This file is binding for all changes to this repository.
 13. The initial device target is Samsung Galaxy S21 (Android 15). Test on-device explicitly; generic emulator success does not validate Samsung power/camera behavior.
 14. Update the status matrix and changelog in docs when implementing milestones. Keep the main README short and link to authoritative docs.
 15. Use feature branches + PRs; protect `main` after bootstrap, and never merge unverified long-session claims.
-16. Every feature should have a measurable acceptance criterion (testable input, expected output, failure behavior), not a subjective success claim.
+16. In every code PR, update **docs/MASTER_TODO.csv** item scores to the *highest evidenced stage*, regenerate the dashboard with `python tools/progress.py --write`, and run `python tools/progress.py --check`. Note the affected item IDs and build/test evidence in the PR. Never advance a score solely because new source code was written; 25% is the uncompiled prototype maximum. 100% requires the item-specific acceptance test, not the mere existence of code.
+17. Every feature should have a measurable acceptance criterion (testable input, expected output, failure behavior), not a subjective success claim.
 
 ## Release gates
 - **Prototype:** builds, core unit tests, short manual camera test.
