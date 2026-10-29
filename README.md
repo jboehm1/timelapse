@@ -11,7 +11,7 @@ Independent, **reliability-first** timelapse application for construction sites,
 - **[MASTER_TODO.md : 233 tâches individuelles avec % de progression, priorités, critères de réussite et score global](docs/MASTER_TODO.md)**
 - [MASTER_TODO.csv : liste canonique modifiable](docs/MASTER_TODO.csv)
 - Mise à jour du tableau de bord : `python tools/progress.py --write`, validation `python tools/progress.py --check`.
-- **Score de référence au 2026-10-29 : 14 % pondéré, 10/233 éléments à 100 % (documents uniquement)**. Ce score n'est pas une déclaration de conformité fonctionnelle : **APK Android non compilé / tests S21 non réalisés**.
+- **Progression : voir le tableau de bord MASTER_TODO actualisé automatiquement.** Un APK alpha est maintenant compilé et les tests Gradle + lint passent, mais **les tests matériels S21 et d'endurance restent à réaliser**.
 
 ## Reuse of mature open-source components
 
@@ -26,7 +26,7 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 - Safety before frame rate: no unbounded queues, no aggressive automatic restarts, no data loss on a failed export, no OS permission bypass.
 
 ## Honest status
-**Pre-alpha (uncompiled Android prototype).** The feature branch contains Android CameraX capture/service/UI and export source, but **NO BUILT OR DEVICE-VALIDATED APK**. Pure-JVM policies, frame-integrity code and temporal blur-window logic have passed local Kotlin smoke tests. The GitHub Actions jobs in this private repository fail **before a runner starts**; those failures are not a successful Android build. Screen-off recording, automatic morning wake-up and multi-day endurance are unverified and must not be advertised as supported.
+**Android alpha: compiled, NOT device-validated.** The APK was successfully built from PR #2 code in [GitHub Actions run #40972789344](https://github.com/jboehm1/timelapse/actions/runs/40972789344): `testDebugUnitTest`, `assembleDebug` and `lintDebug` succeeded (2026-10-30, CET). Artifact: **timelapse-debug-apk**. The debug APK is available through GitHub Actions artifacts (temporary retention); release distributions are not ready. **Capture, AF/AE behavior, overnight wake-up, battery and seven-day endurance are NOT hardware verified on Samsung S21**.
 
 ## Required documents
 - **[Product contract / acceptance criteria](docs/PROJECT_SPEC.md)** — authoritative.
@@ -40,11 +40,11 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 Velocity Lapse is a **feature reference**, not a code source. Do **not** commit its proprietary APK, resources or decompiled code into this public repository. Use user-observed UI and public documentation to independently implement equivalent behavior.
 
 ## Builds
-Pure JVM policy checks run via `bash tools/test-policy.sh` (requires Kotlin CLI and JDK 17), and GitHub Actions runs them on pushes/PRs. The Android application/build pipeline has **not** been migrated into this new repository. A green JVM suite is not proof of Samsung S21 camera reliability. An APK isn't production-ready until the device tests in the spec pass.
+Pure JVM tests run via `bash tools/test-policy.sh`. CI builds the debug APK using Android SDK 36 and Gradle, runs the four core Android JVM JUnit tests, and executes lint. For the verified build and SHA-256 see [BUILD_REPORT_2026-10-30.md](docs/BUILD_REPORT_2026-10-30.md). Green build **does not** validate real camera operation on Samsung S21.
 
 
 ## Repository visibility and build availability (2026-10-29)
-The repository is currently **private**. Recent GitHub Actions runs failed before starting any runner steps, so those failures provide **no proof** about Kotlin/Android compilation; they are consistent with runner allocation or account billing/usage restrictions. Do not claim the debug APK was built. For proprietary/commercial ambitions, keep this repository private and use a developer machine, self-hosted runner or paid hosted minutes; public runners are only free when the **repository is public**.
+The repository is now **PUBLIC**, and GitHub-hosted standard runners are available: the Android APK **compiled and lint passed** in run #40972789344. The original project remains copyright-reserved, without an open-source reuse grant. Public source can still be viewed and copied technically, so commercialization choices require deliberate source-exposure review. Do not treat this alpha build as a stable production app.
 
 
 ### Build an APK on Windows without GitHub Actions
