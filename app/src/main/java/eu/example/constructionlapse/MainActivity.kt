@@ -57,6 +57,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var effect: Spinner
     private lateinit var fps: Spinner
     private lateinit var quality: Spinner
+    private lateinit var codec: Spinner
+    private var codecOptions: List<Pair<String,String>> = emptyList()
     private lateinit var resolution: Spinner
     private var projectNames: List<String> = emptyList()
 
@@ -319,9 +321,13 @@ class MainActivity : ComponentActivity() {
         fps = spinner(listOf("30 fps", "24 fps", "25 fps", "60 fps"), effectRow)
         controls.addView(effectRow)
         val codecRow = row()
-        resolution = spinner(listOf("1080p", "4K (test)"), codecRow)
+        resolution = spinner(listOf("1080p", "4K (test)", "8K (test)"), codecRow)
         quality = spinner(listOf("Auto bitrate", "Low", "Medium", "High"), codecRow)
         controls.addView(codecRow)
+        val codecsRow = row()
+        codecOptions = VideoExporter.availableCodecs()
+        codec = spinner(if (codecOptions.isEmpty()) listOf("No encoders") else codecOptions.map { it.second }, codecsRow)
+        controls.addView(codecsRow)
         val exportRow = row()
         button("Photos ZIP", exportRow) {
             if (service?.status?.startsWith("CAPTURING") == true) {
@@ -386,11 +392,13 @@ class MainActivity : ComponentActivity() {
         }
         val photos = frameFiles()
         if (photos.size < 2) { refreshStatus("At least 2 frames needed"); return }
-        val (w,h) = if (resolution.selectedItemPosition == 0) 1920 to 1080 else 3840 to 2160
+        val (w,h) = listOf(1920 to 1080,3840 to 2160,7680 to 4320)[resolution.selectedItemPosition]
         val rate = listOf(30,24,25,60)[fps.selectedItemPosition]
         val effectSelected = VideoEffect.entries[effect.selectedItemPosition]
         val bitrate = VideoExporter.bitrateFor(w,h,rate,quality.selectedItemPosition)
-        if (!VideoExporter.canEncode(w,h,rate)) {
+        val mime = codecOptions.getOrNull(codec.selectedItemPosition)?.first
+            ?: run { refreshStatus("No compatible encoder"); return }
+        if (!VideoExporter.canEncode(w,h,rate,mime)) {
             refreshStatus("No compatible AVC encoder for ${w}x${h}/${rate}fps"); return
         }
         exporting = true
@@ -407,7 +415,7 @@ class MainActivity : ComponentActivity() {
                 uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
                     ?: throw IOException("Cannot create video")
                 contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
-                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,5,bitrate) {
+                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,5,bitrate,mime) {
                         if (it % 20 == 0) runOnUiThread { refreshStatus("Encoded $it/${photos.size}") }
                     }
                 } ?: throw IOException("Output unavailable")
