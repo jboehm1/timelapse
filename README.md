@@ -1,3 +1,5 @@
+> **Copyright / usage:** The project's original source code is publicly viewable but **not licensed for third-party reuse or redistribution**. See [COPYRIGHT.md](COPYRIGHT.md). Third-party components retain their own licenses.
+
 # Timelapse — construction camera for Android
 
 Independent, **reliability-first** timelapse application for construction sites, initially targeting **Samsung Galaxy S21 / Android 15**.
