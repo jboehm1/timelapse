@@ -25,6 +25,31 @@
 | PRO-017 | Multi-day continuity | P0+ | Durable state, stable naming, journal/reconcile, no catch-up bursts, bounded retry and safe thermal cooldown; clear impossible recovery conditions | IN_PROGRESS |
 | PRO-018 | Remote Wi-Fi status & controls | P2 | LAN-only paired interface, last image/progress/errors and schedule changes; no Internet requirement | SPEC |
 
+## Correspondance avec la checklist % actuelle
+
+Chaque option PRO reste obligatoire et possède un ou plusieurs items vérifiables dans **[MASTER_TODO.md](MASTER_TODO.md)**. Les pourcentages sont des estimations à date de la checklist ; le score réel est maintenu dans `MASTER_TODO.csv`. Une option comprenant plusieurs sous-fonctions n'est terminée que si **toutes** atteignent 100 %.
+
+| Option PRO | Checklist liée | Progrès actuel des sous-fonctions |
+|---|---|---|
+| PRO-001 Unlimited Timelapse projects | B-01 | 25 % |
+| PRO-002 Unlimited Photolapse projects | B-02 | 10 % |
+| PRO-003 Unlimited Import | B-03 / B-04 / B-14 | 25 / 10 / 0 % |
+| PRO-004 Capture Scheduling | E-01 / E-02 / E-03 / E-09 | 25 / 10 / 10 / 0 % |
+| PRO-005 All Camera Lenses | C-05 / C-06 | 25 / 10 % |
+| PRO-006 Customized Timestamps | G-18 | 25 % |
+| PRO-007 Video Codecs | G-16 / G-17 | 25 / 0 % |
+| PRO-008 4K / 8K | G-10 / G-11 | 25 / 25 % (non validé) |
+| PRO-009 Remote Shutter Bluetooth/volume | H-04 / H-05 / H-06 | 25 / 10 / 0 % |
+| PRO-010 Motion Blur/Light Trails | G-04 / G-05 / G-06 | 25 / 25 / 10 % |
+| PRO-011 External SD Storage | B-09 / F-18 | 10 / 0 % |
+| PRO-012 RAW DNG | C-08 / C-09 | 0 / 0 % |
+| PRO-013 Image Sequence | B-06 / B-07 | 25 / 25 % |
+| PRO-014 Bitrate and FPS | G-12 / G-13 / G-14 / G-15 | 25 / 10 / 25 / 0 % |
+| PRO-015 Tap to Focus | D-01 / D-02 / D-06 / D-07 | 25 / 25 / 25 / 25 % |
+| PRO-016 Background Scheduling | E-05 / E-07 / E-09 / J-11 | 25 / 25 / 0 / 0 % |
+| PRO-017 Multi-Day Continuity | B-10 / F-10 / J-12 | 10 / 10 / 0 % |
+| PRO-018 Wi-Fi Remote Control | H-07 / H-08 / H-09 | 0 / 0 / 0 % |
+
 ## Implement in this order
 1. Ensure an Android debug APK is built and tests run.
 2. Camera foreground service + durable JPEG projects + tap AF/AE + safety transitions; verify with device display physically OFF.
