@@ -488,6 +488,25 @@ class MainActivity : ComponentActivity() {
         if (::status.isInitialized) status.text = message ?:
             "${service?.status ?: "NOT CAPTURING"} · ${service?.savedCount ?: frameFiles().size} photos · ${service?.failures ?: 0} errors"
     }
+    /** Hardware/Bluetooth remotes that send volume/camera media keys when UI is visible. */
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode in listOf(KeyEvent.KEYCODE_VOLUME_UP,KeyEvent.KEYCODE_CAMERA,
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
+            if (event.repeatCount == 0) {
+                if (service?.status?.startsWith("CAPTURING") == true) {
+                    service?.requestImmediateFrame()
+                    refreshStatus("Remote shot requested")
+                } else startCapture()
+            }
+            return true
+        }
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            if (event.repeatCount == 0) stopCapture()
+            return true
+        }
+        return super.onKeyDown(keyCode,event)
+    }
+
     override fun onDestroy() {
         exporter.shutdown()
         super.onDestroy()
