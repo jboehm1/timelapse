@@ -26,19 +26,34 @@ import java.nio.ByteOrder
 
 enum class VideoEffect { NONE, MOTION_BLUR, LIGHT_TRAILS }
 
-/** Clean-room MP4 exporter; software temporal effects + OpenGL -> hardware AVC encoder. */
+/** Clean-room MP4 exporter; software temporal effects + OpenGL -> hardware video encoder. */
 object VideoExporter {
-    private fun compatibleCodec(w: Int, h: Int, fps: Int): String? =
+    fun availableCodecs(): List<Pair<String,String>> {
+        val names = listOf(
+            MediaFormat.MIMETYPE_VIDEO_AVC to "H.264 / AVC",
+            MediaFormat.MIMETYPE_VIDEO_HEVC to "H.265 / HEVC",
+            "video/av01" to "AV1"
+        )
+        val infos = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos
+        return names.filter { (mime, _) -> infos.any { codec ->
+            codec.isEncoder && codec.supportedTypes.any { it.equals(mime, true) } &&
+                runCatching { codec.getCapabilitiesForType(mime)
+                    .colorFormats.contains(MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface) }.getOrDefault(false)
+        } }
+    }
+
+    private fun compatibleCodec(w: Int, h: Int, fps: Int, mime: String): String? =
         MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.firstOrNull { info ->
             info.isEncoder && info.supportedTypes.any {
-                it.equals(MediaFormat.MIMETYPE_VIDEO_AVC, true)
+                it.equals(mime, true)
             } && runCatching {
-                info.getCapabilitiesForType(MediaFormat.MIMETYPE_VIDEO_AVC)
+                info.getCapabilitiesForType(mime)
                     .videoCapabilities.areSizeAndRateSupported(w, h, fps.toDouble())
             }.getOrDefault(false)
         }?.name
 
-    fun canEncode(w: Int, h: Int, fps: Int): Boolean = compatibleCodec(w,h,fps) != null
+    fun canEncode(w: Int, h: Int, fps: Int, mime: String = MediaFormat.MIMETYPE_VIDEO_AVC): Boolean =
+        compatibleCodec(w,h,fps,mime) != null
 
     fun bitrateFor(w: Int, h: Int, fps: Int, preset: Int): Int {
         val baseline = (10_000_000L * w * h * fps / (1920L * 1080L * 30L))
@@ -49,19 +64,20 @@ object VideoExporter {
 
     fun encode(
         files: List<File>, fd: FileDescriptor, width: Int, height: Int, fps: Int,
-        effect: VideoEffect, window: Int, bitrate: Int, progress: (Int) -> Unit
+        effect: VideoEffect, window: Int, bitrate: Int,
+        mime: String = MediaFormat.MIMETYPE_VIDEO_AVC, progress: (Int) -> Unit
     ) {
         require(files.size >= 2 && fps in 1..60)
         require(width > 0 && height > 0 && width % 2 == 0 && height % 2 == 0)
         require(window >= 1 && window % 2 == 1 && window <= 9)
-        val codecName = compatibleCodec(width,height,fps)
-            ?: error("No H.264 encoder supporting ${width}x${height}/${fps}fps")
+        val codecName = compatibleCodec(width,height,fps,mime)
+            ?: error("No $mime encoder supporting ${width}x${height}/${fps}fps")
         // Abort preflight rather than creating an upscaled image disguised as 4K.
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(files.first().absolutePath, bounds)
         require(maxOf(bounds.outWidth, bounds.outHeight) >= width &&
                 minOf(bounds.outWidth, bounds.outHeight) >= height) { "Insufficient original resolution" }
-        val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
+        val format = MediaFormat.createVideoFormat(mime, width, height).apply {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
             setInteger(MediaFormat.KEY_FRAME_RATE, fps)
