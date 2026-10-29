@@ -80,6 +80,8 @@ class CaptureService : LifecycleService() {
     private var running = false
     private var inFlight = false
     private var lastAttemptElapsed = 0L
+    private var captureGeneration = 0L
+    private var watchdog: Runnable? = null
     private var deadlineElapsed = 0L
     private var intervalMs = 20_000L
     private var captureCount = 0L
@@ -269,8 +271,9 @@ class CaptureService : LifecycleService() {
         }
         val plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
         val stat = StatFs(dir.absolutePath)
+        val thermal = power.currentThermalStatus
         val decision = policy.evaluate(
-            SafetySnapshot(Instant.now(), power.currentThermalStatus, stat.availableBytes,
+            SafetySnapshot(Instant.now(), thermal, stat.availableBytes,
                 stat.totalBytes, percent, plugged != 0, recoveryBlocked),
             schedule
         )
@@ -284,6 +287,10 @@ class CaptureService : LifecycleService() {
                     return
                 }
                 if (inFlight) { scheduleNext(2_000); return }
+                val minInterval = policy.effectiveIntervalMs(intervalMs, thermal)
+                if (minInterval > intervalMs && deadlineElapsed < SystemClock.elapsedRealtime() + (minInterval-intervalMs)) {
+                    deadlineElapsed = SystemClock.elapsedRealtime() + (minInterval-intervalMs)
+                }
                 val now = SystemClock.elapsedRealtime()
                 if (now < deadlineElapsed) { scheduleNext(deadlineElapsed - now); return }
                 takePhoto()
@@ -302,6 +309,11 @@ class CaptureService : LifecycleService() {
             }
             else -> {
                 releaseWakeLock()
+                if (decision == CaptureDecision.THERMAL_COOLDOWN && !inFlight && cameraBound) {
+                    cameraProvider?.unbindAll()
+                    cameraBound = false
+                    camera = null
+                }
                 state(decision.name)
                 scheduleNext(if (decision == CaptureDecision.THERMAL_COOLDOWN) 120_000 else 60_000)
             }
@@ -324,6 +336,39 @@ class CaptureService : LifecycleService() {
         wakeLock = null
     }
 
+    fun requestImmediateFrame() {
+        if (running && !inFlight) {
+            deadlineElapsed = SystemClock.elapsedRealtime()
+            scheduleNext(0)
+        }
+    }
+
+    private fun armWatchdog(generation: Long, pending: File) {
+        watchdog?.let { handler.removeCallbacks(it) }
+        val timeout = maxOf(15_000L, intervalMs * 2).coerceAtMost(120_000L)
+        val watch = Runnable {
+            if (inFlight && generation == captureGeneration) {
+                inFlight = false
+                // Do not destroy possibly recoverable bytes. They are quarantined/reconciled on restart.
+                if (pending.exists()) {
+                    val quarantine = File(pending.parentFile, "recover_${pending.name}")
+                    pending.renameTo(quarantine)
+                }
+                cameraFailure()
+                cameraBound = false
+                try { cameraProvider?.unbindAll() } catch (_: Exception) {}
+                advanceDeadline()
+            }
+        }
+        watchdog = watch
+        handler.postDelayed(watch, timeout)
+    }
+
+    private fun disarmWatchdog() {
+        watchdog?.let { handler.removeCallbacks(it) }
+        watchdog = null
+    }
+
     private fun takePhoto() {
         val cameraCapture = imageCapture ?: run {
             if (!pendingCameraRebind) {
@@ -335,17 +380,21 @@ class CaptureService : LifecycleService() {
         val dir = project ?: return
         inFlight = true
         lastAttemptElapsed = SystemClock.elapsedRealtime()
+        val generation = ++captureGeneration
         val id = nextId++
         val base = "frame_${id.toString().padStart(10, '0')}_${System.currentTimeMillis()}"
         val pending = File(dir, "${base}.pending")
         val ready = File(dir, "${base}.jpg")
         val output = ImageCapture.OutputFileOptions.Builder(pending).build()
+        armWatchdog(generation, pending)
         try {
             cameraCapture.takePicture(output, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(result: ImageCapture.OutputFileResults) {
                     val saved = pending.length() > 100L && pending.renameTo(ready)
                     if (!saved) pending.delete()
                     handler.post {
+                        if (generation != captureGeneration || !inFlight) return@post
+                        disarmWatchdog()
                         inFlight = false
                         if (saved) {
                             captureCount++
@@ -364,6 +413,8 @@ class CaptureService : LifecycleService() {
                 override fun onError(exception: ImageCaptureException) {
                     pending.delete()
                     handler.post {
+                        if (generation != captureGeneration || !inFlight) return@post
+                        disarmWatchdog()
                         inFlight = false
                         cameraFailure()
                         advanceDeadline()
@@ -371,6 +422,7 @@ class CaptureService : LifecycleService() {
                 }
             })
         } catch (e: Exception) {
+            disarmWatchdog()
             inFlight = false
             pending.delete()
             cameraFailure()
@@ -429,6 +481,7 @@ class CaptureService : LifecycleService() {
         running = false
         pendingRetryDelay = null
         handler.removeCallbacks(nextTick)
+        disarmWatchdog()
         releaseWakeLock()
         try { cameraProvider?.unbindAll() } catch (_: Exception) {}
         cameraBound = false
@@ -444,6 +497,7 @@ class CaptureService : LifecycleService() {
         running = false
         handler.removeCallbacks(nextTick)
         releaseWakeLock()
+        disarmWatchdog()
         cameraExecutor.shutdown()
         if (activeService === this) activeService = null
         super.onDestroy()
