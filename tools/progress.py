@@ -77,9 +77,11 @@ def render_score(tasks: list[dict]) -> str:
     full = sum(task["percent"] == 100 for task in tasks)
     lines = [
         f"**Progression pondérée estimée : {progress(tasks)} %** — **{full}/{len(tasks)} tâches à 100 %** "
-        "(documents / politique uniquement). Aucun **gate** prototype Android n'est encore validé. "
-        "**Les workflows GitHub Actions de la PR #2 échouent avant l'allocation de runner ; "
-        "aucun APK n'a été produit.** Ce constat n'est pas un échec démontré du compilateur Kotlin.",
+        "(surtout documents et pipeline de build). **APK alpha Android compilé et disponible, "
+        "CI JUnit/Gradle/lint verte : "
+        "[run #40972789344](https://github.com/jboehm1/timelapse/actions/runs/40972789344). "
+        "Aucun test sur Galaxy S21 / veille nocturne ni gate de production validé.** "
+        "Le code compilé non testé sur appareil reste plafonné à 40 %.",
         "",
         "| Domaine | Tâches | Score pondéré |",
         "|---|---:|---:|",
