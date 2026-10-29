@@ -17,6 +17,7 @@ Independent, **reliability-first** timelapse application for construction sites,
 
 ## Required documents
 - **[Product contract / acceptance criteria](docs/PROJECT_SPEC.md)** — authoritative.
+- **[Full Velocity Lapse PRO feature-parity matrix](docs/PRO_PARITY.md)** — mandatory, implemented/verified status tracked.
 - [Architecture and day/night strategy](docs/ARCHITECTURE.md).
 - [Reliability and soak-test plan](docs/TEST_PLAN.md).
 - [AI/developer working rules](AGENTS.md).
