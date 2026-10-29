@@ -80,6 +80,8 @@ class CaptureService : LifecycleService() {
     private var wakeLockAcquiredAt = 0L
     private var errorCount = 0
     private var recoveryBlocked = false
+    private var pendingRetryDelay: Long? = null
+    private var pendingCameraRebind = false
     var status: String = "IDLE"
         private set
     val selectedProject: String get() = project?.name ?: "(none)"
@@ -124,6 +126,7 @@ class CaptureService : LifecycleService() {
                     }?.maxOrNull() ?: 0L) + 1L)
                     captureCount = dir.listFiles { it -> it.name.endsWith(".jpg") }?.size?.toLong() ?: 0L
                     running = true
+                    pendingRetryDelay = null
                     recoveryBlocked = false
                     errorCount = 0
                     deadlineElapsed = SystemClock.elapsedRealtime()
@@ -167,6 +170,7 @@ class CaptureService : LifecycleService() {
             try {
                 val provider = future.get()
                 cameraProvider = provider
+                pendingCameraRebind = false
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .setJpegQuality(95)
@@ -288,7 +292,13 @@ class CaptureService : LifecycleService() {
     }
 
     private fun takePhoto() {
-        val cameraCapture = imageCapture ?: run { cameraFailure(); return }
+        val cameraCapture = imageCapture ?: run {
+            if (!pendingCameraRebind) {
+                pendingCameraRebind = true
+                bindCamera()
+            }
+            cameraFailure(); return
+        }
         val dir = project ?: return
         inFlight = true
         lastAttemptElapsed = SystemClock.elapsedRealtime()
@@ -339,12 +349,19 @@ class CaptureService : LifecycleService() {
             state("NEEDS_USER_ACTION camera failures")
         } else {
             state("RECOVERING camera error, retry in ${next / 1000}s")
+            pendingRetryDelay = next
             scheduleNext(next)
         }
     }
 
     private fun advanceDeadline() {
         if (!running) return
+        val retry = pendingRetryDelay
+        if (retry != null) {
+            pendingRetryDelay = null
+            scheduleNext(retry)
+            return
+        }
         val now = SystemClock.elapsedRealtime()
         val elapsed = (now - deadlineElapsed).coerceAtLeast(0)
         deadlineElapsed += ((elapsed / intervalMs) + 1L) * intervalMs
@@ -353,6 +370,7 @@ class CaptureService : LifecycleService() {
 
     private fun stopCaptureAndService() {
         running = false
+        pendingRetryDelay = null
         handler.removeCallbacks(nextTick)
         releaseWakeLock()
         try { cameraProvider?.unbindAll() } catch (_: Exception) {}
