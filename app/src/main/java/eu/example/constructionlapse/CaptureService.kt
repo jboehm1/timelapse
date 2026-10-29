@@ -1,0 +1,373 @@
+package eu.example.constructionlapse
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ServiceInfo
+import android.os.BatteryManager
+import android.os.Binder
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.os.PowerManager
+import android.os.StatFs
+import android.os.SystemClock
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.MeteringPoint
+import androidx.camera.core.Preview
+import androidx.camera.core.Preview.SurfaceProvider
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleService
+import java.io.File
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.util.concurrent.Executors
+
+/**
+ * Proof-of-concept lifecycle-owned camera service, not a multi-day certified engine.
+ * Start from visible Activity (Android 14+ CAMERA while-in-use permission).
+ * All capture files belong to private app storage and are never automatically deleted.
+ */
+class CaptureService : LifecycleService() {
+    companion object {
+        const val ACTION_START = "eu.example.constructionlapse.START"
+        const val ACTION_STOP = "eu.example.constructionlapse.STOP"
+        const val EXTRA_PROJECT = "project"
+        const val EXTRA_INTERVAL = "interval"
+        const val EXTRA_DAY_ONLY = "day_only"
+        const val EXTRA_FROM = "day_start"
+        const val EXTRA_TO = "day_end"
+        private const val CHANNEL_ID = "capture"
+        private const val NOTIFICATION_ID = 45
+        private const val STATUS_KEY = "last_state"
+    }
+
+    inner class LocalBinder : Binder() {
+        fun service(): CaptureService = this@CaptureService
+    }
+    private val binder = LocalBinder()
+    private val handler = Handler(Looper.getMainLooper())
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private val retries = CameraRetryBudget()
+    private val policy = SafetyPolicy()
+    private val retryDelayMs = 5_000L
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var imageCapture: ImageCapture? = null
+    private var camera: Camera? = null
+    private var previewProvider: SurfaceProvider? = null
+    private var running = false
+    private var inFlight = false
+    private var lastAttemptElapsed = 0L
+    private var deadlineElapsed = 0L
+    private var intervalMs = 20_000L
+    private var captureCount = 0L
+    private var nextId = 1L
+    private var project: File? = null
+    private var schedule = DayWindow()
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var wakeLockAcquiredAt = 0L
+    private var errorCount = 0
+    private var recoveryBlocked = false
+    var status: String = "IDLE"
+        private set
+    val selectedProject: String get() = project?.name ?: "(none)"
+    val savedCount: Long get() = captureCount
+    val failures: Int get() = errorCount
+
+    override fun onCreate() {
+        super.onCreate()
+        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .createNotificationChannel(NotificationChannel(CHANNEL_ID, "Timelapse capture",
+                NotificationManager.IMPORTANCE_LOW))
+    }
+
+    override fun onBind(intent: Intent): IBinder {
+        super.onBind(intent)
+        return binder
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        when (intent?.action) {
+            ACTION_STOP -> stopCaptureAndService()
+            ACTION_START -> {
+                // No silent startup from BOOT_COMPLETED; callers must start from visible activity.
+                try {
+                    startForeground(NOTIFICATION_ID, notification("Starting"),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+                    val p = intent.getStringExtra(EXTRA_PROJECT) ?: error("Missing project")
+                    val root = File(getExternalFilesDir("Pictures") ?: filesDir, "projects")
+                    val dir = File(root, p)
+                    require(dir.canonicalFile.parentFile == root.canonicalFile && dir.isDirectory)
+                    project = dir
+                    intervalMs = intent.getLongExtra(EXTRA_INTERVAL, 20_000L).coerceIn(1_000L, 3_600_000L)
+                    val dayOnly = intent.getBooleanExtra(EXTRA_DAY_ONLY, false)
+                    val from = LocalTime.parse(intent.getStringExtra(EXTRA_FROM) ?: "07:00")
+                    val until = LocalTime.parse(intent.getStringExtra(EXTRA_TO) ?: "18:00")
+                    schedule = DayWindow(enabled = dayOnly, start = from, end = until,
+                        zone = ZoneId.systemDefault())
+                    nextId = ((dir.listFiles()?.mapNotNull {
+                        it.name.takeIf { name -> name.endsWith(".jpg") }
+                            ?.substringAfter("frame_")?.substringBefore("_")?.toLongOrNull()
+                    }?.maxOrNull() ?: 0L) + 1L)
+                    captureCount = dir.listFiles { it -> it.name.endsWith(".jpg") }?.size?.toLong() ?: 0L
+                    running = true
+                    recoveryBlocked = false
+                    errorCount = 0
+                    deadlineElapsed = SystemClock.elapsedRealtime()
+                    bindCamera()
+                    scheduleNext(0L)
+                } catch (e: Exception) {
+                    state("NEEDS_USER_ACTION: ${e.message}")
+                    stopCaptureAndService()
+                }
+            }
+        }
+        return START_NOT_STICKY
+    }
+
+    private fun notification(message: String): Notification {
+        val pending = PendingIntent.getActivity(this, 0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_menu_camera)
+            .setContentTitle("Construction timelapse")
+            .setContentText(message)
+            .setContentIntent(pending)
+            .setOngoing(true)
+            .build()
+    }
+
+    private fun state(value: String) {
+        if (status == value) return
+        status = value
+        getSharedPreferences("timelapse_status", MODE_PRIVATE).edit()
+            .putString(STATUS_KEY, value).apply()
+        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(NOTIFICATION_ID, notification(value))
+    }
+
+    private fun bindCamera() {
+        val future = ProcessCameraProvider.getInstance(this)
+        future.addListener({
+            if (!running) return@addListener
+            try {
+                val provider = future.get()
+                cameraProvider = provider
+                imageCapture = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    .setJpegQuality(95)
+                    .build()
+                connectUseCases()
+                state("CAPTURING ready")
+            } catch (e: Exception) {
+                state("RECOVERING camera init: ${e.message}")
+                cameraFailure()
+            }
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    /** Visible UI may attach/detach preview without owning camera lifecycle. */
+    fun setPreviewSurface(surface: SurfaceProvider?) {
+        if (previewProvider === surface) return
+        previewProvider = surface
+        if (running && cameraProvider != null) connectUseCases()
+    }
+
+    private fun connectUseCases() {
+        val p = cameraProvider ?: return
+        val image = imageCapture ?: return
+        try {
+            p.unbindAll()
+            val preview = previewProvider?.let { surface ->
+                Preview.Builder().build().also { it.setSurfaceProvider(surface) }
+            }
+            camera = if (preview == null)
+                p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, image)
+            else
+                p.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, image, preview)
+        } catch (e: Exception) {
+            camera = null
+            state("RECOVERING bind: ${e.message}")
+            cameraFailure()
+        }
+    }
+
+    fun meterAt(point: MeteringPoint, mode: Int, result: (Boolean, String) -> Unit) {
+        val c = camera ?: run { result(false, "Camera unavailable"); return }
+        val action = when (mode) {
+            0 -> FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+            1 -> FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AE)
+            else -> FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+                .addPoint(point, FocusMeteringAction.FLAG_AE)
+        }.build()
+        try {
+            val future = c.cameraControl.startFocusAndMetering(action)
+            future.addListener({
+                try {
+                    val ok = future.get().isFocusSuccessful
+                    result(if (mode == 1) true else ok,
+                        if (mode == 1) "AE metering requested" else if (ok) "Focus OK" else "AF not confirmed")
+                } catch (e: Exception) { result(false, e.message ?: "Metering failed") }
+            }, ContextCompat.getMainExecutor(this))
+        } catch (e: Exception) { result(false, e.message ?: "Metering failed") }
+    }
+
+    private val nextTick = Runnable { captureWhenAllowed() }
+    private fun scheduleNext(delayMs: Long) {
+        handler.removeCallbacks(nextTick)
+        if (running) handler.postDelayed(nextTick, delayMs.coerceAtLeast(0))
+    }
+
+    private fun captureWhenAllowed() {
+        if (!running) return
+        val dir = project ?: return
+        val power = getSystemService(POWER_SERVICE) as PowerManager
+        val battery = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val percent = (battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1).let { level ->
+            val scale = battery?.getIntExtra(BatteryManager.EXTRA_SCALE, 100) ?: 100
+            if (level < 0 || scale <= 0) 100 else (100 * level / scale).coerceIn(0, 100)
+        }
+        val plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+        val stat = StatFs(dir.absolutePath)
+        val decision = policy.evaluate(
+            SafetySnapshot(Instant.now(), power.currentThermalStatus, stat.availableBytes,
+                stat.totalBytes, percent, plugged != 0, recoveryBlocked),
+            schedule
+        )
+        when (decision) {
+            CaptureDecision.CAPTURE -> {
+                state("CAPTURING ${captureCount} saved, ${errorCount} errors")
+                ensureWakeLock(power)
+                if (inFlight) { scheduleNext(2_000); return }
+                val now = SystemClock.elapsedRealtime()
+                if (now < deadlineElapsed) { scheduleNext(deadlineElapsed - now); return }
+                takePhoto()
+            }
+            CaptureDecision.NIGHT_STANDBY -> {
+                state("NIGHT_STANDBY display may be OFF")
+                releaseWakeLock()
+                // A sleeping Android device may defer the next Handler tick: exact wake not guaranteed.
+                scheduleNext(60_000)
+            }
+            else -> {
+                releaseWakeLock()
+                state(decision.name)
+                scheduleNext(if (decision == CaptureDecision.THERMAL_COOLDOWN) 120_000 else 60_000)
+            }
+        }
+    }
+
+    private fun ensureWakeLock(power: PowerManager) {
+        val now = SystemClock.elapsedRealtime()
+        if (wakeLock?.isHeld == true && now - wakeLockAcquiredAt < 30L * 60L * 1000L) return
+        releaseWakeLock()
+        wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Timelapse:ActiveCapture")
+        wakeLock?.setReferenceCounted(false)
+        // Finite renewable lease: explicitly release when paused or stopped.
+        wakeLock?.acquire(60L * 60L * 1000L)
+        wakeLockAcquiredAt = now
+    }
+
+    private fun releaseWakeLock() {
+        try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (_: Exception) {}
+        wakeLock = null
+    }
+
+    private fun takePhoto() {
+        val cameraCapture = imageCapture ?: run { cameraFailure(); return }
+        val dir = project ?: return
+        inFlight = true
+        lastAttemptElapsed = SystemClock.elapsedRealtime()
+        val id = nextId++
+        val base = "frame_${id.toString().padStart(10, '0')}_${System.currentTimeMillis()}"
+        val pending = File(dir, "${base}.pending")
+        val ready = File(dir, "${base}.jpg")
+        val output = ImageCapture.OutputFileOptions.Builder(pending).build()
+        try {
+            cameraCapture.takePicture(output, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                    val saved = pending.length() > 100L && pending.renameTo(ready)
+                    if (!saved) pending.delete()
+                    handler.post {
+                        inFlight = false
+                        if (saved) {
+                            captureCount++
+                            retries.clearAfterVerifiedSuccess()
+                            // Persist last successful project selection across process death.
+                            getSharedPreferences("lapse", MODE_PRIVATE).edit()
+                                .putString("lastProject", dir.name).apply()
+                        } else cameraFailure()
+                        advanceDeadline()
+                    }
+                }
+                override fun onError(exception: ImageCaptureException) {
+                    pending.delete()
+                    handler.post {
+                        inFlight = false
+                        cameraFailure()
+                        advanceDeadline()
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            inFlight = false
+            pending.delete()
+            cameraFailure()
+            advanceDeadline()
+        }
+    }
+
+    private fun cameraFailure() {
+        errorCount++
+        val next = retries.failure(SystemClock.elapsedRealtime())
+        if (next == null) {
+            recoveryBlocked = true
+            state("NEEDS_USER_ACTION camera failures")
+        } else {
+            state("RECOVERING camera error, retry in ${next / 1000}s")
+            scheduleNext(next)
+        }
+    }
+
+    private fun advanceDeadline() {
+        if (!running) return
+        val now = SystemClock.elapsedRealtime()
+        val elapsed = (now - deadlineElapsed).coerceAtLeast(0)
+        deadlineElapsed += ((elapsed / intervalMs) + 1L) * intervalMs
+        scheduleNext(deadlineElapsed - now)
+    }
+
+    private fun stopCaptureAndService() {
+        running = false
+        handler.removeCallbacks(nextTick)
+        releaseWakeLock()
+        try { cameraProvider?.unbindAll() } catch (_: Exception) {}
+        imageCapture = null
+        camera = null
+        state("STOPPED")
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        running = false
+        handler.removeCallbacks(nextTick)
+        releaseWakeLock()
+        cameraExecutor.shutdown()
+        super.onDestroy()
+    }
+}
