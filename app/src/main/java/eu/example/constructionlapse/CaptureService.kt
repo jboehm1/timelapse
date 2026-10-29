@@ -1,6 +1,7 @@
 package eu.example.constructionlapse
 
 import android.app.AlarmManager
+import android.graphics.BitmapFactory
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -93,6 +94,7 @@ class CaptureService : LifecycleService() {
     private var captureCount = 0L
     private var nextId = 1L
     private var project: File? = null
+    private var frameStore: FrameStore? = null
     private var requestedCameraId: String? = null
     private var schedule = DayWindow()
     private var wakeLock: PowerManager.WakeLock? = null
@@ -141,11 +143,12 @@ class CaptureService : LifecycleService() {
                     val until = LocalTime.parse(intent.getStringExtra(EXTRA_TO) ?: "18:00")
                     schedule = DayWindow(enabled = dayOnly, start = from, end = until,
                         zone = ZoneId.systemDefault())
-                    nextId = ((dir.listFiles()?.mapNotNull {
-                        it.name.takeIf { name -> name.endsWith(".jpg") || name.endsWith(".png") || name.endsWith(".jpeg") }
-                            ?.substringAfter("frame_")?.substringBefore("_")?.toLongOrNull()
-                    }?.maxOrNull() ?: 0L) + 1L)
-                    captureCount = dir.listFiles { it -> it.name.endsWith(".jpg") || it.name.endsWith(".png") || it.name.endsWith(".jpeg") }?.size?.toLong() ?: 0L
+                    val recovered = FrameStore(dir).also { frameStore = it }.recover()
+                    nextId = recovered.nextId
+                    captureCount = recovered.originals.toLong()
+                    if (recovered.promoted > 0 || recovered.quarantined > 0) {
+                        state("Recovered ${recovered.promoted} frames; ${recovered.quarantined} incomplete")
+                    }
                     running = true
                     pendingRetryDelay = null
                     recoveryBlocked = false
@@ -495,11 +498,9 @@ class CaptureService : LifecycleService() {
         val watch = Runnable {
             if (inFlight && generation == captureGeneration) {
                 inFlight = false
-                // Do not destroy possibly recoverable bytes. They are quarantined/reconciled on restart.
-                if (pending.exists()) {
-                    val quarantine = File(pending.parentFile, "recover_${pending.name}")
-                    pending.renameTo(quarantine)
-                }
+                // Preserve staging bytes: late CameraX callback may finish writing.
+                // FrameStore will promote complete files or quarantine partial files
+                // on next service start. Never rename a still-being-written file.
                 cameraFailure()
                 cameraBound = false
                 try { cameraProvider?.unbindAll() } catch (_: Exception) {}
@@ -530,14 +531,20 @@ class CaptureService : LifecycleService() {
         val id = nextId++
         val base = "frame_${id.toString().padStart(10, '0')}_${System.currentTimeMillis()}"
         val pending = File(dir, "${base}.pending")
-        val ready = File(dir, "${base}.jpg")
         val output = ImageCapture.OutputFileOptions.Builder(pending).build()
         armWatchdog(generation, pending)
         try {
             cameraCapture.takePicture(output, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(result: ImageCapture.OutputFileResults) {
-                    val saved = pending.length() > 100L && pending.renameTo(ready)
-                    if (!saved) pending.delete()
+                    // Decode only image bounds (no full bitmap allocated).
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeFile(pending.absolutePath, bounds)
+                    val saved = bounds.outWidth > 0 && bounds.outHeight > 0 && runCatching {
+                        frameStore?.commit(pending, "${base}.jpg", System.currentTimeMillis())
+                            ?: error("FrameStore unavailable")
+                    }.isSuccess
+                    // Never delete a staging file after a failure: it might be
+                    // valid but unjournaled and is reconciled on restart.
                     handler.post {
                         if (generation != captureGeneration || !inFlight) return@post
                         disarmWatchdog()
@@ -557,7 +564,7 @@ class CaptureService : LifecycleService() {
                     }
                 }
                 override fun onError(exception: ImageCaptureException) {
-                    pending.delete()
+                    // Leave staged data untouched for recovery and crash analysis.
                     handler.post {
                         if (generation != captureGeneration || !inFlight) return@post
                         disarmWatchdog()
@@ -570,7 +577,7 @@ class CaptureService : LifecycleService() {
         } catch (e: Exception) {
             disarmWatchdog()
             inFlight = false
-            pending.delete()
+            // Leave even partial captures for FrameStore recovery.
             cameraFailure()
             advanceDeadline()
         }
