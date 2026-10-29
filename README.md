@@ -4,6 +4,13 @@ Independent, **reliability-first** timelapse application for construction sites,
 
 > **Source of truth:** [docs/PROJECT_SPEC.md](docs/PROJECT_SPEC.md). All development, reviews, and test plans MUST respect the numbered requirements there. [AGENTS.md](AGENTS.md) defines the required developer workflow.
 
+## Roadmap exhaustive et progression vérifiable
+
+- **[MASTER_TODO.md : 233 tâches individuelles avec % de progression, priorités, critères de réussite et score global](docs/MASTER_TODO.md)**
+- [MASTER_TODO.csv : liste canonique modifiable](docs/MASTER_TODO.csv)
+- Mise à jour du tableau de bord : `python tools/progress.py --write`, validation `python tools/progress.py --check`.
+- **Score de référence au 2026-10-29 : 14 % pondéré, 10/233 éléments à 100 % (documents uniquement)**. Ce score n'est pas une déclaration de conformité fonctionnelle : **APK Android non compilé / tests S21 non réalisés**.
+
 ## Non-negotiable goals
 - Capture original JPEG frames and retain them across exports, with uninterrupted, resumable projects.
 - Export **image sequence** or **MP4**, with **None / Motion Blur / Light Trails**, configurable resolution, bitrate and FPS.
