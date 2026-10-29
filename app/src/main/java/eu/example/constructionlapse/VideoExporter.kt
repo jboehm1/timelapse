@@ -170,9 +170,8 @@ object VideoExporter {
         frames: List<File>, index: Int, width: Int, height: Int,
         effect: VideoEffect, window: Int, timestamp: TimestampOverlay?
     ): Bitmap {
-        val radius = window / 2
         val samples = if(effect == VideoEffect.NONE) index..index
-            else maxOf(0,index-radius)..minOf(frames.size-1,index+radius)
+            else TimelapseLogic.blurWindow(index, frames.size, window)
         val out = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888)
         val canvas = Canvas(out)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
