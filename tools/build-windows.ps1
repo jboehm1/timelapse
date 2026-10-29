@@ -71,7 +71,8 @@ function Ensure-Java {
             $javaCandidate = Get-ChildItem -Path $stage -Filter java.exe -Recurse |
                 Where-Object { $_.FullName -match '\\bin\\java\.exe$' } | Select-Object -First 1
             if (-not $javaCandidate) { throw 'Temurin JDK download did not contain java.exe' }
-            Copy-Item -Path (Split-Path (Split-Path $javaCandidate.FullName -Parent) -Parent)\* -Destination $jdkHome -Recurse -Force
+            $sourceHome = Split-Path (Split-Path $javaCandidate.FullName -Parent) -Parent
+            Copy-Item -Path (Join-Path $sourceHome '*') -Destination $jdkHome -Recurse -Force
             Remove-Item -Recurse -Force $stage
         }
         $env:JAVA_HOME = $jdkHome
