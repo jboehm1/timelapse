@@ -32,3 +32,13 @@ Pure JVM policy checks run via `bash tools/test-policy.sh` (requires Kotlin CLI 
 
 ## Repository visibility and build availability (2026-10-29)
 The repository is currently **private**. Recent GitHub Actions runs failed before starting any runner steps, so those failures provide **no proof** about Kotlin/Android compilation; they are consistent with runner allocation or account billing/usage restrictions. Do not claim the debug APK was built. For proprietary/commercial ambitions, keep this repository private and use a developer machine, self-hosted runner or paid hosted minutes; public runners are only free when the **repository is public**.
+
+
+### Build an APK on Windows without GitHub Actions
+On an Internet-connected Windows PC, check out branch `feat/android-capture-export-alpha` and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build-windows.ps1
+```
+
+The script downloads official Android command-line tools, Gradle and Java if absent, asks for SDK licence acceptance, runs the local Android test+build tasks and, **only upon success**, copies `app-debug.apk` to `dist/Timelapse-debug.apk`. It does not require hosted GitHub Actions. The current chat runtime has no Android SDK or downloadable external build dependencies; a compiled APK has **not** been produced or validated here. If the build fails, keep its Gradle output for troubleshooting rather than claiming APK success.
