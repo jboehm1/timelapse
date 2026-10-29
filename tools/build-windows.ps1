@@ -27,7 +27,7 @@ Set-StrictMode -Version Latest
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $cache = Join-Path $env:LOCALAPPDATA 'TimelapseBuild'
 $sdk = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } elseif ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
-$gradleVersion = '8.11.1'
+$gradleVersion = '8.13'
 $gradleBin = Join-Path $cache "gradle-$gradleVersion\bin\gradle.bat"
 $cmdlineTools = Join-Path $sdk 'cmdline-tools\latest\bin\sdkmanager.bat'
 $androidToolsUrl = 'https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip'
