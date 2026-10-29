@@ -17,26 +17,26 @@
 | **90 %** | Charge longue et tests de reprise réalisés, correctifs mineurs éventuels. |
 | **100 %** | **Critère d'acceptation rempli et documenté**, avec preuves (logs/commit/tests/données), aucune limitation bloquante. Pour les tâches de documentation seules, le document versionné complet constitue la preuve. |
 
-Les scores 25 % visibles signifient seulement **code existant, compilation Android NON prouvée** ; ne jamais les présenter comme des fonctionnalités opérationnelles. Les valeurs 100 % actuelles concernent des documents et règles **existants**, pas une app certifiée. Aucun test S21 ni APK validé. Les scores sont arrondis et calculés en pondérant les priorités **P0 ×5**, **P1 ×3**, **P2 ×1**. L'objectif est **100 % par ligne**, pas uniquement une moyenne de 100 %.
+Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 40 % indiquent un APK compilé mais **aucun test matériel probant**. Ne jamais les présenter comme des fonctionnalités déjà confirmées sur appareil. Les valeurs 100 % actuelles concernent des documents et règles **existants**, pas une app certifiée. Aucun test S21 ni APK validé. Les scores sont arrondis et calculés en pondérant les priorités **P0 ×5**, **P1 ×3**, **P2 ×1**. L'objectif est **100 % par ligne**, pas uniquement une moyenne de 100 %.
 
 ## Tableau de bord actuel
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 14 %** — **10/233 tâches à 100 %** (documents / politique uniquement). Aucun **gate** prototype Android n'est encore validé. **Les workflows GitHub Actions de la PR #2 échouent avant l'allocation de runner ; aucun APK n'a été produit.** Ce constat n'est pas un échec démontré du compilateur Kotlin.
+**Progression pondérée estimée : 17 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **APK alpha Android compilé et disponible, CI JUnit/Gradle/lint verte : [run #40972789344](https://github.com/jboehm1/timelapse/actions/runs/40972789344). Aucun test sur Galaxy S21 / veille nocturne ni gate de production validé.** Le code compilé non testé sur appareil reste plafonné à 40 %.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
-| A — Build, outils, CI et livraison | 17 | **6 %** |
-| B — Projets, Photolapse, import et stockage | 19 | **14 %** |
-| C — Capture caméra, objectifs, format et qualité | 22 | **10 %** |
+| A — Build, outils, CI et livraison | 17 | **31 %** |
+| B — Projets, Photolapse, import et stockage | 19 | **16 %** |
+| C — Capture caméra, objectifs, format et qualité | 22 | **13 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **10 %** |
-| F — Fiabilité, sécurité matérielle et récupération | 30 | **10 %** |
-| G — Export, formats, effets et montage vidéo | 27 | **16 %** |
+| F — Fiabilité, sécurité matérielle et récupération | 30 | **11 %** |
+| G — Export, formats, effets et montage vidéo | 27 | **19 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **7 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
-| J — Tests, mesures, robustesse validée et release | 24 | **2 %** |
+| J — Tests, mesures, robustesse validée et release | 24 | **7 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **54 %** |
 
 <!-- PROGRESS-SCORE-END -->
@@ -53,26 +53,26 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 
 ### Bloqueurs transversaux actuels
 
-- B-01 / C-01 / G-01 / D-01 : code non compilé. Tant que A-02/J-04 sont 0 %, rester ≤25 % sur ces fonctions.
+- C-01 / D-01 / G-01 : code désormais compilé ; rester ≤40 % tant que J-04 (installation et essai S21) reste à 0 %.
 - E-09/J-11 : reprise nocturne avec écran éteint sur S21 non démontrée ; Android limite le lancement caméra depuis le background.
 - F-10/F-11 : sauvegarde/journal pas suffisamment robuste pour promettre zéro perte.
 - J-14/J-16/J-19 : aucun test d'injection de pannes réellement exécuté sur Android.
-- A-07 : dépôt **privé** ; runner local/self-hosted recommandé pour conserver contrôle du code et de la consommation GitHub Actions.
+- A-07 : dépôt désormais **public** ; standard GitHub Actions disponible, test de compilation et lint réussi. Choix commercial et visibilité du code à évaluer.
 
 ## Checklist détaillée (toutes tâches à 100 % requises)
 
 <!-- PROGRESS-LIST-START -->
 
-### A. Build, outils, CI et livraison — 6 %
+### A. Build, outils, CI et livraison — 31 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
-| [ ] | A-01 | P0 | **10 %** | Projet Android Gradle reproductible | Compilation debug propre sur un clone vierge |
-| [ ] | A-02 | P0 | **10 %** | APK debug téléchargeable | APK généré et SHA-256 publié |
-| [ ] | A-03 | P0 | **10 %** | SDK Android installé pour build autonome | Toolchain officielle installée et testée |
+| [x] | A-01 | P0 | **100 %** | Projet Android Gradle reproductible | Compilation debug propre sur un clone vierge |
+| [x] | A-02 | P0 | **100 %** | APK debug téléchargeable | APK généré et SHA-256 publié |
+| [ ] | A-03 | P0 | **40 %** | SDK Android installé pour build autonome | Toolchain officielle installée et testée |
 | [ ] | A-04 | P0 | **25 %** | Script build Windows sans Actions | Exécuté de bout en bout sur Windows |
 | [ ] | A-05 | P0 | **10 %** | Gradle wrapper versionné | gradlew et gradlew.bat reproduisent le build |
-| [ ] | A-06 | P0 | **10 %** | CI exécute compilation et tests | Run vert avec journaux et artefact APK |
+| [x] | A-06 | P0 | **100 %** | CI exécute compilation et tests | Run vert avec journaux et artefact APK |
 | [ ] | A-07 | P0 | **10 %** | Alternative runner auto-hébergé privé | Runner branché, durci et reproductible |
 | [ ] | A-08 | P1 | **0 %** | Cache fiable dépendances | Build hors réseau après initialisation |
 | [ ] | A-09 | P1 | **0 %** | Versions épinglées et mises à jour dépendances | Lockfile, contrôle versions et vérification SDK |
@@ -82,10 +82,10 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | A-13 | P1 | **0 %** | Distributions alpha et historique releases | Tag, changelog, artefact, hashes et rollback |
 | [ ] | A-14 | P1 | **0 %** | Compatibilité Android 10 à 15+ | Matrice API réelle compilée et testée |
 | [ ] | A-15 | P1 | **0 %** | Vérification licences des dépendances | SBOM, obligations et exclusions validées |
-| [ ] | A-16 | P1 | **0 %** | Contrôle des avertissements lint/static analysis | Lint + analyse statique sans défaut majeur |
+| [ ] | A-16 | P1 | **55 %** | Contrôle des avertissements lint/static analysis | Lint + analyse statique sans défaut majeur |
 | [ ] | A-17 | P2 | **0 %** | Construction reproductible/hachage | Build déterministe comparé en CI locale |
 
-### B. Projets, Photolapse, import et stockage — 14 %
+### B. Projets, Photolapse, import et stockage — 16 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -98,8 +98,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | B-07 | P0 | **25 %** | Export ZIP facultatif | Archive exacte validée par comparaison de hashes |
 | [ ] | B-08 | P0 | **25 %** | Stockage interne fichiers originaux | Photos accessibles au projet après relance |
 | [ ] | B-09 | P0 | **10 %** | Stockage SD/USB externe via SAF | Persistance URI et gestion du média retiré |
-| [ ] | B-10 | P0 | **25 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
-| [ ] | B-11 | P0 | **25 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
+| [ ] | B-10 | P0 | **40 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
+| [ ] | B-11 | P0 | **40 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
 | [ ] | B-12 | P0 | **10 %** | Détection stockage plein et quotas | Arrêt sûr avant seuil avec notification |
 | [ ] | B-13 | P1 | **0 %** | Estimation stockage restant en jours | Prévision avec taille réelle des dernières images |
 | [ ] | B-14 | P0 | **0 %** | Éviter doublons import et reprendre | Index conservé, aucune photo originale écrasée |
@@ -109,13 +109,13 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
 
-### C. Capture caméra, objectifs, format et qualité — 10 %
+### C. Capture caméra, objectifs, format et qualité — 13 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
-| [ ] | C-01 | P0 | **25 %** | Service caméra indépendant de l'écran | Capture écran éteint sur S21 confirmée |
-| [ ] | C-02 | P0 | **25 %** | JPEG originaux haute résolution | Résolution réelle EXIF et qualité vérifiées |
-| [ ] | C-03 | P0 | **25 %** | Intervalle configurable 1 à 3600 s | Mesure de cadence avec p50 p95 p99 |
+| [ ] | C-01 | P0 | **40 %** | Service caméra indépendant de l'écran | Capture écran éteint sur S21 confirmée |
+| [ ] | C-02 | P0 | **40 %** | JPEG originaux haute résolution | Résolution réelle EXIF et qualité vérifiées |
+| [ ] | C-03 | P0 | **40 %** | Intervalle configurable 1 à 3600 s | Mesure de cadence avec p50 p95 p99 |
 | [ ] | C-04 | P0 | **25 %** | Éviter les rafales après retard | Frames manquées comptées sans rattrapage |
 | [ ] | C-05 | P0 | **25 %** | Sélection des objectifs exposés | Chaque ID réel avant/arrière fonctionne |
 | [ ] | C-06 | P1 | **10 %** | Focale, champ et caméra capacités | Caractéristiques détectées et présentées |
@@ -189,7 +189,7 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | E-19 | P2 | **0 %** | Pilotage appareils gérés/kiosk optionnel | Documentation et tests device-owner |
 | [ ] | E-20 | P1 | **0 %** | Comparaison consommation 24h 3 stratégies | Graphes Wh nuit noire/écran OFF/caméra idle |
 
-### F. Fiabilité, sécurité matérielle et récupération — 10 %
+### F. Fiabilité, sécurité matérielle et récupération — 11 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -202,8 +202,8 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | F-07 | P0 | **10 %** | Prévention ANR UI | Encodeur et I/O hors thread UI validés |
 | [ ] | F-08 | P0 | **10 %** | Prévention OOM/mémoire bornée | 48h sans croissance mémoire significative |
 | [ ] | F-09 | P0 | **10 %** | File capture à taille bornée | Une image active; retard => skip et audit |
-| [ ] | F-10 | P0 | **25 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
-| [ ] | F-11 | P0 | **25 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
+| [ ] | F-10 | P0 | **40 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
+| [ ] | F-11 | P0 | **40 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
 | [ ] | F-12 | P0 | **10 %** | Photos originales immuables | Export raté ne modifie aucun hash source |
 | [ ] | F-13 | P0 | **0 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
 | [ ] | F-14 | P0 | **0 %** | Diagnostics exportables et consentement | ZIP anonymisé pour analyse |
@@ -224,16 +224,16 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | F-29 | P0 | **0 %** | Mode dégradation contrôlée | Captures ralentissent, reprennent avec hysteresis |
 | [ ] | F-30 | P1 | **0 %** | Test mémoire/thermique avec instrumentation | Rapports p95, courbes et seuils |
 
-### G. Export, formats, effets et montage vidéo — 16 %
+### G. Export, formats, effets et montage vidéo — 19 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | G-01 | P0 | **25 %** | Choix export photos ou vidéo | Les deux produisent des fichiers lisibles vérifiés |
 | [ ] | G-02 | P0 | **25 %** | MP4 H.264 | ffprobe vérifie codec, durée et lecture |
 | [ ] | G-03 | P0 | **25 %** | Vidéo sans effet (None) | Chaque image correspond à un original |
-| [ ] | G-04 | P0 | **25 %** | Motion Blur temporel | N images intégrées avec réglage force |
-| [ ] | G-05 | P0 | **25 %** | Light Trails | Composition max-luminance, intensité configurable |
-| [ ] | G-06 | P0 | **25 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
+| [ ] | G-04 | P0 | **40 %** | Motion Blur temporel | N images intégrées avec réglage force |
+| [ ] | G-05 | P0 | **40 %** | Light Trails | Composition max-luminance, intensité configurable |
+| [ ] | G-06 | P0 | **40 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
 | [ ] | G-07 | P1 | **0 %** | Effet poids temporels et ghosting réglable | Réglages clairs vs moyenne brute |
 | [ ] | G-08 | P0 | **25 %** | Encodeur matériel MediaCodec/MediaMuxer | MP4 produit sans stall et métadonnées correctes |
 | [ ] | G-09 | P0 | **25 %** | Résolution 1080p | Sortie validée sur S21 |
@@ -299,12 +299,12 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 | [ ] | I-14 | P1 | **0 %** | Signatures et mises à jour sécurisées | Clés protégées et stratégie rotation |
 | [ ] | I-15 | P2 | **0 %** | Gestion crash telemetry opt-in | Aucune transmission sans consentement |
 
-### J. Tests, mesures, robustesse validée et release — 2 %
+### J. Tests, mesures, robustesse validée et release — 7 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
-| [ ] | J-01 | P0 | **25 %** | Tests purs Kotlin politique calendrier | Tous scénarios exécutés et journal CI vert |
-| [ ] | J-02 | P0 | **10 %** | Tests Android JVM exécutables | Gradle testDebugUnitTest vert |
+| [ ] | J-01 | P0 | **55 %** | Tests purs Kotlin politique calendrier | Tous scénarios exécutés et journal CI vert |
+| [x] | J-02 | P0 | **100 %** | Tests Android JVM exécutables | Gradle testDebugUnitTest vert |
 | [ ] | J-03 | P0 | **0 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
 | [ ] | J-04 | P0 | **0 %** | APK compile et s'installe S21 | Installation et lancement constatés |
 | [ ] | J-05 | P0 | **0 %** | Photo réelle / métadonnées / fichiers | Capture JPEG décodable avec EXIF |
@@ -359,4 +359,4 @@ Les scores 25 % visibles signifient seulement **code existant, compilation Andro
 
 **Vérification exhaustive** : les tâches PRO-001..018 restent aussi normatives dans [PRO_PARITY.md](PRO_PARITY.md) et les exigences CAM/REL/EXP dans [PROJECT_SPEC.md](PROJECT_SPEC.md). Le présent tableau détaillé ne remplace pas ces critères ; le développeur doit croiser les trois sources avant de considérer une tâche finie.
 
-Dernière source de mesure : fichiers de PR #2 inspectés au 2026-10-29 ; pourcentages indicatifs **à revérifier à chaque commit**.
+Dernière source de mesure : [build #40972789344, 2026-10-30](BUILD_REPORT_2026-10-30.md) ; scores conservateurs **à revérifier à chaque commit**.
