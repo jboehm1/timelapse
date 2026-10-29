@@ -11,6 +11,10 @@ Independent, **reliability-first** timelapse application for construction sites,
 - Mise à jour du tableau de bord : `python tools/progress.py --write`, validation `python tools/progress.py --check`.
 - **Score de référence au 2026-10-29 : 14 % pondéré, 10/233 éléments à 100 % (documents uniquement)**. Ce score n'est pas une déclaration de conformité fonctionnelle : **APK Android non compilé / tests S21 non réalisés**.
 
+## Reuse of mature open-source components
+
+Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REUSE.md): official CameraX / Camera2 samples, Apache-2.0 OpenCineCam, MIT Simple-Motion-Cam, Jetpack Media3/Room/DataStore/WorkManager. **GPL timelapse apps are behavioral references, not drop-in modules for a closed-source commercial APK.** Prefer selecting small proven modules instead of merging entire competing camera applications.
+
 ## Non-negotiable goals
 - Capture original JPEG frames and retain them across exports, with uninterrupted, resumable projects.
 - Export **image sequence** or **MP4**, with **None / Motion Blur / Light Trails**, configurable resolution, bitrate and FPS.
@@ -49,3 +53,13 @@ powershell -ExecutionPolicy Bypass -File tools/build-windows.ps1
 ```
 
 The script downloads official Android command-line tools, Gradle and Java if absent, asks for SDK licence acceptance, runs the local Android test+build tasks and, **only upon success**, copies `app-debug.apk` to `dist/Timelapse-debug.apk`. It does not require hosted GitHub Actions. The current chat runtime has no Android SDK or downloadable external build dependencies; a compiled APK has **not** been produced or validated here. If the build fails, keep its Gradle output for troubleshooting rather than claiming APK success.
+
+### Linux build (without GitHub-hosted runners)
+
+On a Linux PC with outbound HTTPS and Java already installed:
+
+```bash
+bash tools/build-linux.sh
+```
+
+The script verifies checksums of the official Android command-line SDK and Gradle, requests SDK licence acceptance and builds the debug APK to dist/Timelapse-debug.apk. The current chat container cannot reach download servers; this **has not been built here**. Pure Kotlin logic can be tested locally with bash tools/test-policy.sh even without Android SDK.
