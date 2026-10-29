@@ -82,3 +82,6 @@ Spec and architecture are written. No confirmed 72h/7d on-device test. Avoid say
 
 ## 9. Traceability policy
 Every PR shall state requirement IDs addressed, tests run, tests missing, failure modes changed, and whether documentation has been updated.
+
+## 10. Mandatory full PRO functionality
+Every item in [PRO_PARITY.md](PRO_PARITY.md), **PRO-001 through PRO-018**, is a product requirement. PRO_PARITY is normative, and status is explicitly SPEC/IMPLEMENTED/DEVICE_VERIFIED; nothing there is optional merely because the app is alpha. Features are released only after the corresponding measurable acceptance criteria pass. Any external references are for functional comparison, not copying proprietary source or binaries.
