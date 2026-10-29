@@ -23,6 +23,8 @@ class MeteringOverlay(context: Context) : View(context) {
     var exposure: Marker? = null
         private set
     var target: Target = Target.FOCUS
+    var showGrid: Boolean = true
+        set(value) { field = value; invalidate() }
     var onSelect: ((Target, Marker) -> Unit)? = null
     private val pen = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -56,6 +58,15 @@ class MeteringOverlay(context: Context) : View(context) {
     }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        if (showGrid && width>0 && height>0) {
+            pen.color = Color.argb(110, 245, 248, 255)
+            pen.strokeWidth = resources.displayMetrics.density
+            for (i in 1..2) {
+                val x = width*i/3f; val y = height*i/3f
+                canvas.drawLine(x,0f,x,height.toFloat(),pen)
+                canvas.drawLine(0f,y,width.toFloat(),y,pen)
+            }
+        }
         focus?.let { drawMarker(canvas,it,"AF",Color.GREEN,true) }
         exposure?.let { drawMarker(canvas,it,"AE",Color.YELLOW,false) }
     }
