@@ -56,11 +56,11 @@ class WorkspaceSmokeTest {
     }
     private fun clickText(text: String) {
         val item = awaitUi(By.text(text), 10_000)
-        assertNotNull("Missing $text", item); item.click(); compose.waitForIdle(); device.waitForIdle()
+        assertNotNull("Missing $text", item); item!!.click(); compose.waitForIdle(); device.waitForIdle()
     }
     private fun clickDescription(description: String) {
         val item = awaitUi(By.desc(description), 15_000)
-        assertNotNull("Missing $description", item); item.click(); compose.waitForIdle(); device.waitForIdle()
+        assertNotNull("Missing $description", item); item!!.click(); compose.waitForIdle(); device.waitForIdle()
     }
     private fun set(description: String, value: String) {
         // Drive Compose's real text-edit semantics and wait for recomposition.
@@ -94,7 +94,7 @@ class WorkspaceSmokeTest {
     }
     private fun openProject(title: String) {
         val item = awaitUi(By.text(title), 15_000)
-        assertNotNull("Missing project $title", item); item.click(); compose.waitForIdle(); device.waitForIdle()
+        assertNotNull("Missing project $title", item); item!!.click(); compose.waitForIdle(); device.waitForIdle()
     }
     private fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
 
