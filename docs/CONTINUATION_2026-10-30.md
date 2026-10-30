@@ -50,3 +50,19 @@ Run [41063353155](https://github.com/jboehm1/timelapse/actions/runs/41063353155)
 Evidence review found a collection defect: `adb exec-out run-as ... tar /sdcard/...` produced a nonempty permission-error text file, which the script accepted as an archive. It did NOT invalidate the Android image-decoding/hash assertions, but raw JPEG bytes were absent from the downloadable archive. The next iteration copies the synthetic test JPEGs to app-private test evidence and requires independent host-side Pillow decoding, dimensions and SHA-256 agreement. Merely nonempty artifact output is no longer accepted.
 
 Screenshot inspection also showed the capture label lagging the filesystem count (9 displayed while the test had ten files). The test now waits for a visible double-digit count before taking its recording screenshot. Full Compose UX work remains pending; capture functionality takes priority.
+
+## Final automated proof for this continuation
+
+Source **`afc57560196ebd0c784a3040cfdd2757a5fa2245`**:
+
+- Android compilation + five JUnit tests + lint: PASS, [41064722482](https://github.com/jboehm1/timelapse/actions/runs/41064722482).
+- Pure Kotlin reliability: PASS, [41064722381](https://github.com/jboehm1/timelapse/actions/runs/41064722381).
+- Two instrumentation cases + independent host validation: PASS, [41064722414](https://github.com/jboehm1/timelapse/actions/runs/41064722414), `OK (2 tests)`.
+- **13 genuine emulator-camera JPEG files**, 1856×1392, unique monotonic IDs, matching SHA-256 on Android, after Activity reopening, and in an independent Pillow full decode of the downloaded archive. The archive was downloaded and checked again locally with the same verifier: PASS.
+- Invalid camera reached `NEEDS_USER_ACTION CAMERA_BIND: No available camera can be found`, with zero new JPEGs and no Recording claim.
+- Actual recording screenshot now displays ten saved photos. Workflow committed screenshots, per-frame TSV and [verification.json](screenshots/emulator/verification.json) to the feature branch in `889ba25`.
+- J-03/J-24 move to 55% (relevant automated tests executed); no S21, physical screen-OFF, long-session or production gate advanced.
+
+The saved diagnostic APK has the unchanged application source from `d499a91` (later commits change only tests, CI and documentation), SHA-256 listed above. It is a debug-signed **UNVERIFIED S21 diagnostic**, not a production release. To investigate the hardware blocker: create a project, choose 2–5 seconds without daily restriction, Start, check ten originals, and explicitly export diagnostics from Settings → Export if capture fails. Preserve old app data when handling signing/update differences.
+
+**Remaining blocker:** physical S21 recording/resolution/lens/screen-OFF evidence. UI Compose redesign, real device MP4/quality and 8h/72h/7d gates remain unfinished. PR #2 stays unmerged.

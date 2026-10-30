@@ -36,7 +36,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | G — Export, formats, effets et montage vidéo | 27 | **19 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **10 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
-| J — Tests, mesures, robustesse validée et release | 24 | **10 %** |
+| J — Tests, mesures, robustesse validée et release | 24 | **11 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **54 %** |
 
 <!-- PROGRESS-SCORE-END -->
@@ -299,13 +299,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | I-14 | P1 | **0 %** | Signatures et mises à jour sécurisées | Clés protégées et stratégie rotation |
 | [ ] | I-15 | P2 | **0 %** | Gestion crash telemetry opt-in | Aucune transmission sans consentement |
 
-### J. Tests, mesures, robustesse validée et release — 10 %
+### J. Tests, mesures, robustesse validée et release — 11 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | J-01 | P0 | **55 %** | Tests purs Kotlin politique calendrier | Tous scénarios exécutés et journal CI vert |
 | [x] | J-02 | P0 | **100 %** | Tests Android JVM exécutables | Gradle testDebugUnitTest vert |
-| [ ] | J-03 | P0 | **40 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
+| [ ] | J-03 | P0 | **55 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
 | [ ] | J-04 | P0 | **0 %** | APK compile et s'installe S21 | Installation et lancement constatés |
 | [ ] | J-05 | P0 | **0 %** | Photo réelle / métadonnées / fichiers | Capture JPEG décodable avec EXIF |
 | [ ] | J-06 | P0 | **0 %** | Tap AF AE deux zones réelles | Test mur/sky sur S21 |
@@ -326,7 +326,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | J-21 | P1 | **0 %** | Test multi-objectifs et SD externe | Toutes capacités S21 observées |
 | [ ] | J-22 | P1 | **0 %** | Rapport benchmark qualité Velocity Lapse | Comparaison fonctionnelle sans copier code |
 | [ ] | J-23 | P0 | **0 %** | Release gate G0/G1/G2/G3/G4/G5 | Aucune version stable sans preuves matérielles |
-| [ ] | J-24 | P1 | **25 %** | CI prévention régressions et matrice erreurs | PR bloquée si tests échouent |
+| [ ] | J-24 | P1 | **55 %** | CI prévention régressions et matrice erreurs | PR bloquée si tests échouent |
 
 ### K. Documentation, gouvernance et suivi du projet — 54 %
 
