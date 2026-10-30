@@ -17,7 +17,7 @@ Independent, **reliability-first** timelapse application for construction sites,
 - **[MASTER_TODO.md : 233 tâches individuelles avec % de progression, priorités, critères de réussite et score global](docs/MASTER_TODO.md)**
 - [MASTER_TODO.csv : liste canonique modifiable](docs/MASTER_TODO.csv)
 - Mise à jour du tableau de bord : `python tools/progress.py --write`, validation `python tools/progress.py --check`.
-- **Progression : voir le tableau de bord MASTER_TODO actualisé automatiquement.** Un APK alpha est maintenant compilé et les tests Gradle + lint passent, mais **les tests matériels S21 et d'endurance restent à réaliser**.
+- **Progression actuelle : 23 % pondérés, 14/233 tâches entièrement acceptées.** Ce score mesure les critères de la feuille de route, pas le volume de code. Le blocage de capture sur Galaxy S21 reste ouvert ; les APK CI sont diagnostiques et non vérifiés sur téléphone. Voir le tableau de bord pour le détail.
 
 ## Reuse of mature open-source components
 
@@ -32,7 +32,7 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 - Safety before frame rate: no unbounded queues, no aggressive automatic restarts, no data loss on a failed export, no OS permission bypass.
 
 ## Honest status
-**Android alpha: compiled, NOT device-validated.** The APK was successfully built from PR #2 code in [GitHub Actions run #40972789344](https://github.com/jboehm1/timelapse/actions/runs/40972789344): `testDebugUnitTest`, `assembleDebug` and `lintDebug` succeeded (2026-10-30, CET). Artifact: **timelapse-debug-apk**. The debug APK is available through GitHub Actions artifacts (temporary retention); release distributions are not ready. **Capture, AF/AE behavior, overnight wake-up, battery and seven-day endurance are NOT hardware verified on Samsung S21**.
+**Diagnostic v0.3.1: emulator-tested, NOT device-validated.** Android compilation, 30 JVM tests, lint, core policy checks and three emulator scenarios passed for source [`741ada4`](https://github.com/jboehm1/timelapse/commit/741ada488c56e534408275e98ab1871b98c8f47d). The emulator produced and independently validated JPEGs and MP4s; this does not prove S21 camera operation. **CAPTURE-P0-001 remains open:** capture, AF/AE behavior, physical screen-off scheduling, battery and long-run endurance have not been verified on the Samsung S21. CI APKs are internal diagnostics only, not a usable release.
 
 ## Required documents
 - **[Product contract / acceptance criteria](docs/PROJECT_SPEC.md)** — authoritative.
@@ -45,12 +45,12 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 ## Reference application
 Velocity Lapse is a **feature reference**, not a code source. Do **not** commit its proprietary APK, resources or decompiled code into this public repository. Use user-observed UI and public documentation to independently implement equivalent behavior.
 
-## Builds
-Pure JVM tests run via `bash tools/test-policy.sh`. CI builds the debug APK using Android SDK 36 and Gradle, runs the four core Android JVM JUnit tests, and executes lint. For the verified build and SHA-256 see [BUILD_REPORT_2026-10-30.md](docs/BUILD_REPORT_2026-10-30.md). Green build **does not** validate real camera operation on Samsung S21.
+## Builds and fast feedback
+Pure JVM policy checks run via `bash tools/test-policy.sh`; one Kotlin compiler invocation runs all three deterministic suites and checks the progress tracker. The policy workflow caches the pinned Kotlin CLI compiler between runs. Android PR CI runs JVM tests, debug APK compilation and lint; emulator CI runs the recording, export and workspace flows with independent host-side JPEG/MP4 validation. The emulator suite is separate because it needs an Android virtual device and its camera simulation. Green CI **does not** validate real camera operation on Samsung S21. See [TEST_PLAN.md](docs/TEST_PLAN.md) for scopes and remaining hardware gates.
 
 
-## Repository visibility and build availability (2026-10-29)
-The repository is now **PUBLIC**, and GitHub-hosted standard runners are available: the Android APK **compiled and lint passed** in run #40972789344. The original project remains copyright-reserved, without an open-source reuse grant. Public source can still be viewed and copied technically, so commercialization choices require deliberate source-exposure review. Do not treat this alpha build as a stable production app.
+## Repository visibility and build availability (2026-10-30)
+The repository is **PUBLIC**, and GitHub-hosted standard runners are available. The original project remains copyright-reserved, without an open-source reuse grant. Public source can still be viewed and copied technically, so commercialization choices require deliberate source-exposure review. Do not treat diagnostic builds as stable production apps.
 
 
 ### Build an APK on Windows without GitHub Actions
@@ -60,7 +60,7 @@ On an Internet-connected Windows PC, check out branch `feat/android-capture-expo
 powershell -ExecutionPolicy Bypass -File tools/build-windows.ps1
 ```
 
-The script downloads official Android command-line tools, Gradle and Java if absent, asks for SDK licence acceptance, runs the local Android test+build tasks and, **only upon success**, copies `app-debug.apk` to `dist/Timelapse-debug.apk`. It does not require hosted GitHub Actions. The current chat runtime has no Android SDK or downloadable external build dependencies; a compiled APK has **not** been produced or validated here. If the build fails, keep its Gradle output for troubleshooting rather than claiming APK success.
+The script downloads official Android command-line tools, Gradle and Java if absent, asks for SDK licence acceptance, runs the local Android test+build tasks and, **only upon success**, copies `app-debug.apk` to `dist/Timelapse-debug.apk`. It does not require hosted GitHub Actions. If the build fails, keep its Gradle output for troubleshooting rather than claiming APK success.
 
 ### Linux build (without GitHub-hosted runners)
 
@@ -70,7 +70,7 @@ On a Linux PC with outbound HTTPS and Java already installed:
 bash tools/build-linux.sh
 ```
 
-The script verifies checksums of the official Android command-line SDK and Gradle, requests SDK licence acceptance and builds the debug APK to dist/Timelapse-debug.apk. The current chat container cannot reach download servers; this **has not been built here**. Pure Kotlin logic can be tested locally with bash tools/test-policy.sh even without Android SDK.
+The script verifies checksums of the official Android command-line SDK and Gradle, requests SDK licence acceptance and builds the debug APK to dist/Timelapse-debug.apk. Pure Kotlin policy logic can also be tested without an Android SDK using `bash tools/test-policy.sh` (with JDK 17 and Kotlin CLI 2.0.21 installed).
 
 ## Diagnostic v0.3 workspace
 

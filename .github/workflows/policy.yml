@@ -21,11 +21,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Kotlin CLI
+      - name: Cache Kotlin CLI compiler
+        id: kotlin-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/kotlinc
+          key: kotlin-cli-2.0.21-${{ runner.os }}
+      - name: Install Kotlin CLI on cache miss
+        if: steps.kotlin-cache.outputs.cache-hit != 'true'
         run: |
           curl -fsSL -o kotlin-compiler.zip https://github.com/JetBrains/kotlin/releases/download/v2.0.21/kotlin-compiler-2.0.21.zip
-          unzip -q kotlin-compiler.zip
-          echo "$PWD/kotlinc/bin" >> "$GITHUB_PATH"
+          unzip -q kotlin-compiler.zip -d "$RUNNER_TEMP"
+          test -x "$RUNNER_TEMP/kotlinc/bin/kotlinc"
+      - name: Add cached Kotlin CLI to PATH
+        run: echo "$RUNNER_TEMP/kotlinc/bin" >> "$GITHUB_PATH"
       - run: bash tools/test-policy.sh
       - name: Upload self-contained Markdown handoff
         if: always()
