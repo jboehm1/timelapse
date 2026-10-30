@@ -23,20 +23,20 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 17 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **APK alpha Android compilé et disponible, CI JUnit/Gradle/lint verte : [run #40972789344](https://github.com/jboehm1/timelapse/actions/runs/40972789344). Aucun test sur Galaxy S21 / veille nocturne ni gate de production validé.** Le code compilé non testé sur appareil reste plafonné à 40 %.
+**Progression pondérée estimée : 18 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **31 %** |
 | B — Projets, Photolapse, import et stockage | 19 | **16 %** |
-| C — Capture caméra, objectifs, format et qualité | 22 | **13 %** |
+| C — Capture caméra, objectifs, format et qualité | 22 | **14 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **10 %** |
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **11 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **19 %** |
-| H — Commandes externes, UI, ergonomie | 18 | **7 %** |
+| H — Commandes externes, UI, ergonomie | 18 | **8 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
-| J — Tests, mesures, robustesse validée et release | 24 | **7 %** |
+| J — Tests, mesures, robustesse validée et release | 24 | **9 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **54 %** |
 
 <!-- PROGRESS-SCORE-END -->
@@ -109,7 +109,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
 
-### C. Capture caméra, objectifs, format et qualité — 13 %
+### C. Capture caméra, objectifs, format et qualité — 14 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -128,7 +128,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | C-13 | P0 | **10 %** | Capture écran physique OFF | Dumpsys power prouve état display OFF |
 | [ ] | C-14 | P1 | **0 %** | Délai d'exposition et shutter long | Cadence respecte temps exposition + traitement |
 | [ ] | C-15 | P1 | **0 %** | Photo unique immédiate | Télécommande/volume sans collision avec timer |
-| [ ] | C-16 | P1 | **0 %** | Compteur et progression en direct | Tentatives, photos sauvées et ratées distinctes |
+| [ ] | C-16 | P1 | **25 %** | Compteur et progression en direct | Tentatives, photos sauvées et ratées distinctes |
 | [ ] | C-17 | P1 | **0 %** | Contrôle résolution/cadence adaptatif | Capteur limite thermique sans corruption |
 | [ ] | C-18 | P1 | **0 %** | Flou et photo noire détectés | Qualité signalée sans suppression d'image |
 | [ ] | C-19 | P1 | **0 %** | Anti-flicker capture/posttraitement | Transition jour/nuages non clignotante sur vidéos |
@@ -256,13 +256,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | G-26 | P1 | **0 %** | Anti-flicker au montage | Courbes luminosité corrigées sans débordement |
 | [ ] | G-27 | P1 | **0 %** | Conversion RAW en MP4 | DNG décodé dans budget mémoire |
 
-### H. Commandes externes, UI, ergonomie — 7 %
+### H. Commandes externes, UI, ergonomie — 8 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | H-01 | P0 | **25 %** | Interface mobile de capture basique | Start Stop Status Preview utilisables |
 | [ ] | H-02 | P0 | **25 %** | Tap séparé focus / exposition | Marqueurs verts/jaunes corrects sur téléphone |
-| [ ] | H-03 | P0 | **10 %** | Mises en garde fonctions non validées | Aucun label pro prêt avant tests |
+| [ ] | H-03 | P0 | **25 %** | Mises en garde fonctions non validées | Aucun label pro prêt avant tests |
 | [ ] | H-04 | P1 | **25 %** | Volume +/− commande shutter | Start/stop et photo sans double déclenchement |
 | [ ] | H-05 | P1 | **10 %** | Bluetooth remote standard | Média key event selon appareil testé |
 | [ ] | H-06 | P1 | **0 %** | Bluetooth sans interface active | Capacités Android et permissions validées |
@@ -299,13 +299,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | I-14 | P1 | **0 %** | Signatures et mises à jour sécurisées | Clés protégées et stratégie rotation |
 | [ ] | I-15 | P2 | **0 %** | Gestion crash telemetry opt-in | Aucune transmission sans consentement |
 
-### J. Tests, mesures, robustesse validée et release — 7 %
+### J. Tests, mesures, robustesse validée et release — 9 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | J-01 | P0 | **55 %** | Tests purs Kotlin politique calendrier | Tous scénarios exécutés et journal CI vert |
 | [x] | J-02 | P0 | **100 %** | Tests Android JVM exécutables | Gradle testDebugUnitTest vert |
-| [ ] | J-03 | P0 | **0 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
+| [ ] | J-03 | P0 | **25 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
 | [ ] | J-04 | P0 | **0 %** | APK compile et s'installe S21 | Installation et lancement constatés |
 | [ ] | J-05 | P0 | **0 %** | Photo réelle / métadonnées / fichiers | Capture JPEG décodable avec EXIF |
 | [ ] | J-06 | P0 | **0 %** | Tap AF AE deux zones réelles | Test mur/sky sur S21 |
@@ -326,7 +326,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | J-21 | P1 | **0 %** | Test multi-objectifs et SD externe | Toutes capacités S21 observées |
 | [ ] | J-22 | P1 | **0 %** | Rapport benchmark qualité Velocity Lapse | Comparaison fonctionnelle sans copier code |
 | [ ] | J-23 | P0 | **0 %** | Release gate G0/G1/G2/G3/G4/G5 | Aucune version stable sans preuves matérielles |
-| [ ] | J-24 | P1 | **0 %** | CI prévention régressions et matrice erreurs | PR bloquée si tests échouent |
+| [ ] | J-24 | P1 | **25 %** | CI prévention régressions et matrice erreurs | PR bloquée si tests échouent |
 
 ### K. Documentation, gouvernance et suivi du projet — 54 %
 

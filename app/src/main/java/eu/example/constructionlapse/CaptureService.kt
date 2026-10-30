@@ -35,6 +35,7 @@ import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
+import android.util.Log
 import android.util.Size
 import androidx.camera.core.Preview.SurfaceProvider
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -97,6 +98,12 @@ class CaptureService : LifecycleService() {
     private var previewOnly = false
     val isCapturing: Boolean get() = running && !previewOnly
     val isPreviewing: Boolean get() = running && previewOnly
+    val hasSessionFrame: Boolean get() = sessionFrames > 0
+    private var sessionFrames = 0L
+    private var sessionGeneration = 0L
+    private var bindGeneration = 0L
+    private var firstFrameWatchdog: Runnable? = null
+    private var lastFailure = ""
     var actualPhotoSize: String = "Not captured yet"
         private set
     private var photoTargetWidth = 0
@@ -142,6 +149,7 @@ class CaptureService : LifecycleService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        trace("SERVICE_INTENT", intent?.action ?: "null")
         when (intent?.action) {
             ACTION_STOP -> stopCaptureAndService()
             ACTION_RELEASE_PREVIEW -> if(previewOnly) stopCaptureAndService()
@@ -156,14 +164,19 @@ class CaptureService : LifecycleService() {
                         previewOnly = true
                         bindCamera()
                     } catch(e:Exception) {
-                        state("Camera preview unavailable: ${e.message}")
-                        stopCaptureAndService()
+                        stopCaptureAndService("NEEDS_USER_ACTION preview unavailable: ${e.message}")
                     }
                 }
             }
             ACTION_START -> {
                 // A running preview can upgrade into capture without closing the activity.
                 if (running && !previewOnly) return START_NOT_STICKY
+                val session = ++sessionGeneration
+                sessionFrames = 0L
+                lastFailure = ""
+                captureGeneration++
+                inFlight = false
+                bindGeneration++
                 if (previewOnly) {
                     try { cameraProvider?.unbindAll() } catch (_:Exception) {}
                     cameraBound = false
@@ -200,10 +213,9 @@ class CaptureService : LifecycleService() {
                     cameraExecutor.execute {
                         val result = runCatching { store.recover() }
                         handler.post {
-                            if (!running || project != dir) return@post
+                            if (!running || session != sessionGeneration) return@post
                             if (result.isFailure) {
-                                state("NEEDS_USER_ACTION storage recovery: ${result.exceptionOrNull()?.message}")
-                                stopCaptureAndService()
+                                stopCaptureAndService("NEEDS_USER_ACTION storage recovery: ${result.exceptionOrNull()?.message}")
                                 return@post
                             }
                             val recovered = result.getOrThrow()
@@ -218,8 +230,8 @@ class CaptureService : LifecycleService() {
                         }
                     }
                 } catch (e: Exception) {
-                    state("NEEDS_USER_ACTION: ${e.message}")
-                    stopCaptureAndService()
+                    trace("START_FAILED", e.toString())
+                    stopCaptureAndService("NEEDS_USER_ACTION: ${e.message}")
                 }
             }
         }
@@ -239,9 +251,15 @@ class CaptureService : LifecycleService() {
             .build()
     }
 
+    private fun trace(event: String, detail: String = "") {
+        Log.i("TimelapseCapture", "elapsed=${SystemClock.elapsedRealtime()} wall=${System.currentTimeMillis()} " +
+            "session=$sessionGeneration project=${project?.name} camera=$requestedCameraId event=$event $detail")
+    }
+
     private fun state(value: String) {
         if (status == value) return
         status = value
+        trace("STATE", value)
         getSharedPreferences("timelapse_status", MODE_PRIVATE).edit()
             .putString(STATUS_KEY, value).apply()
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
@@ -249,9 +267,12 @@ class CaptureService : LifecycleService() {
     }
 
     private fun bindCamera() {
+        val binding = ++bindGeneration
+        state(if (previewOnly) "STARTING preview" else "STARTING binding camera; no new JPEG saved")
+        trace("BIND_REQUEST", "requested=${photoTargetWidth}x${photoTargetHeight}")
         val future = ProcessCameraProvider.getInstance(this)
         future.addListener({
-            if (!running) return@addListener
+            if (!running || binding != bindGeneration) return@addListener
             try {
                 val provider = future.get()
                 cameraProvider = provider
@@ -268,12 +289,12 @@ class CaptureService : LifecycleService() {
                             .build())
                     }
                 }.build()
-                connectUseCases()
-                state(if (previewOnly) "PREVIEW — choose AF / AE zones" else
-                    "CAPTURING ready · requested ${photoTargetWidth}×${photoTargetHeight}")
+                if (connectUseCases()) {
+                    state(if (previewOnly) "PREVIEW — choose AF / AE zones" else
+                        "STARTING camera bound; awaiting first JPEG")
+                }
             } catch (e: Exception) {
-                state("RECOVERING camera init: ${e.message}")
-                cameraFailure()
+                cameraFailure("CAMERA_INIT", e)
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -294,9 +315,9 @@ class CaptureService : LifecycleService() {
         }
     }
 
-    private fun connectUseCases() {
-        val p = cameraProvider ?: return
-        val image = imageCapture ?: return
+    private fun connectUseCases(): Boolean {
+        val p = cameraProvider ?: return false
+        val image = imageCapture ?: return false
         try {
             p.unbindAll()
             val selector = requestedCameraId?.let { id ->
@@ -312,11 +333,13 @@ class CaptureService : LifecycleService() {
             else
                 p.bindToLifecycle(this, selector, image, preview)
             cameraBound = true
+            trace("CAMERA_BOUND", "actual=${Camera2CameraInfo.from(camera!!.cameraInfo).cameraId}")
+            return true
         } catch (e: Exception) {
             camera = null
             cameraBound = false
-            state("RECOVERING bind: ${e.message}")
-            cameraFailure()
+            cameraFailure("CAMERA_BIND", e)
+            return false
         }
     }
 
@@ -509,11 +532,12 @@ class CaptureService : LifecycleService() {
         )
         when (decision) {
             CaptureDecision.CAPTURE -> {
-                state("CAPTURING ${captureCount} saved, ${errorCount} errors")
+                state(if (hasSessionFrame) "RECORDING ${captureCount} saved, ${errorCount} errors"
+                    else "STARTING no new JPEG saved")
+                armFirstFrameDeadline()
                 ensureWakeLock(power)
                 if (!cameraBound && imageCapture != null) {
-                    connectUseCases()
-                    scheduleNext(2000)
+                    if (connectUseCases()) scheduleNext(2000)
                     return
                 }
                 if (inFlight) { scheduleNext(2_000); return }
@@ -522,6 +546,7 @@ class CaptureService : LifecycleService() {
                 takePhoto()
             }
             CaptureDecision.NIGHT_STANDBY -> {
+                disarmFirstFrameDeadline()
                 state("NIGHT_STANDBY display may be OFF")
                 releaseWakeLock()
                 if (!inFlight && cameraBound) {
@@ -534,13 +559,15 @@ class CaptureService : LifecycleService() {
                 scheduleNext(60_000)
             }
             else -> {
+                disarmFirstFrameDeadline()
                 releaseWakeLock()
                 if (decision == CaptureDecision.THERMAL_COOLDOWN && !inFlight && cameraBound) {
                     cameraProvider?.unbindAll()
                     cameraBound = false
                     camera = null
                 }
-                state(decision.name)
+                state(if (decision == CaptureDecision.NEEDS_USER_ACTION)
+                    "NEEDS_USER_ACTION $lastFailure" else decision.name)
                 scheduleNext(if (decision == CaptureDecision.THERMAL_COOLDOWN) 120_000 else 60_000)
             }
         }
@@ -569,6 +596,32 @@ class CaptureService : LifecycleService() {
         }
     }
 
+    private fun armFirstFrameDeadline() {
+        if (hasSessionFrame || firstFrameWatchdog != null) return
+        val session = sessionGeneration
+        val watch = Runnable {
+            if (session == sessionGeneration && isCapturing && !hasSessionFrame) {
+                trace("FIRST_JPEG_TIMEOUT", lastFailure)
+                recoveryBlocked = true
+                cameraBound = false
+                cameraProvider?.unbindAll()
+                captureGeneration++
+                inFlight = false
+                disarmWatchdog()
+                releaseWakeLock()
+                handler.removeCallbacks(nextTick)
+                state("NEEDS_USER_ACTION no JPEG saved after 30s. $lastFailure Stop and retry; inspect capture log.")
+            }
+        }
+        firstFrameWatchdog = watch
+        handler.postDelayed(watch, 30_000L)
+    }
+
+    private fun disarmFirstFrameDeadline() {
+        firstFrameWatchdog?.let { handler.removeCallbacks(it) }
+        firstFrameWatchdog = null
+    }
+
     private fun armWatchdog(generation: Long, pending: File) {
         watchdog?.let { handler.removeCallbacks(it) }
         val timeout = maxOf(15_000L, intervalMs * 2).coerceAtMost(120_000L)
@@ -578,7 +631,7 @@ class CaptureService : LifecycleService() {
                 // Preserve staging bytes: late CameraX callback may finish writing.
                 // FrameStore will promote complete files or quarantine partial files
                 // on next service start. Never rename a still-being-written file.
-                cameraFailure()
+                cameraFailure("CAPTURE_TIMEOUT ${pending.name}")
                 cameraBound = false
                 try { cameraProvider?.unbindAll() } catch (_: Exception) {}
                 advanceDeadline()
@@ -599,16 +652,18 @@ class CaptureService : LifecycleService() {
                 pendingCameraRebind = true
                 bindCamera()
             }
-            cameraFailure(); return
+            cameraFailure("IMAGE_CAPTURE_UNAVAILABLE"); return
         }
         val dir = project ?: return
         inFlight = true
         lastAttemptElapsed = SystemClock.elapsedRealtime()
         val generation = ++captureGeneration
+        val store = frameStore ?: run { inFlight = false; cameraFailure("FRAME_STORE_UNAVAILABLE"); return }
         val id = nextId++
         val base = "frame_${id.toString().padStart(10, '0')}_${System.currentTimeMillis()}"
         val pending = File(dir, "${base}.pending")
         val output = ImageCapture.OutputFileOptions.Builder(pending).build()
+        trace("JPEG_REQUEST", "file=${pending.name}")
         armWatchdog(generation, pending)
         try {
             cameraCapture.takePicture(output, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
@@ -616,25 +671,30 @@ class CaptureService : LifecycleService() {
                     // Decode only image bounds (no full bitmap allocated).
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeFile(pending.absolutePath, bounds)
-                    if (bounds.outWidth > 0 && bounds.outHeight > 0)
-                        actualPhotoSize = "${bounds.outWidth} × ${bounds.outHeight}"
-                    val saved = bounds.outWidth > 0 && bounds.outHeight > 0 && runCatching {
-                        frameStore?.commit(pending, "${base}.jpg", System.currentTimeMillis())
-                            ?: error("FrameStore unavailable")
-                    }.isSuccess
+                                        val publication = runCatching {
+                        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "JPEG does not decode" }
+                        store.commit(pending, "${base}.jpg", System.currentTimeMillis())
+                    }
+                    publication.onSuccess {
+                        trace("JPEG_COMMITTED", "file=${it.name} bytes=${it.length()} dimensions=${bounds.outWidth}x${bounds.outHeight}")
+                    }.onFailure { trace("JPEG_COMMIT_FAILED", it.toString()) }
                     // Never delete a staging file after a failure: it might be
                     // valid but unjournaled and is reconciled on restart.
                     handler.post {
                         if (generation != captureGeneration || !inFlight) return@post
                         disarmWatchdog()
                         inFlight = false
-                        if (saved) {
+                        if (publication.isSuccess) {
                             captureCount++
+                            actualPhotoSize = "${bounds.outWidth} × ${bounds.outHeight}"
+                            sessionFrames++
+                            disarmFirstFrameDeadline()
+                            state("RECORDING ${captureCount} saved · $actualPhotoSize")
                             retries.clearAfterVerifiedSuccess()
                             // Persist last successful project selection across process death.
                             getSharedPreferences("lapse", MODE_PRIVATE).edit()
                                 .putString("lastProject", dir.name).apply()
-                        } else cameraFailure()
+                        } else cameraFailure("JPEG_COMMIT", publication.exceptionOrNull())
                         if (pendingPreviewRebind) {
                             pendingPreviewRebind = false
                             connectUseCases()
@@ -648,7 +708,7 @@ class CaptureService : LifecycleService() {
                         if (generation != captureGeneration || !inFlight) return@post
                         disarmWatchdog()
                         inFlight = false
-                        cameraFailure()
+                        cameraFailure("JPEG_CALLBACK_${exception.imageCaptureError}", exception)
                         advanceDeadline()
                     }
                 }
@@ -657,19 +717,25 @@ class CaptureService : LifecycleService() {
             disarmWatchdog()
             inFlight = false
             // Leave even partial captures for FrameStore recovery.
-            cameraFailure()
+            cameraFailure("JPEG_REQUEST", e)
             advanceDeadline()
         }
     }
 
-    private fun cameraFailure() {
+    private fun cameraFailure(code: String, error: Throwable? = null) {
+        lastFailure = "$code: ${error?.message ?: "camera did not complete"}"
+        trace("FAILURE", lastFailure)
+        if (error != null) Log.e("TimelapseCapture", code, error)
         errorCount++
         val next = retries.failure(SystemClock.elapsedRealtime())
         if (next == null) {
             recoveryBlocked = true
-            state("NEEDS_USER_ACTION camera failures")
+            handler.removeCallbacks(nextTick)
+            disarmFirstFrameDeadline()
+            releaseWakeLock()
+            state("NEEDS_USER_ACTION $lastFailure")
         } else {
-            state("RECOVERING camera error, retry in ${next / 1000}s")
+            state("RECOVERING $lastFailure; retry in ${next / 1000}s")
             pendingRetryDelay = next
             scheduleNext(next)
         }
@@ -709,7 +775,12 @@ class CaptureService : LifecycleService() {
         if (running) scheduleNext(0)
     }
 
-    private fun stopCaptureAndService() {
+    private fun stopCaptureAndService(finalState: String = "STOPPED") {
+        sessionGeneration++
+        bindGeneration++
+        captureGeneration++
+        inFlight = false
+        disarmFirstFrameDeadline()
         running = false
         previewOnly = false
         pendingRetryDelay = null
@@ -721,12 +792,17 @@ class CaptureService : LifecycleService() {
         (getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(wakeIntent())
         imageCapture = null
         camera = null
-        state("STOPPED")
+        state(finalState)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
     override fun onDestroy() {
+        sessionGeneration++
+        bindGeneration++
+        captureGeneration++
+        disarmFirstFrameDeadline()
+        try { cameraProvider?.unbindAll() } catch (_: Exception) {}
         running = false
         handler.removeCallbacks(nextTick)
         releaseWakeLock()

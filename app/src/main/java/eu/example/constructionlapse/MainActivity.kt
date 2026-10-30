@@ -109,18 +109,25 @@ class MainActivity : ComponentActivity() {
             refreshStatus("Camera service disconnected")
         }
     }
+    private var startAfterPermission = false
     private val cameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         refreshStatus(if (granted) "Camera ready" else "Camera permission denied")
-        if(granted) requestCameraPreview()
+        if (granted && startAfterPermission) {
+            startAfterPermission = false
+            startCapture()
+        } else {
+            startAfterPermission = false
+            if (granted) requestCameraPreview()
+        }
     }
 
     private val importFolder = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { tree ->
         if (tree == null) return@registerForActivityResult
-        if (exporting || (service?.status?.startsWith("CAPTURING") == true)) {
+        if (exporting || (service?.status?.startsWith("RECORDING") == true)) {
             refreshStatus("Stop capture/export before importing"); return@registerForActivityResult
         }
         val dir = selectedProject() ?: run { refreshStatus("Create a project first"); return@registerForActivityResult }
@@ -175,7 +182,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocumentTree()
     ) { tree ->
         if (tree == null || exporting) return@registerForActivityResult
-        if (service?.status?.startsWith("CAPTURING") == true) {
+        if (service?.status?.startsWith("RECORDING") == true) {
             refreshStatus("Stop capture before exporting"); return@registerForActivityResult
         }
         val frames = frameFiles()
@@ -343,6 +350,7 @@ class MainActivity : ComponentActivity() {
         button("+ Project", projectRow) { newProject() }
         controls.addView(projectRow)
         interval = labeledEdit("Interval(s) ", "20", controls)
+        interval.contentDescription = "Capture interval seconds"
         interval.inputType = android.text.InputType.TYPE_CLASS_NUMBER
         val scheduleRow = row()
         dayOnly = CheckBox(this).apply { text = "Daily time range"; isChecked = false }
@@ -496,7 +504,7 @@ class MainActivity : ComponentActivity() {
         controls.addView(stampOptions)
         val exportRow = row()
         button("Photos ZIP", exportRow) {
-            if (service?.status?.startsWith("CAPTURING") == true) {
+            if (service?.status?.startsWith("RECORDING") == true) {
                 refreshStatus("Stop capture before export")
             } else exportZip.launch("${selectedProject()?.name ?: "timelapse"}.zip")
         }
@@ -758,8 +766,9 @@ class MainActivity : ComponentActivity() {
             return b
         }
         mainRecordButton=actionButton("●  START",true){startCapture()}
-        actionButton("■  STOP",false){stopCapture()}
-        actionButton("⚙  SETTINGS",false){settingsDialog.show()}
+        mainRecordButton.contentDescription = "Start capture"
+        actionButton("■  STOP",false){stopCapture()}.contentDescription = "Stop capture"
+        actionButton("⚙  SETTINGS",false){settingsDialog.show()}.contentDescription = "Capture settings"
         bottom.addView(buttonRow)
         root.addView(bottom,LinearLayout.LayoutParams(-1,-2))
 
@@ -829,6 +838,7 @@ class MainActivity : ComponentActivity() {
     private fun startCapture() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
+            startAfterPermission = true
             cameraPermission.launch(Manifest.permission.CAMERA); return
         }
         if (selectedProject() == null) newProject()
@@ -947,7 +957,7 @@ class MainActivity : ComponentActivity() {
 
 
     private fun exportVideo() {
-        if (exporting || service?.status?.startsWith("CAPTURING") == true) {
+        if (exporting || service?.status?.startsWith("RECORDING") == true) {
             refreshStatus("Stop capture/export before MP4 export"); return
         }
         val photos = frameFiles()
@@ -1000,19 +1010,26 @@ class MainActivity : ComponentActivity() {
     private fun refreshStatus(message: String? = null) {
         val s=service
         if (::status.isInitialized) status.text = message ?:
-            ((s?.status ?: "CAMERA READY") + " · " +
-                (s?.savedCount ?: frameFiles().size) + " photos · " +
+            ((s?.status ?: getSharedPreferences("timelapse_status", MODE_PRIVATE)
+                .getString("last_state", "CAMERA READY")) + " · " +
+                (if (s?.isCapturing == true) s.savedCount else frameFiles().size) + " photos · " +
                 (s?.failures ?: 0) + " errors" +
                 (s?.actualPhotoSize?.takeIf { it!="Not captured yet" }?.let { " · " + it } ?: ""))
         if(::mainRecordButton.isInitialized)
-            mainRecordButton.text=if(s?.isCapturing==true)"●  RECORDING" else "●  START"
+            mainRecordButton.text = when {
+                s?.isCapturing != true -> "●  START"
+                s.status.startsWith("NEEDS_USER_ACTION") -> "!  CAMERA ERROR"
+                s.status.startsWith("RECORDING") && s.hasSessionFrame -> "●  RECORDING"
+                s.status.startsWith("STARTING") -> "◌  STARTING"
+                else -> "Ⅱ  WAITING"
+            }
     }
     /** Hardware/Bluetooth remotes that send volume/camera media keys when UI is visible. */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode in listOf(KeyEvent.KEYCODE_VOLUME_UP,KeyEvent.KEYCODE_CAMERA,
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
             if (event.repeatCount == 0) {
-                if (service?.status?.startsWith("CAPTURING") == true) {
+                if (service?.status?.startsWith("RECORDING") == true) {
                     service?.requestImmediateFrame()
                     refreshStatus("Remote shot requested")
                 } else startCapture()

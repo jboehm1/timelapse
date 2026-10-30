@@ -1,4 +1,4 @@
-name: UI screenshot and emulator smoke
+name: JPEG recording gate and emulator UI
 on:
   pull_request:
     paths:
@@ -39,7 +39,7 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           test -x "$SDKMANAGER"
           "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
-          gradle :app:assembleDebug --no-daemon
+          gradle :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
           test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Run emulator and capture UI
         uses: reactivecircus/android-emulator-runner@v2

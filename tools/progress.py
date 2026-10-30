@@ -77,11 +77,12 @@ def render_score(tasks: list[dict]) -> str:
     full = sum(task["percent"] == 100 for task in tasks)
     lines = [
         f"**Progression pondérée estimée : {progress(tasks)} %** — **{full}/{len(tasks)} tâches à 100 %** "
-        "(surtout documents et pipeline de build). **APK alpha Android compilé et disponible, "
-        "CI JUnit/Gradle/lint verte : "
-        "[run #40972789344](https://github.com/jboehm1/timelapse/actions/runs/40972789344). "
-        "Aucun test sur Galaxy S21 / veille nocturne ni gate de production validé.** "
-        "Le code compilé non testé sur appareil reste plafonné à 40 %.",
+        "(surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : "
+        "aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. "
+        "Compilation historique : "
+        "[run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). "
+        "Voir le rapport de continuation pour la validation de la révision actuelle.** "
+        "Les fonctions caméra ne sont pas validées par une compilation seule.",
         "",
         "| Domaine | Tâches | Score pondéré |",
         "|---|---:|---:|",

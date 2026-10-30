@@ -3,7 +3,7 @@
     Build the Android debug APK on a Windows PC without GitHub Actions.
 .DESCRIPTION
     One-time downloads: portable JDK 17 (if Java is missing), Gradle 8.11.1,
-    official Android command-line tools, SDK Platform 35 and Build Tools 35.
+    official Android command-line tools, SDK Platform 36 and Build Tools 35.
     The script prompts for Android SDK licence acceptance.
     It then compiles/tests the CURRENT checkout and produces dist/Timelapse-debug.apk.
     The build never uploads source or signing keys to any third-party CI provider.
@@ -109,12 +109,12 @@ function Ensure-AndroidSdk {
     }
     $env:ANDROID_HOME = $sdk
     $env:ANDROID_SDK_ROOT = $sdk
-    if (-not (Test-Path (Join-Path $sdk 'platforms\android-35\android.jar')) -or
+    if (-not (Test-Path (Join-Path $sdk 'platforms\android-36\android.jar')) -or
         -not (Test-Path (Join-Path $sdk 'build-tools\35.0.0\aapt2.exe'))) {
         Log 'Android licences must be accepted in the following prompt.'
         & $cmdlineTools --sdk_root="$sdk" --licenses
         Require-ExitCode 'Android SDK licence acceptance'
-        & $cmdlineTools --sdk_root="$sdk" 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+        & $cmdlineTools --sdk_root="$sdk" 'platforms;android-36' 'build-tools;35.0.0' 'platform-tools'
         Require-ExitCode 'Android SDK installation'
     }
 }

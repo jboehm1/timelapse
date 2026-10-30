@@ -44,10 +44,10 @@ if [ ! -x "$SDKMANAGER" ]; then
 fi
 
 export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
-if [ ! -f "$SDK/platforms/android-35/android.jar" ] || [ ! -x "$SDK/build-tools/35.0.0/aapt2" ]; then
-    log "Install Android SDK Platform 35 and Build Tools. Accept the official SDK licenses interactively."
+if [ ! -f "$SDK/platforms/android-36/android.jar" ] || [ ! -x "$SDK/build-tools/35.0.0/aapt2" ]; then
+    log "Install Android SDK Platform 36 and Build Tools. Accept the official SDK licenses interactively."
     "$SDKMANAGER" --sdk_root="$SDK" --licenses
-    "$SDKMANAGER" --sdk_root="$SDK" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+    "$SDKMANAGER" --sdk_root="$SDK" "platforms;android-36" "build-tools;35.0.0" "platform-tools"
 fi
 
 cd "$ROOT"
