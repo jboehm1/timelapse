@@ -104,9 +104,13 @@ object ExportPerformanceCheck {
             validate(completed.last())
             var rows = 0
             var pending = 0
+            val query = android.os.Bundle().apply {
+                putString(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION, MediaStore.Video.Media.RELATIVE_PATH + " = ?")
+                putStringArray(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, arrayOf("Movies/Timelapse/$id/"))
+                if (android.os.Build.VERSION.SDK_INT >= 30) putInt(MediaStore.QUERY_ARG_MATCH_PENDING, MediaStore.MATCH_INCLUDE)
+            }
             context.contentResolver.query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                arrayOf(MediaStore.Video.Media.IS_PENDING),MediaStore.Video.Media.RELATIVE_PATH + " = ?",
-                arrayOf("Movies/Timelapse/$id/"),null)!!.use { cursor ->
+                arrayOf(MediaStore.Video.Media.IS_PENDING), query, null)!!.use { cursor ->
                 while (cursor.moveToNext()) { rows++; pending += cursor.getInt(0) }
             }
             assertEquals(3,rows); assertEquals(0,pending)

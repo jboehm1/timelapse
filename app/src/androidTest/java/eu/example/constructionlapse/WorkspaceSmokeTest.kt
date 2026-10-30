@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
@@ -64,6 +65,7 @@ class WorkspaceSmokeTest {
         return null
     }
     private fun clickText(text: String) {
+        hideKeyboard()
         val item = awaitUi(By.text(text), 10_000)
         assertNotNull("Missing $text", item); item!!.click(); pumpCompose(); device.waitForIdle()
     }
@@ -81,15 +83,23 @@ class WorkspaceSmokeTest {
         pumpCompose()
     }
     private fun hideKeyboard() {
-        device.waitForIdle()
-        var visible = false
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val activity = ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).firstOrNull()
-            activity?.window?.decorView?.rootWindowInsets?.let {
-                visible = WindowInsetsCompat.toWindowInsetsCompat(it).isVisible(WindowInsetsCompat.Type.ime())
+        repeat(3) {
+            pumpCompose()
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val activity = ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).firstOrNull()
+                activity?.let {
+                    it.currentFocus?.clearFocus()
+                    WindowInsetsControllerCompat(it.window, it.window.decorView).hide(WindowInsetsCompat.Type.ime())
+                }
+            }
+            SystemClock.sleep(300)
+            pumpCompose()
+            if (!device.hasObject(By.pkg("com.google.android.inputmethod.latin"))) {
+                SystemClock.sleep(300)
+                if (!device.hasObject(By.pkg("com.google.android.inputmethod.latin"))) return
             }
         }
-        if (visible) { device.pressBack(); device.waitForIdle() }
+        assertFalse("Keyboard still covers action", device.hasObject(By.pkg("com.google.android.inputmethod.latin")))
     }
     private fun scrollTo(text: String) {
         repeat(8) {

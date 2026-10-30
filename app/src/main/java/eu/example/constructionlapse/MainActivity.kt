@@ -1099,7 +1099,7 @@ class MainActivity : ComponentActivity() {
             refreshStatus("No compatible encoder for ${w}x${h}/${rate}fps"); return
         }
         val settings = VideoBatchExporter.Settings(w,h,rate,selectedEffect,
-            listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay)
+            listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay,projectInfo[project.name]?.title)
         val zone = java.time.ZoneId.systemDefault()
         getSharedPreferences("video_export", MODE_PRIVATE).edit().putBoolean("perDay", separateDays)
             .putString("from", exportFromDay.text.toString()).putString("through", exportThroughDay.text.toString()).apply()
@@ -1128,7 +1128,8 @@ class MainActivity : ComponentActivity() {
                     if (item.frame % 20 == 0 || item.published) runOnUiThread { if (!isDestroyed) refreshStatus(exportStatus) }
                 }
                 runOnUiThread { if (!isDestroyed) {
-                    val message = "Saved ${result.outputs.size} MP4s (${result.frames} frames) in Movies/Timelapse/${project.name}"
+                    val seconds = String.format(Locale.US, "%.1f", result.elapsedMs / 1000.0)
+                    val message = "Saved ${result.outputs.size} MP4s (${result.frames} frames) in $seconds s: ${result.relativePath}"
                     refreshStatus(message); android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
                 } }
             } catch (e: Exception) {

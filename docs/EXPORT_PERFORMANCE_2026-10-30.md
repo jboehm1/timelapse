@@ -24,3 +24,10 @@ On 30 October, the user requested faster, more efficient export and at least sep
 - Host: benchmark/batch JSON, cache bounds and actual MP4 bytes are required. Existing capture, three effect exports and complete workspace tests remain mandatory.
 
 No comparison against the proprietary reference app, S21 speedup, 4K/8K throughput, 10,000-frame stress or hardware thermal endurance is claimed until measured. Day splitting provides boundaries and independent completion; it does not by itself reduce the total frames to encode. These changes map to G-20/G-21/G-22; G-22 is only prototype stage until checks run.
+
+
+## First execution and follow-up
+
+Source `09b2a763` passes Android build, 29 JUnit tests and lint ([41108138696](https://github.com/jboehm1/timelapse/actions/runs/41108138696)). Emulator [41108138908](https://github.com/jboehm1/timelapse/actions/runs/41108138908) reaches and passes the 30-frame cache work comparison (88 uncached decodes versus 30 cached, 58 hits), then fails the new one-frame duration check. The workspace case also hits a late keyboard overlay before Save preset. The overall gate is FAILED; no complete v0.3.1 validation is claimed yet.
+
+Follow-up uses Android's documented empty EOS sample with an explicit end timestamp to finalize the last frame's duration. See the [AOSP MediaMuxer contract](https://github.com/aosp-mirror/platform_frameworks_base/blob/master/media/java/android/media/MediaMuxer.java). The workspace test explicitly clears focus/hides the keyboard before buttons. Batch auditing now requests pending rows explicitly on API 30+, making cancellation cleanup observable. Export files use the project title, and the final status includes real elapsed seconds. Runtime confirmation remains pending for this follow-up.

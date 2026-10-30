@@ -173,6 +173,11 @@ object VideoExporter {
             }
             drain(true)
             check(muxerStarted) { "Encoder produced no MP4 video track" }
+            // Android MediaMuxer contract: an empty EOS sample sets the final sample duration, including one-frame days.
+            val endOfTrack = MediaCodec.BufferInfo().apply {
+                set(0, 0, files.size.toLong() * 1_000_000L / fps, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            }
+            muxer!!.writeSampleData(track, ByteBuffer.allocate(0), endOfTrack)
             muxer!!.stop() // Finalization failure must propagate; never publish a corrupt MP4.
             muxerStarted = false
             result = ExportStatistics(frames.decodedFrames, frames.cache.hits, frames.cache.peakBytes,
@@ -206,7 +211,7 @@ object VideoExporter {
         private var directDecodes = 0
         val decodedFrames: Int get() = directDecodes + cache.loads
         fun make(index: Int): Bitmap {
-            if (effect == VideoEffect.NONE) {
+            if (effect == VideoEffect.NONE || window == 1) {
                 // Decode/crop directly into the reusable output; no second frame-sized copy.
                 decodeFrame(frames[index], width, height, output)
                 directDecodes++

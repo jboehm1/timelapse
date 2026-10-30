@@ -16,10 +16,11 @@ import java.util.concurrent.CancellationException
 /** Sequential calendar-day jobs. Publish only finalized MP4s; failure deletes only the active pending row. */
 object VideoBatchExporter {
     data class Settings(val width: Int, val height: Int, val fps: Int, val effect: VideoEffect,
-                        val window: Int, val bitrate: Int, val mime: String, val overlay: TimestampOverlay?)
+                        val window: Int, val bitrate: Int, val mime: String, val overlay: TimestampOverlay?,
+                        val projectTitle: String? = null)
     data class Progress(val part: Int, val parts: Int, val day: String, val frame: Int, val frames: Int,
                         val published: Boolean = false)
-    data class Result(val outputs: List<Uri>, val frames: Int, val elapsedMs: Long)
+    data class Result(val outputs: List<Uri>, val frames: Int, val elapsedMs: Long, val relativePath: String)
 
     fun export(context: Context, projectId: String, days: List<ExportDay>, zone: String,
                settings: Settings, cancelled: () -> Boolean, progress: (Progress) -> Unit): Result {
@@ -29,10 +30,18 @@ object VideoBatchExporter {
         val records = JSONArray()
         val report = AtomicFile(File(context.filesDir, "last-video-export.json"))
         val began = android.os.SystemClock.elapsedRealtime()
+        val safeId = projectId.replace(Regex("[^A-Za-z0-9._-]"), "_")
+        val title = settings.projectTitle?.map { if (it.isLetterOrDigit() || it in "._ -") it else '_' }
+            ?.joinToString("")?.trim()?.take(80)?.ifBlank { "Timelapse" }
+        val folder = if (title == null) safeId else "${title}_${safeId.takeLast(8)}"
+        val relativePath = "Movies/Timelapse/$folder"
         val manifest = JSONObject().put("project", projectId).put("zone", zone)
             .put("width", settings.width).put("height", settings.height).put("fps", settings.fps)
             .put("effect", settings.effect.name).put("window", settings.window).put("bitrate", settings.bitrate)
-            .put("mime", settings.mime).put("requested_parts", days.size).put("completed", records)
+            .put("mime", settings.mime).put("path", relativePath)
+            .put("timestamp", settings.overlay?.let { JSONObject().put("format", it.format).put("font_size", it.fontSizePx)
+                .put("color", it.color).put("position", it.position.name) } ?: JSONObject.NULL)
+            .put("requested_parts", days.size).put("completed", records)
         fun save(state: String, error: String? = null) {
             manifest.put("state", state).put("elapsed_ms", android.os.SystemClock.elapsedRealtime() - began)
             if (error != null) manifest.put("error", error)
@@ -53,11 +62,10 @@ object VideoBatchExporter {
                     "Not enough storage for ${day.day ?: "project"} plus safety reserve"
                 }
                 val dayName = day.day?.toString() ?: "all-days"
-                val safeId = projectId.replace(Regex("[^A-Za-z0-9._-]"), "_")
                 val values = ContentValues().apply {
-                    put(MediaStore.Video.Media.DISPLAY_NAME, "${safeId}_${dayName}_${settings.effect.name}.mp4")
+                    put(MediaStore.Video.Media.DISPLAY_NAME, "${title ?: safeId}_${dayName}_${settings.effect.name}.mp4")
                     put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Timelapse/$safeId")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, relativePath)
                     put(MediaStore.Video.Media.IS_PENDING, 1)
                 }
                 val uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
@@ -86,7 +94,7 @@ object VideoBatchExporter {
                 progress(Progress(index + 1, days.size, dayName, day.files.size, day.files.size, true))
             }
             save("COMPLETE")
-            return Result(outputs.toList(), frameCount, android.os.SystemClock.elapsedRealtime() - began)
+            return Result(outputs.toList(), frameCount, android.os.SystemClock.elapsedRealtime() - began, relativePath)
         } catch (e: Exception) {
             pending?.let { uri -> runCatching { resolver.delete(uri, null, null) } }
             val next = days.getOrNull(outputs.size)?.day?.toString() ?: "project"
