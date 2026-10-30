@@ -558,32 +558,110 @@ class MainActivity : ComponentActivity() {
         val children=(0 until settingsControls.childCount).map {settingsControls.getChildAt(it)}
         settingsControls.removeAllViews()
         settingsControls.setPadding(dp(18),0,dp(18),dp(36))
-        fun section(title:String,start:Int,end:Int) {
-            val heading=text(title,17f,Color.rgb(20,42,68)).apply {
-                setTypeface(null,android.graphics.Typeface.BOLD)
-                setPadding(0,dp(20),0,dp(9))
+
+        // On a phone, manual controls must never occupy four cramped horizontal columns.
+        fun expandManual(index:Int) {
+            val container=children.getOrNull(index) as? LinearLayout ?: return
+            val originals=(0 until container.childCount).map{container.getChildAt(it)}
+            container.removeAllViews()
+            container.orientation=LinearLayout.VERTICAL
+            val actionRow=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
+            for(v in originals) {
+                if(v is Button) {
+                    v.isAllCaps=false
+                    v.textSize=13f
+                    v.setTextColor(Color.rgb(12,58,91))
+                    v.background=round(Color.rgb(218,241,249),10)
+                    actionRow.addView(v,LinearLayout.LayoutParams(0,dp(45),1f).apply {
+                        rightMargin=dp(10)
+                    })
+                } else {
+                    container.addView(v,LinearLayout.LayoutParams(-1,dp(54)))
+                }
             }
-            settingsControls.addView(heading,LinearLayout.LayoutParams(-1,dp(58)))
-            for(i in start..end) {
-                if(i>=children.size) break
-                val view=children[i]
-                settingsControls.addView(view,LinearLayout.LayoutParams(-1,-2))
-            }
+            container.addView(actionRow,LinearLayout.LayoutParams(-1,dp(52)))
         }
-        section("01   PROJECT & SCHEDULE",0,2)
-        section("02   LENS & PHOTO QUALITY",3,4)
-        section("03   FOCUS & EXPOSURE",5,10)
-        section("04   CAPTURE COMMANDS",11,11)
-        section("05   VIDEO & EXPORT",12,children.size-1)
-        settingsScroll.setBackgroundColor(Color.rgb(249,251,253))
+        expandManual(9)
+        expandManual(10)
+
+        // Keep ALL original controls and their callbacks, but expose only one
+        // logical group per screen, like a real camera application.
+        val settingsRoot=LinearLayout(this).apply{
+            orientation=LinearLayout.VERTICAL
+            setBackgroundColor(Color.rgb(249,251,254))
+        }
+        val titleRow=LinearLayout(this).apply {
+            orientation=LinearLayout.HORIZONTAL
+            gravity=Gravity.CENTER_VERTICAL
+            setPadding(dp(20),dp(6),dp(20),dp(2))
+        }
+        titleRow.addView(text("SETTINGS",21f,Color.rgb(24,47,73)).apply {
+            setTypeface(null,android.graphics.Typeface.BOLD)
+        },LinearLayout.LayoutParams(0,dp(58),1f))
+        val close=text("✕",26f,Color.rgb(41,65,84)).apply {
+            gravity=Gravity.CENTER
+            setOnClickListener{settingsDialog.dismiss()}
+        }
+        titleRow.addView(close,LinearLayout.LayoutParams(dp(48),dp(48)))
+        settingsRoot.addView(titleRow)
+        val tabRow=LinearLayout(this).apply {
+            orientation=LinearLayout.HORIZONTAL
+            setPadding(dp(16),0,dp(16),dp(9))
+        }
+        val tabNames=listOf("CAPTURE","CAMERA","EXPORT")
+        val tabButtons=mutableListOf<TextView>()
+        for((idx,name) in tabNames.withIndex()) {
+            val tab=text(name,13f,Color.rgb(46,80,104)).apply {
+                gravity=Gravity.CENTER
+                setTypeface(null,android.graphics.Typeface.BOLD)
+                setPadding(0,dp(5),0,dp(5))
+            }
+            tabButtons.add(tab)
+            tabRow.addView(tab,LinearLayout.LayoutParams(0,dp(52),1f).apply {
+                rightMargin=dp(4)
+            })
+        }
+        settingsRoot.addView(tabRow)
+        fun showSettingsTab(which:Int) {
+            settingsControls.removeAllViews()
+            tabButtons.forEachIndexed { i,view ->
+                view.setTextColor(if(i==which)Color.WHITE else Color.rgb(43,72,96))
+                view.background=round(if(i==which)Color.rgb(22,116,161) else
+                    Color.rgb(228,236,246),11)
+            }
+            val indices=when(which) {
+                0 -> listOf(0,1,2)
+                1 -> (3..10).toList()
+                else -> (12 until children.size).toList()
+            }
+            for(i in indices) {
+                val view=children[i]
+                if(i==3 || i==5 || i==12) {
+                    settingsControls.addView(
+                        text(when(i){3->"LENS & PHOTO QUALITY";5->"FOCUS & EXPOSURE";else->"VIDEO & IMAGE EXPORT"},
+                            15f,Color.rgb(25,62,94)).apply {
+                            setTypeface(null,android.graphics.Typeface.BOLD)
+                            setPadding(0,dp(18),0,dp(7))
+                        },LinearLayout.LayoutParams(-1,dp(63))
+                    )
+                }
+                settingsControls.addView(view,LinearLayout.LayoutParams(-1,-2).apply {
+                    bottomMargin=dp(10)
+                })
+            }
+            settingsScroll.post{settingsScroll.scrollTo(0,0)}
+        }
+        tabButtons.forEachIndexed{i,v -> v.setOnClickListener{showSettingsTab(i)}}
+        showSettingsTab(0)
+        settingsScroll.setBackgroundColor(Color.rgb(249,251,254))
+        settingsRoot.addView(settingsScroll,LinearLayout.LayoutParams(-1,0,1f))
         settingsDialog=android.app.Dialog(this)
-        settingsDialog.setContentView(settingsScroll)
+        settingsDialog.setContentView(settingsRoot)
         settingsDialog.window?.apply {
             setBackgroundDrawableResource(android.R.color.transparent)
             setLayout(-1,(resources.displayMetrics.heightPixels*.86f).toInt())
             setGravity(Gravity.BOTTOM)
         }
-
         val header=LinearLayout(this).apply {
             orientation=LinearLayout.HORIZONTAL
             gravity=Gravity.CENTER_VERTICAL
