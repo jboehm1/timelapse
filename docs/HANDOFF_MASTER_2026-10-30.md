@@ -1,5 +1,8 @@
 # TIMELAPSE — MASTER DEVELOPMENT & NEW-CHAT HANDOFF
 
+> **Latest export milestone:** diagnostic v0.3.1 source `741ada48` passes build, 30 unit tests, lint, pure Kotlin checks and all three emulator scenarios. Calendar-day batches, date-range selection, completed-day preservation on cancellation and bounded neighbour/buffer/GPU-texture reuse are now tested. Exact timings and independent FFmpeg results are in [EXPORT_PERFORMANCE_2026-10-30.md](EXPORT_PERFORMANCE_2026-10-30.md). No S21/4K/long-volume speed or production acceptance is claimed; CAPTURE-P0-001 stays open.
+
+
 > **Latest checkpoint, 30 October 2026:** diagnostic v0.3 source `6616bffc` passes Android build, 22 JUnit tests, lint, pure Kotlin policy tests and all three emulator instrumentation cases. The new Compose projects/planner/gallery workflow, finite capture, one-shot capture, Photolapse, preset copy and lossless reversible trash/restore are now exercised. See [WORKSPACE_PROGRESS_2026-10-30.md](WORKSPACE_PROGRESS_2026-10-30.md) and its exact CI links. The following historical snapshot/checklist is not a claim about current CI. Galaxy S21 recording and physical screen OFF remain unverified; CAPTURE-P0-001 remains open. Do not merge/release.
 
 ## Engineering, product design, reference-app research, release safety, and execution guide

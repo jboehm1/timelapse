@@ -63,3 +63,8 @@ Conservative tracker changes to 55% apply only to B-01/B-02/B-13/B-16/H-12/H-13/
 Diagnostic APK: `Timelapse-v0.3.0-diagnostic-UNVERIFIED.apk`, 36,244,009 bytes, SHA-256 `8703066dfc33206d1a48cd0892c2bd64b3e674a0492a0dce1678bbf6a5b7194e`. Built by [41084568182](https://github.com/jboehm1/timelapse/actions/runs/41084568182) from the tested source. CI debug signing may differ from earlier locally signed diagnostics: do not uninstall an existing installation to bypass a signing mismatch, because that can erase private originals.
 
 Visual inspection confirms the real four-photo gallery; long project names still wrap and clip the toolbar subtitle. This remains UI polish debt. The camera screen is still the legacy Activity. S21, physical screen OFF, 8h/72h/7d endurance and production release remain blocked/unverified.
+
+
+## Subsequent export milestone — v0.3.1
+
+Source `741ada48` adds bounded frame/buffer/texture reuse and independent calendar-day MP4 batches with date-range selection and cancellation preserving completed days. Android build, 30 JUnit tests, lint and all three emulator cases PASS. See [EXPORT_PERFORMANCE_2026-10-30.md](EXPORT_PERFORMANCE_2026-10-30.md) for exact CI links, three timing pairs, independent decoded-frame equality, partial-budget cache checks, diagnostic APK hash and remaining hardware/long-volume limitations. This is the current milestone; v0.3 evidence above remains historical.
