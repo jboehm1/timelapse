@@ -36,6 +36,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -79,6 +81,14 @@ class MainActivity : ComponentActivity() {
     private var supportedPhotoSizes: List<PhotoResolution> = emptyList()
     private lateinit var settingsDialog: android.app.Dialog
     private lateinit var mainRecordButton: Button
+    private lateinit var projectChip: TextView
+    private val statusHandler=android.os.Handler(android.os.Looper.getMainLooper())
+    private val statusTicker=object:Runnable {
+        override fun run() {
+            refreshStatus()
+            statusHandler.postDelayed(this,1500L)
+        }
+    }
     private lateinit var resolution: Spinner
     private lateinit var stampEnabled: CheckBox
     private lateinit var stampPattern: EditText
@@ -236,10 +246,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        statusHandler.removeCallbacks(statusTicker)
+        statusHandler.post(statusTicker)
         bound = bindService(Intent(this, CaptureService::class.java),
             connection, Context.BIND_AUTO_CREATE)
     }
     override fun onStop() {
+        statusHandler.removeCallbacks(statusTicker)
         if (bound) {
             service?.setPreviewSurface(null)
             unbindService(connection)
@@ -268,6 +281,7 @@ class MainActivity : ComponentActivity() {
         val previous = name ?: getSharedPreferences("lapse", MODE_PRIVATE)
             .getString("lastProject", "")
         projectNames.indexOf(previous).takeIf { it >= 0 }?.let { projects.setSelection(it) }
+        updateProjectChip()
     }
 
     private fun newProject() {
@@ -436,6 +450,7 @@ class MainActivity : ComponentActivity() {
             override fun onNothingSelected(p: AdapterView<*>?) {}
             override fun onItemSelected(p: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
                 restoreMeteringSelection()
+                updateProjectChip()
             }
         }
         val captureRow = row()
@@ -520,6 +535,13 @@ class MainActivity : ComponentActivity() {
         val settingsScroll=root.getChildAt(2) as ScrollView
         root.removeAllViews()
         root.setBackgroundColor(navy)
+        // Android 15 enforces edge-to-edge: respect real system status/nav bars.
+        ViewCompat.setOnApplyWindowInsetsListener(root){view,insets->
+            val bars=insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0,bars.top,0,bars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(root)
         window.statusBarColor=navy
         window.navigationBarColor=navy
 
@@ -634,9 +656,9 @@ class MainActivity : ComponentActivity() {
         }
         val name=text("PROJECT •",11f,grey)
         overview.addView(name,LinearLayout.LayoutParams(dp(85),dp(40)))
-        val projectTitle=text("Select or create a project",14f,Color.WHITE)
-        overview.addView(projectTitle,LinearLayout.LayoutParams(0,dp(40),1f))
-        projectTitle.setOnClickListener{settingsDialog.show()}
+        projectChip=text("NO PROJECT • Tap to choose",14f,Color.WHITE)
+        overview.addView(projectChip,LinearLayout.LayoutParams(0,dp(40),1f))
+        projectChip.setOnClickListener{showProjectBrowser()}
         bottom.addView(overview)
         val statusHolder=currentStatus as TextView
         statusHolder.setTextColor(grey)
@@ -673,7 +695,28 @@ class MainActivity : ComponentActivity() {
             }
         }
         updatePhotoResolutions()
-        projectTitle.text="Projects → Settings"
+        updateProjectChip()
+    }
+
+    private fun updateProjectChip() {
+        if(::projectChip.isInitialized)
+            projectChip.text=selectedProject()?.name ?: "NO PROJECT • Tap to choose"
+    }
+
+    private fun showProjectBrowser() {
+        val names=projectNames
+        val options=if(names.isEmpty())arrayOf("No projects yet") else names.toTypedArray()
+        android.app.AlertDialog.Builder(this).setTitle("Timelapse projects")
+            .setItems(options){_,index->
+                if(names.isNotEmpty() && index in names.indices){
+                    projects.setSelection(index)
+                    updateProjectChip()
+                    refreshStatus("Selected " + names[index])
+                }
+            }
+            .setPositiveButton("+ New project"){_,_->newProject()}
+            .setNegativeButton("Close",null)
+            .show()
     }
 
     private fun updatePhotoResolutions() {
