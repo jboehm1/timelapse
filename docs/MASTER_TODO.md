@@ -32,7 +32,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | C — Capture caméra, objectifs, format et qualité | 22 | **16 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **15 %** |
-| F — Fiabilité, sécurité matérielle et récupération | 30 | **21 %** |
+| F — Fiabilité, sécurité matérielle et récupération | 30 | **22 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **29 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **18 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
@@ -189,7 +189,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | E-19 | P2 | **0 %** | Pilotage appareils gérés/kiosk optionnel | Documentation et tests device-owner |
 | [ ] | E-20 | P1 | **0 %** | Comparaison consommation 24h 3 stratégies | Graphes Wh nuit noire/écran OFF/caméra idle |
 
-### F. Fiabilité, sécurité matérielle et récupération — 21 %
+### F. Fiabilité, sécurité matérielle et récupération — 22 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -218,7 +218,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-23 | P0 | **25 %** | Gestion stockage endommagé et JPEG tronqué | Fichier partiel détecté et quarantiné |
 | [ ] | F-24 | P0 | **40 %** | Comptabilisation frames manquées | Journal taux et plus gros intervalle |
 | [ ] | F-25 | P1 | **0 %** | Gestion peu d'espace RAM et pressure | Dégrader sans perdre photos sauvegardées |
-| [ ] | F-26 | P1 | **0 %** | Concurrence capture/export/import | Capture prioritaire, aucune deadlock |
+| [ ] | F-26 | P1 | **40 %** | Concurrence capture/export/import | Capture prioritaire, aucune deadlock |
 | [ ] | F-27 | P1 | **0 %** | Protection contre boucles de restart | Budget global de tentatives et arrêt explicite |
 | [ ] | F-28 | P1 | **0 %** | Téléphone trop chaud pour toucher | Notification/action sécurité, pas override |
 | [ ] | F-29 | P0 | **40 %** | Mode dégradation contrôlée | Captures ralentissent, reprennent avec hysteresis |

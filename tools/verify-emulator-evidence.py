@@ -67,7 +67,7 @@ def verify(archive_path: str, destination: str) -> dict:
                 raise ValueError("Unexpected MP4 dimensions/frame accounting")
             (output / "exports" / name).write_bytes(content)
         (output / "video-validation.json").write_text(json.dumps(videos, indent=2) + "\n")
-        for name in ("projects-home.png", "planner.png", "project-gallery.png", "restored-project.png", "project-validation.txt"):
+        for name in ("projects-home.png", "planner.png", "project-gallery.png", "restored-project.png", "photolapse.png", "project-validation.txt"):
             member = archive.getmember("workspace-evidence/" + name)
             if not member.isfile() or member.size > 16 * 1024 * 1024:
                 raise ValueError("Invalid workspace evidence")

@@ -125,7 +125,7 @@ id,domain,priority,progress_percent,name,acceptance
 "F-23","F","P0","25","Gestion stockage endommagé et JPEG tronqué","Fichier partiel détecté et quarantiné"
 "F-24","F","P0","40","Comptabilisation frames manquées","Journal taux et plus gros intervalle"
 "F-25","F","P1","0","Gestion peu d'espace RAM et pressure","Dégrader sans perdre photos sauvegardées"
-"F-26","F","P1","0","Concurrence capture/export/import","Capture prioritaire, aucune deadlock"
+"F-26","F","P1","40","Concurrence capture/export/import","Capture prioritaire, aucune deadlock"
 "F-27","F","P1","0","Protection contre boucles de restart","Budget global de tentatives et arrêt explicite"
 "F-28","F","P1","0","Téléphone trop chaud pour toucher","Notification/action sécurité, pas override"
 "F-29","F","P0","40","Mode dégradation contrôlée","Captures ralentissent, reprennent avec hysteresis"

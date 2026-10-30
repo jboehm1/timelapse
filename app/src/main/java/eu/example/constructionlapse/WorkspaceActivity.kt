@@ -185,7 +185,8 @@ class WorkspaceActivity : ComponentActivity() {
                     modifier = Modifier.semantics { contentDescription = "New project name" })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ProjectLibrary.Mode.entries.forEach { mode ->
-                        FilterChip(createMode == mode, { createMode = mode }, label = { Text(if (mode == ProjectLibrary.Mode.TIMELAPSE) "Timelapse" else "Photolapse") })
+                        FilterChip(createMode == mode, { createMode = mode }, label = { Text(if (mode == ProjectLibrary.Mode.TIMELAPSE) "Timelapse" else "Photolapse") },
+                            modifier = Modifier.semantics { contentDescription = "Mode ${mode.name}" })
                     }
                 }
                 Text("Photolapse keeps manually added frames in the same original-preserving project format.", style = MaterialTheme.typography.bodySmall)
@@ -267,19 +268,28 @@ class WorkspaceActivity : ComponentActivity() {
         var weekdays by remember { mutableStateOf(initial.weekdays) }
         var note by remember { mutableStateOf<String?>(null) }
         val stat = remember { StatFs((getExternalFilesDir(Environment.DIRECTORY_PICTURES) ?: filesDir).absolutePath) }
-        val estimate = runCatching { CapturePlanner.estimate(CapturePlanner.intervalMillis(interval), hours.toDouble(), days.toInt(), fps.toDouble(),
+        val actualHours = runCatching {
+            if (project == null) hours.toDouble() else if (!dayOnly) 24.0 else {
+                val seconds = java.time.Duration.between(java.time.LocalTime.parse(from), java.time.LocalTime.parse(until)).seconds
+                require(seconds != 0L) { "Daily window must have nonzero duration" }
+                (if (seconds < 0) seconds + 86400 else seconds) / 3600.0
+            }
+        }
+        val estimate = runCatching { CapturePlanner.estimate(CapturePlanner.intervalMillis(interval), actualHours.getOrThrow(), days.toInt(), fps.toDouble(),
             (mb.toDouble() * 1_000_000).toLong(), inventory?.recentSizes.orEmpty(), stat.availableBytes, stat.totalBytes, maxFrames = if (unlimited) 0 else frameLimit.toLong().also { require(it > 0) }) }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(project?.title ?: "Explore before shooting", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text("Nominal cadence. A slow camera skips overdue slots; it never queues a catch-up burst.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 NumberField("Interval (seconds)", interval, { interval = it }, Modifier.weight(1f))
-                NumberField("Active hours/day", hours, { hours = it }, Modifier.weight(1f))
+                NumberField("Active hours/day", if (project == null) hours else actualHours.getOrNull()?.toString() ?: "", { hours = it }, Modifier.weight(1f), enabled = project == null)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 NumberField("Active days", days, { days = it }, Modifier.weight(1f))
                 NumberField("Playback FPS", fps, { fps = it }, Modifier.weight(1f))
             }
+            if (project != null) Text(if (dayOnly) "Active hours follow your daily window." else "Continuous capture runs 24h/day. Enable a daily window below for work hours.", style = MaterialTheme.typography.bodySmall)
+            if (project?.mode == ProjectLibrary.Mode.PHOTOLAPSE) Text("Photolapse records one frame per action. Cadence figures are planning examples, not an automatic schedule.", style = MaterialTheme.typography.bodySmall)
             if (inventory?.recentSizes.isNullOrEmpty()) NumberField("Estimated MB/photo", mb, { mb = it }, Modifier.fillMaxWidth())
             estimate.onSuccess { result ->
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
@@ -325,9 +335,9 @@ class WorkspaceActivity : ComponentActivity() {
             Spacer(Modifier.height(24.dp))
         }
     }
-    @Composable private fun NumberField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier) {
+    @Composable private fun NumberField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier, enabled: Boolean = true) {
         OutlinedTextField(value, onChange, modifier.semantics { contentDescription = label }, label = { Text(label) }, singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), enabled = enabled)
     }
     @Composable private fun Metric(label: String, value: String) {
         Column { Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

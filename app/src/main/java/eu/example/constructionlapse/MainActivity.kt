@@ -55,9 +55,16 @@ class MainActivity : ComponentActivity() {
     private val exporter = Executors.newSingleThreadExecutor()
     private var service: CaptureService? = null
     private var bound = false
-    @Volatile private var exporting = false
-    @Volatile private var cancelExportRequested = false
-    @Volatile private var exportStatus: String? = null
+    private var exporting: Boolean
+        get() = ProjectFileJobs.busy
+        set(value) { ProjectFileJobs.busy = value }
+    private var cancelExportRequested: Boolean
+        get() = ProjectFileJobs.cancelVideo
+        set(value) { ProjectFileJobs.cancelVideo = value }
+    private var exportStatus: String?
+        get() = ProjectFileJobs.videoStatus
+        set(value) { ProjectFileJobs.videoStatus = value }
+    private fun captureArmed() = CaptureService.activeService?.isCapturing == true
     private lateinit var status: TextView
     private lateinit var preview: PreviewView
     private lateinit var projects: Spinner
@@ -170,7 +177,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocumentTree()
     ) { tree ->
         if (tree == null) return@registerForActivityResult
-        if (exporting || (service?.status?.startsWith("RECORDING") == true)) {
+        if (exporting || captureArmed()) {
             refreshStatus("Stop capture/export before importing"); return@registerForActivityResult
         }
         val dir = selectedProject() ?: run { refreshStatus("Create a project first"); return@registerForActivityResult }
@@ -225,7 +232,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocumentTree()
     ) { tree ->
         if (tree == null || exporting) return@registerForActivityResult
-        if (service?.status?.startsWith("RECORDING") == true) {
+        if (captureArmed()) {
             refreshStatus("Stop capture before exporting"); return@registerForActivityResult
         }
         val frames = frameFiles()
@@ -258,6 +265,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         if (uri == null || exporting) return@registerForActivityResult
+        if (captureArmed()) { refreshStatus("Stop capture before ZIP export"); return@registerForActivityResult }
         val photos = frameFiles()
         if (photos.isEmpty()) { refreshStatus("No saved frames"); return@registerForActivityResult }
         exporting = true
@@ -552,7 +560,7 @@ class MainActivity : ComponentActivity() {
         controls.addView(stampOptions)
         val exportRow = row()
         button("Photos ZIP", exportRow) {
-            if (service?.status?.startsWith("RECORDING") == true) {
+            if (captureArmed()) {
                 refreshStatus("Stop capture before export")
             } else exportZip.launch("${selectedProject()?.name ?: "timelapse"}.zip")
         }
@@ -835,6 +843,11 @@ class MainActivity : ComponentActivity() {
         projects.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, index: Int, id: Long) {
+                val active = CaptureService.activeService
+                if (active?.isCapturing == true && projectNames.getOrNull(index) != active.selectedProject) {
+                    projectNames.indexOf(active.selectedProject).takeIf { it >= 0 }?.let { projects.setSelection(it) }
+                    refreshStatus("Stop recording before switching projects"); return
+                }
                 loadProjectPreset(); updateProjectChip()
             }
         }
@@ -901,7 +914,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startCapture(testPhoto: Boolean = false) {
-        if (service?.isCapturing == true) { refreshStatus("Stop the current session before changing capture mode"); return }
+        if (exporting || captureArmed()) { refreshStatus("Stop the current capture/file operation before starting another"); return }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
             pendingTestShot = testPhoto
@@ -1031,7 +1044,7 @@ class MainActivity : ComponentActivity() {
 
 
     private fun exportVideo() {
-        if (exporting || service?.isCapturing == true) {
+        if (exporting || captureArmed()) {
             refreshStatus("Stop capture/export before MP4 export"); return
         }
         val photos = frameFiles()

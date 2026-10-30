@@ -53,8 +53,23 @@ class WorkspaceSmokeTest {
             device.dumpWindowHierarchy(File(evidence, "input-failure.xml"))
             fail("No editable child for $description (${container.className})")
         }
-        field!!.text = value
-        assertEquals("Text entry did not reach $description", value, field.text)
+        typeInto(field!!, value)
+    }
+    private fun typeInto(field: androidx.test.uiautomator.UiObject2, value: String) {
+        // Compose semantics updates asynchronously; use actual focus/key input and re-query,
+        // never read a stale accessibility node immediately after ACTION_SET_TEXT.
+        require(value.matches(Regex("[A-Za-z0-9 ._-]+")))
+        field.click()
+        device.waitForIdle()
+        device.pressKeyCode(android.view.KeyEvent.KEYCODE_A, android.view.KeyEvent.META_CTRL_ON)
+        device.pressKeyCode(android.view.KeyEvent.KEYCODE_DEL)
+        device.executeShellCommand("input text '" + value.replace(" ", "%s") + "'")
+        val entered = device.wait(Until.findObject(By.clazz("android.widget.EditText").text(value)), 5000)
+        if (entered == null) {
+            device.takeScreenshot(File(evidence, "input-failure.png"))
+            device.dumpWindowHierarchy(File(evidence, "input-failure.xml"))
+            fail("Typed value did not appear in editable node: $value")
+        }
     }
     private fun hideKeyboard() {
         device.waitForIdle()
@@ -98,9 +113,9 @@ class WorkspaceSmokeTest {
         openProject(title)
         clickText("Plan")
         set("Interval (seconds)", "0.5")
-        // The nominal 8h count must be 57,600, independently checked in JVM tests.
+        // A continuous project runs 24h/day; the separate JVM test verifies 57,600 for an 8h shift.
         hideKeyboard()
-        assertTrue(device.wait(Until.hasObject(By.text("57600")), 5000))
+        assertTrue(device.wait(Until.hasObject(By.text("172800")), 5000))
         device.takeScreenshot(File(evidence, "planner.png"))
         scrollTo("Unlimited recording")
         clickDescription("Unlimited recording")
@@ -116,6 +131,12 @@ class WorkspaceSmokeTest {
         clickDescription("Start capture")
         waitFor("finite session completes") { library.frames(project.id).size == 3 && CaptureService.activeService?.isCapturing != true }
         assertEquals(3, library.frames(project.id).size)
+        ProjectFileJobs.busy = true
+        try {
+            clickDescription("Take test photo")
+            SystemClock.sleep(1000)
+            assertEquals("Capture must not overlap import/export", 3, library.frames(project.id).size)
+        } finally { ProjectFileJobs.busy = false }
         clickDescription("Take test photo")
         waitFor("one-shot saves one new original") { library.frames(project.id).size == 4 && CaptureService.activeService?.isCapturing != true }
         SystemClock.sleep(2000)
@@ -126,7 +147,7 @@ class WorkspaceSmokeTest {
         device.takeScreenshot(File(evidence, "project-gallery.png"))
         clickText("Rename")
         val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 10_000)
-        assertNotNull(field); field.text = "$title renamed"
+        assertNotNull(field); typeInto(field, "$title renamed")
         clickText("Save name")
         waitFor("rename") { library.read(project.id).title.endsWith("renamed") }
         clickText("Copy preset")
@@ -144,6 +165,25 @@ class WorkspaceSmokeTest {
         waitFor("restore") { !library.read(project.id).archived }
         assertEquals(before, library.frames(project.id).associate { it.name to hash(it) })
         device.takeScreenshot(File(evidence, "restored-project.png"))
-        File(evidence, "project-validation.txt").writeText("PASS: create/rename/copy preset/trash/restore; interval=500ms; finite=3 new JPEGs; test photo=1 new JPEG; 4 original hashes unchanged\n")
+        device.pressBack()
+        clickText("All")
+        clickDescription("Create project")
+        val manualTitle = "Photolapse ${System.currentTimeMillis()}"
+        set("New project name", manualTitle)
+        clickDescription("Mode PHOTOLAPSE")
+        clickText("Create")
+        waitFor("manual project create") { library.list().any { it.title == manualTitle } }
+        val manual = library.list().single { it.title == manualTitle }
+        openProject(manualTitle)
+        clickText("Open camera & export")
+        clickDescription("Start capture")
+        waitFor("first manual frame") { library.frames(manual.id).size == 1 && CaptureService.activeService?.isCapturing != true }
+        clickDescription("Start capture")
+        waitFor("second manual frame") { library.frames(manual.id).size == 2 && CaptureService.activeService?.isCapturing != true }
+        SystemClock.sleep(1000)
+        assertEquals(2, library.frames(manual.id).size)
+        assertEquals(before, library.frames(project.id).associate { it.name to hash(it) })
+        device.takeScreenshot(File(evidence, "photolapse.png"))
+        File(evidence, "project-validation.txt").writeText("PASS: create/rename/copy preset/trash/restore; interval=500ms; finite=3 new JPEGs; test photo=1 new JPEG; 4 original hashes unchanged; separate Photolapse project adds exactly 1 frame per action (2 total); capture blocked during file job\n")
     }
 }
