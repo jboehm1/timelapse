@@ -27,3 +27,11 @@ jobs:
           unzip -q kotlin-compiler.zip
           echo "$PWD/kotlinc/bin" >> "$GITHUB_PATH"
       - run: bash tools/test-policy.sh
+      - name: Upload self-contained Markdown handoff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timelapse-master-handoff-md
+          path: docs/HANDOFF_MASTER_2026-10-30.md
+          if-no-files-found: error
+          retention-days: 14
