@@ -94,12 +94,12 @@ class WorkspaceSmokeTest {
     private fun scrollTo(text: String) {
         repeat(8) {
             pumpCompose()
-            if (device.hasObject(By.text(text))) return
+            if (device.hasObject(By.textContains(text))) return
             device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, .7f)
             pumpCompose()
             device.waitForIdle()
         }
-        assertTrue("Cannot scroll to $text", device.hasObject(By.text(text)))
+        assertTrue("Cannot scroll to $text", device.hasObject(By.textContains(text)))
     }
     private fun openProject(title: String) {
         val item = awaitUi(By.text(title), 15_000)
