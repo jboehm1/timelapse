@@ -1,101 +1,109 @@
 {
   "result": "PASS",
   "scope": "Android emulator only; S21 unverified",
-  "jpeg_count": 12,
+  "jpeg_count": 13,
   "frames": [
     {
-      "file": "frame_0000000001_1793386792788.jpg",
-      "bytes": "61176",
+      "file": "frame_0000000001_1793387348281.jpg",
+      "bytes": "61222",
       "dimensions": "1856x1392",
-      "sha256": "67694f162706b7e5c3d5f351f28af295f13503d6ed3d445a7e39c5e413b493c0",
+      "sha256": "a6f41d7fbbfc78048a2e4dce1d83e3b201aeca1bc4ebf2368da685897dcd5102",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000002_1793386796572.jpg",
-      "bytes": "60948",
+      "file": "frame_0000000002_1793387352104.jpg",
+      "bytes": "59011",
       "dimensions": "1856x1392",
-      "sha256": "e2fb17f1ddb24f39fbdba1cdd45f7a7d5b38039c1fee886295c0c5e31605ac0f",
+      "sha256": "d945a10d73637918d93a436c688696e82d269cce50b0966208814b1fb3264c43",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000003_1793386798527.jpg",
-      "bytes": "60488",
-      "dimensions": "1856x1392",
-      "sha256": "23935852cdffe235990add45c5ea7ad64ffcdc2bfd8faa929bc3eef6920b8951",
-      "width": 1856,
-      "height": 1392
-    },
-    {
-      "file": "frame_0000000004_1793386800603.jpg",
-      "bytes": "60938",
-      "dimensions": "1856x1392",
-      "sha256": "c9355b27f5534eddda736dec6c8dcd332f08a96f37a234ca97e697b302e63c6e",
-      "width": 1856,
-      "height": 1392
-    },
-    {
-      "file": "frame_0000000005_1793386802544.jpg",
+      "file": "frame_0000000003_1793387353983.jpg",
       "bytes": "61115",
       "dimensions": "1856x1392",
-      "sha256": "1aa811b163a403980b2dfe49d7bf3fbd4f504117927e0d6a27ae1ea12e23ce86",
+      "sha256": "11caefc48959c95e214d828d8574d7216749bc842cf040e8fab7559acbf185a4",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000006_1793386804565.jpg",
-      "bytes": "60488",
+      "file": "frame_0000000004_1793387355968.jpg",
+      "bytes": "59833",
       "dimensions": "1856x1392",
-      "sha256": "41c63a4abd66ca602e8c79f30f1cc0a94001c5d83d66712d2d0ba726bc6792aa",
+      "sha256": "08c88dd4d76c41ebf7b8cf6d4369ce52f9194a3ad114df49bff58c4cce67a795",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000007_1793386806559.jpg",
-      "bytes": "59910",
+      "file": "frame_0000000005_1793387358066.jpg",
+      "bytes": "61115",
       "dimensions": "1856x1392",
-      "sha256": "cd51756138e82dee691b2f80b7ec7281c6762fd028e75d860193e985ea05961d",
+      "sha256": "f9b7820fd0c656d25fe46cfc5d7046758542d986dc382538df18023f16de6334",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000008_1793386808617.jpg",
-      "bytes": "60204",
+      "file": "frame_0000000006_1793387360011.jpg",
+      "bytes": "59015",
       "dimensions": "1856x1392",
-      "sha256": "671c9c96c455751161b3388f0a839fa439a32e696323376441a50f78ee50ebc4",
+      "sha256": "7fe1e694c792ded5e14c07a9d8e4b77602b9cc860332fc071c1aef4735f8a82f",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000009_1793386810551.jpg",
-      "bytes": "60808",
+      "file": "frame_0000000007_1793387362080.jpg",
+      "bytes": "59015",
       "dimensions": "1856x1392",
-      "sha256": "150dadab06d149a1b8f18c371b9e2c71edd9c8ee03ea591875373b2f7705283c",
+      "sha256": "a8f970b6f4e84cf7f244e4db16fc6386c09469124bd4855427872659cb6706ee",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000010_1793386812546.jpg",
-      "bytes": "60488",
+      "file": "frame_0000000008_1793387364005.jpg",
+      "bytes": "59833",
       "dimensions": "1856x1392",
-      "sha256": "d66c28dbab70f9bd4d225d44b755a06442e54685cd9cb2ace8f7dba80ca7bac8",
+      "sha256": "89f0a3415e0e646497925affd5999cd0a26a5387aa5a9aca1ce85da165621994",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000011_1793386814617.jpg",
+      "file": "frame_0000000009_1793387365983.jpg",
+      "bytes": "61397",
+      "dimensions": "1856x1392",
+      "sha256": "3939b627fc5293d6121c64ee7a79589cc9c26ce31e6560ef3b8bb091ebe79294",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000010_1793387367975.jpg",
       "bytes": "60101",
       "dimensions": "1856x1392",
-      "sha256": "a1a0a34ef47ed513a42d6ff7460a1558895a10a415cc3a7789b3daa3cd97bc01",
+      "sha256": "9912dd78372736fde1eb727c15e80e6070f77561f539d48523b5a67db717bd14",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000012_1793386816823.jpg",
-      "bytes": "61287",
+      "file": "frame_0000000011_1793387370016.jpg",
+      "bytes": "59015",
       "dimensions": "1856x1392",
-      "sha256": "fb0e457b130d8e102d651a74832670bb6b8de64d48f79bfc0db713468d2d1e58",
+      "sha256": "57d7e1c5de6d3397ff4ac474a2b84c7ab2d426a644ad93771c952177d93d7963",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000012_1793387373968.jpg",
+      "bytes": "61133",
+      "dimensions": "1856x1392",
+      "sha256": "afcde629c493d6399707df5e8cc26ad65636ed40d7db0a1fe8b60c79402dd129",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000013_1793387376071.jpg",
+      "bytes": "59833",
+      "dimensions": "1856x1392",
+      "sha256": "650515fde28059c3af74cd710581aa2108c5c4a2eff64f71e90120b6f9847b52",
       "width": 1856,
       "height": 1392
     }
@@ -104,32 +112,32 @@
     {
       "effect": "NONE",
       "file": "none.mp4",
-      "bytes": 9154,
+      "bytes": 10456,
       "width": 640,
       "height": 360,
       "samples": 4,
       "duration_us": 133333,
-      "sha256": "218be14b61a91dac07218f2d41953914248964cac5934f8c06cdac83f6ac3a06"
+      "sha256": "78c1cb8f7323c6723155abb9bfd7ac19503c6477d42fb569b87da620540bbb52"
     },
     {
       "effect": "MOTION_BLUR",
       "file": "motion_blur.mp4",
-      "bytes": 7167,
+      "bytes": 9716,
       "width": 640,
       "height": 360,
       "samples": 4,
       "duration_us": 133333,
-      "sha256": "7f72f41d22462c10da93654d2c8349a17c4237330853e594c8c72c1182560640"
+      "sha256": "fff6c6e8f97941d29aa1b31cd634ed8b2ca38a9d614ede3d9f33a7f457148948"
     },
     {
       "effect": "LIGHT_TRAILS",
       "file": "light_trails.mp4",
-      "bytes": 8561,
+      "bytes": 8281,
       "width": 640,
       "height": 360,
       "samples": 4,
       "duration_us": 133333,
-      "sha256": "7fbfc0ea69ae13ec25d0e2ba1062a843958e45893571f8a6f20c68d48fa6fa70"
+      "sha256": "1c27dc7704dd70758956283a61d0fc7e3fc4fd62469305046ae43198462e5175"
     }
   ],
   "workspace": "PASS",
@@ -137,8 +145,8 @@
     "frames": 30,
     "uncached_decodes": 88,
     "cached_decodes": 30,
-    "uncached_ms": 2620,
-    "cached_ms": 2057,
+    "uncached_ms": 1937,
+    "cached_ms": 821,
     "cache_hits": 58,
     "peak_cache_bytes": 2764800,
     "encoder": "c2.android.avc.encoder",
