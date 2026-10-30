@@ -37,9 +37,18 @@ class WorkspaceSmokeTest {
     @After fun saveFinalUi() {
         runCatching { device.takeScreenshot(File(evidence, "last-ui.png")); device.dumpWindowHierarchy(File(evidence, "last-ui.xml")) }
     }
+    private fun pumpCompose() {
+        var workspaceResumed = false
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            workspaceResumed = ActivityLifecycleMonitorRegistry.getInstance()
+                .getActivitiesInStage(Stage.RESUMED).any { it is WorkspaceActivity }
+        }
+        // The legacy camera has no Compose root. Do not wait for one on that screen.
+        if (workspaceResumed) compose.waitForIdle()
+    }
     private fun waitFor(label: String, ready: () -> Boolean) {
         val end = SystemClock.elapsedRealtime() + 45_000
-        while (SystemClock.elapsedRealtime() < end) { compose.waitForIdle(); if (ready()) return; SystemClock.sleep(250) }
+        while (SystemClock.elapsedRealtime() < end) { pumpCompose(); if (ready()) return; SystemClock.sleep(250) }
         device.takeScreenshot(File(evidence, "failure.png"))
         device.dumpWindowHierarchy(File(evidence, "failure.xml"))
         fail("Timed out $label: ${CaptureService.activeService?.status}")
@@ -48,7 +57,7 @@ class WorkspaceSmokeTest {
         val end = SystemClock.elapsedRealtime() + timeout
         while (SystemClock.elapsedRealtime() < end) {
             // Compose's test clock must advance between external UiAutomator actions.
-            compose.waitForIdle()
+            pumpCompose()
             device.findObject(selector)?.let { return it }
             SystemClock.sleep(100)
         }
@@ -56,20 +65,20 @@ class WorkspaceSmokeTest {
     }
     private fun clickText(text: String) {
         val item = awaitUi(By.text(text), 10_000)
-        assertNotNull("Missing $text", item); item!!.click(); compose.waitForIdle(); device.waitForIdle()
+        assertNotNull("Missing $text", item); item!!.click(); pumpCompose(); device.waitForIdle()
     }
     private fun clickDescription(description: String) {
         val item = awaitUi(By.desc(description), 15_000)
-        assertNotNull("Missing $description", item); item!!.click(); compose.waitForIdle(); device.waitForIdle()
+        assertNotNull("Missing $description", item); item!!.click(); pumpCompose(); device.waitForIdle()
     }
     private fun set(description: String, value: String) {
         // Drive Compose's real text-edit semantics and wait for recomposition.
         compose.onNodeWithContentDescription(description).performTextReplacement(value)
-        compose.waitForIdle()
+        pumpCompose()
     }
     private fun renameText(value: String) {
         compose.onNode(hasSetTextAction()).performTextReplacement(value)
-        compose.waitForIdle()
+        pumpCompose()
     }
     private fun hideKeyboard() {
         device.waitForIdle()
@@ -84,17 +93,17 @@ class WorkspaceSmokeTest {
     }
     private fun scrollTo(text: String) {
         repeat(8) {
-            compose.waitForIdle()
+            pumpCompose()
             if (device.hasObject(By.text(text))) return
             device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, .7f)
-            compose.waitForIdle()
+            pumpCompose()
             device.waitForIdle()
         }
         assertTrue("Cannot scroll to $text", device.hasObject(By.text(text)))
     }
     private fun openProject(title: String) {
         val item = awaitUi(By.text(title), 15_000)
-        assertNotNull("Missing project $title", item); item!!.click(); compose.waitForIdle(); device.waitForIdle()
+        assertNotNull("Missing project $title", item); item!!.click(); pumpCompose(); device.waitForIdle()
     }
     private fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
 
