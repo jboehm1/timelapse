@@ -3,6 +3,8 @@ set -euo pipefail
 mkdir -p emulator-evidence
 # Always preserve evidence, including failing startup/capture traces.
 collect() {
+  adb shell dumpsys window windows > emulator-evidence/windows.txt || true
+  adb shell dumpsys activity activities > emulator-evidence/activities.txt || true
   adb logcat -d -v threadtime > emulator-evidence/logcat.txt || true
   adb exec-out run-as eu.example.constructionlapse tar -C files -cf - recording-evidence workspace-evidence \
     > emulator-evidence/recording-evidence.tar 2>/dev/null || true

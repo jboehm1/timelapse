@@ -77,9 +77,15 @@ jobs:
           if log.exists():
               lines = log.read_text(errors="replace").splitlines()
               for i, line in enumerate(lines):
-                  if "FATAL EXCEPTION" in line or "TimelapseWorkspace" in line:
+                  if any(term in line for term in ("FATAL EXCEPTION", "TimelapseWorkspace", "Background activity", "ANR in", "not responding")):
                       print("\n".join(lines[max(0,i-2):i+35]))
               print("\n".join([line for line in lines if "AndroidRuntime" in line][-100:]))
+          for name in ("windows.txt", "activities.txt"):
+              path = Path("emulator-evidence") / name
+              if path.exists():
+                  print("SYSTEM STATE:", name)
+                  lines = path.read_text(errors="replace").splitlines()
+                  print("\n".join(line for line in lines if any(term in line for term in ("mCurrentFocus", "mFocusedApp", "mResumedActivity", "topResumedActivity", "keyguard", "Keyguard", "mShowing", "mTopFullscreenOpaqueWindowState"))))
           archive = Path("emulator-evidence/recording-evidence.tar")
           if archive.exists():
               with tarfile.open(archive) as data:
@@ -91,8 +97,8 @@ jobs:
                               root = ET.fromstring(raw)
                               for node in root.iter("node"):
                                   attrs = node.attrib
-                                  if attrs.get("package") == "eu.example.constructionlapse":
-                                      print({k: attrs.get(k) for k in ("text", "class", "content-desc", "enabled", "focused", "bounds")})
+                                  if attrs.get("package") == "eu.example.constructionlapse" or attrs.get("text") or attrs.get("content-desc"):
+                                      print({k: attrs.get(k) for k in ("package", "text", "class", "content-desc", "enabled", "focused", "bounds")})
                           except ET.ParseError:
                               print(raw.decode(errors="replace")[:24000])
           PY
