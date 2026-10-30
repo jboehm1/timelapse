@@ -23,18 +23,18 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 22 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 23 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **31 %** |
-| B — Projets, Photolapse, import et stockage | 19 | **23 %** |
+| B — Projets, Photolapse, import et stockage | 19 | **26 %** |
 | C — Capture caméra, objectifs, format et qualité | 22 | **16 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **15 %** |
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **22 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **29 %** |
-| H — Commandes externes, UI, ergonomie | 18 | **18 %** |
+| H — Commandes externes, UI, ergonomie | 18 | **20 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
 | J — Tests, mesures, robustesse validée et release | 24 | **11 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **54 %** |
@@ -85,12 +85,12 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | A-16 | P1 | **55 %** | Contrôle des avertissements lint/static analysis | Lint + analyse statique sans défaut majeur |
 | [ ] | A-17 | P2 | **0 %** | Construction reproductible/hachage | Build déterministe comparé en CI locale |
 
-### B. Projets, Photolapse, import et stockage — 23 %
+### B. Projets, Photolapse, import et stockage — 26 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
-| [ ] | B-01 | P0 | **40 %** | Projets Timelapse sans quota artificiel | Créer reprendre renommer supprimer 100+ projets |
-| [ ] | B-02 | P0 | **40 %** | Projets Photolapse indépendants | Ajout manuel de photos avec ordre explicite |
+| [ ] | B-01 | P0 | **55 %** | Projets Timelapse sans quota artificiel | Créer reprendre renommer supprimer 100+ projets |
+| [ ] | B-02 | P0 | **55 %** | Projets Photolapse indépendants | Ajout manuel de photos avec ordre explicite |
 | [ ] | B-03 | P0 | **25 %** | Import massif JPEG et PNG | Importer 10000 fichiers avec mémoire bornée |
 | [ ] | B-04 | P0 | **10 %** | Import via photothèque Android | Sélection multiple et permissions explicites |
 | [ ] | B-05 | P1 | **0 %** | Import RAW/DNG et EXIF | Conserver origines et orientations validées |
@@ -101,10 +101,10 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-10 | P0 | **40 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
 | [ ] | B-11 | P0 | **40 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
 | [ ] | B-12 | P0 | **10 %** | Détection stockage plein et quotas | Arrêt sûr avant seuil avec notification |
-| [ ] | B-13 | P1 | **40 %** | Estimation stockage restant en jours | Prévision avec taille réelle des dernières images |
+| [ ] | B-13 | P1 | **55 %** | Estimation stockage restant en jours | Prévision avec taille réelle des dernières images |
 | [ ] | B-14 | P0 | **0 %** | Éviter doublons import et reprendre | Index conservé, aucune photo originale écrasée |
 | [ ] | B-15 | P1 | **40 %** | Miniatures et galerie de projets | Navigation fluide sur 10000+ photos |
-| [ ] | B-16 | P1 | **40 %** | Suppression confirmée et corbeille | Aucun effacement irréversible involontaire |
+| [ ] | B-16 | P1 | **55 %** | Suppression confirmée et corbeille | Aucun effacement irréversible involontaire |
 | [ ] | B-17 | P1 | **0 %** | Export/backup projet complet portable | Réimporter métadonnées+images sur nouvel appareil |
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
@@ -256,7 +256,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | G-26 | P1 | **0 %** | Anti-flicker au montage | Courbes luminosité corrigées sans débordement |
 | [ ] | G-27 | P1 | **0 %** | Conversion RAW en MP4 | DNG décodé dans budget mémoire |
 
-### H. Commandes externes, UI, ergonomie — 18 %
+### H. Commandes externes, UI, ergonomie — 20 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -271,12 +271,12 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | H-09 | P1 | **0 %** | Authentification/pairing remote | Token rotation et réseau local uniquement |
 | [ ] | H-10 | P1 | **0 %** | Historique erreurs et état reprise | Affichage clair avec cause et action |
 | [ ] | H-11 | P1 | **0 %** | Notification action Pause/Stop | Boutons fiables même écran éteint |
-| [ ] | H-12 | P1 | **40 %** | Navigation projets / export ergonomique | Workflow complet avec arrière-plan |
-| [ ] | H-13 | P1 | **40 %** | Réglages persistants et presets | Après reboot et update conservés |
+| [ ] | H-12 | P1 | **55 %** | Navigation projets / export ergonomique | Workflow complet avec arrière-plan |
+| [ ] | H-13 | P1 | **55 %** | Réglages persistants et presets | Après reboot et update conservés |
 | [ ] | H-14 | P1 | **0 %** | Aide contextuelle et valeurs supportées | Explication dioptre, AE, RAW, codec et nuit |
 | [ ] | H-15 | P1 | **25 %** | Accessibilité et grands éléments | TalkBack, contraste et cibles tactiles |
 | [ ] | H-16 | P2 | **25 %** | Thèmes sombre/clair et langues | FR, EN, DE intégralement traduits |
-| [ ] | H-17 | P1 | **40 %** | Bouton test de capture et qualité | Vérifier zone, exposition avant session |
+| [ ] | H-17 | P1 | **55 %** | Bouton test de capture et qualité | Vérifier zone, exposition avant session |
 | [ ] | H-18 | P1 | **0 %** | Avertissements chaleur et stockage proactifs | Badges couleur et notification claire |
 
 ### I. Confidentialité, sécurité, droits, commercialisation — 19 %

@@ -46,3 +46,20 @@ Follow-up implementation: sustained-low-temperature hysteresis (minimum 3 min at
 ## Latest CI checkpoint
 
 Source `0498860`: Android APK, 22 unit tests and lint PASS ([41075800419](https://github.com/jboehm1/timelapse/actions/runs/41075800419)); pure Kotlin policy tests PASS. Emulator [41075800385](https://github.com/jboehm1/timelapse/actions/runs/41075800385) passes real capture/export and unavailable-camera tests, but the workspace case still fails at text entry. Diagnostic unlock removes the previous startup blockage. No complete workspace pass is claimed. The next gate uses Compose's text-edit semantics with recomposition synchronization rather than emulator keyboard injection, and emits compact app UI nodes on failure.
+
+## Verified final checkpoint — source 6616bffc
+
+All three gates PASS for source `6616bffc8040d547f57366dd01d8295e3c5e2751`:
+- Android APK, 22 JUnit tests, lint and tracker consistency: [41084568182](https://github.com/jboehm1/timelapse/actions/runs/41084568182).
+- Pure Kotlin reliability policy: [41084568151](https://github.com/jboehm1/timelapse/actions/runs/41084568151).
+- Three instrumentation cases, host JPEG decoding/hash verification, MP4 archive checks and complete workspace journey: [41084568537](https://github.com/jboehm1/timelapse/actions/runs/41084568537).
+
+The workspace case now proves project creation opens the project directly, interval 500 ms, exact stop at 3 new JPEGs, Test Photo adds exactly 1, file work blocks capture, rename/copy/trash/restore preserve all four original hashes, and two Photolapse actions add exactly two originals. Preset copying does not copy photos. The separate recorder case verifies real emulator-camera images, additional frames while the Activity is backgrounded, persistence and three playable 640×360 AVC effect exports. Committed evidence is in `docs/screenshots/emulator/`.
+
+Earlier startup failures were traced to a positively identified Pixel Launcher ANR covering the app. The test preparation records and clears only that launcher fault; it never suppresses a Timelapse ANR. Compose test-clock synchronization, padded switch-label matching and the new-project list-scroll regression were corrected. Trusted internal PR emulator builds now save and restore Gradle caches; a subsequent full APK/test build took 53 seconds versus about 3 minutes cold.
+
+Conservative tracker changes to 55% apply only to B-01/B-02/B-13/B-16/H-12/H-13/H-17. This does not certify acceptance, 10,000-photo gallery performance, reboot/update migrations, or hardware behavior. No new task is marked 100%.
+
+Diagnostic APK: `Timelapse-v0.3.0-diagnostic-UNVERIFIED.apk`, 36,244,009 bytes, SHA-256 `8703066dfc33206d1a48cd0892c2bd64b3e674a0492a0dce1678bbf6a5b7194e`. Built by [41084568182](https://github.com/jboehm1/timelapse/actions/runs/41084568182) from the tested source. CI debug signing may differ from earlier locally signed diagnostics: do not uninstall an existing installation to bypass a signing mismatch, because that can erase private originals.
+
+Visual inspection confirms the real four-photo gallery; long project names still wrap and clip the toolbar subtitle. This remains UI polish debt. The camera screen is still the legacy Activity. S21, physical screen OFF, 8h/72h/7d endurance and production release remain blocked/unverified.

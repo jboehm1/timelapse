@@ -1,4 +1,7 @@
 # TIMELAPSE — MASTER DEVELOPMENT & NEW-CHAT HANDOFF
+
+> **Latest checkpoint, 30 October 2026:** diagnostic v0.3 source `6616bffc` passes Android build, 22 JUnit tests, lint, pure Kotlin policy tests and all three emulator instrumentation cases. The new Compose projects/planner/gallery workflow, finite capture, one-shot capture, Photolapse, preset copy and lossless reversible trash/restore are now exercised. See [WORKSPACE_PROGRESS_2026-10-30.md](WORKSPACE_PROGRESS_2026-10-30.md) and its exact CI links. The following historical snapshot/checklist is not a claim about current CI. Galaxy S21 recording and physical screen OFF remain unverified; CAPTURE-P0-001 remains open. Do not merge/release.
+
 ## Engineering, product design, reference-app research, release safety, and execution guide
 **Prepared:** 30 October 2026 · **Target:** Samsung Galaxy S21 / Android 15 · **Authoritative GitHub repo:** https://github.com/jboehm1/timelapse · **Active PR:** https://github.com/jboehm1/timelapse/pull/2 · **Branch:** feat/android-capture-export-alpha
 
@@ -557,7 +560,7 @@ Read current GitHub PR #2 and branch before doing anything. Use the connected Gi
 
     bash tools/emulator-smoke.sh
 
-The baseline emulator script currently **only opens activity and takes screenshots**; it must be upgraded to actually Start and verify captured image files.
+The emulator script now runs real recording and workspace instrumentation, independently decodes archived JPEGs on the host, checks hashes and MP4 evidence, and requires all three tests. See the latest checkpoint above.
 
 **S21 diagnostic commands (with user permission, no private data posted publicly):**
 
@@ -589,7 +592,7 @@ Photos live under the application's app-specific Pictures/projects location; ver
 3. **Screen OFF ≠ black preview:** verify physical screen power with dumpsys and energy measurement.
 4. **High-res and physical camera access differ from stock Samsung Camera:** third-party API caps are real; no vendor privilege assumptions.
 5. **CameraX AF success is not proof of optical sharpness:** use sensor state and optional peaking; improve honest feedback.
-6. **FrameStore correctness not yet proven on real JPEG camera callback:** validate atomic file and journal from live capture; no file loss assumptions.
+6. **FrameStore hardware durability remains unverified:** emulator-camera callback JPEGs and hash reconciliation now pass; device/crash/long-soak validation remains required.
 7. **Heavy video exports can overheat or exhaust RAM/storage:** bounded decode cache, thermal constraints and high-volume tests.
 8. **Copyright and commercialization:** our public code original rights are reserved, but it is visible/copyable technically; third-party licenses Apache/MIT must be respected, GPL code not silently reused; independent product brand/UI needed.
 9. **Velocity Lapse is a closed third-party benchmark, not an open-source base.** APK acquisition must be legal, PRO features legitimately obtained, no redistribution/decompiled code copied.
