@@ -33,3 +33,8 @@
 
 ### Evidence and limits
 The screenshots/official docs are **functional design references**, not permission to decompile and republish someone else's resources. We may perform black-box installation and behavior comparison of legitimately obtained app binaries on an emulator, without copying its UI image assets or protected code. A particular commercial APK has **not** been independently installed in this PR, and full PRO feature parity remains outstanding.
+
+
+## Major real-world defect and screenshot-source evidence (2026-10-30)
+
+The current UI screenshot quality is **not accepted**. The user says the screen is old-fashioned and **Start does not save photos**. The correct next step is first-image debugging followed by a fully modern Material3 / Compose, preview-first redesign. For a complete end-to-end task contract, reference-app research and exact release policy, read **[HANDOFF_MASTER_2026-10-30.md](HANDOFF_MASTER_2026-10-30.md)**. Actual emulator screenshots are stored under **docs/screenshots/emulator/** after successful screenshot commit; their synthetic viewfinder image is not proof of JPEG recording.
