@@ -14,6 +14,7 @@ import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import org.junit.Assert.*
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +29,9 @@ class WorkspaceSmokeTest {
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     private val evidence = File(context.filesDir, "workspace-evidence").apply { mkdirs() }
     private val library = ProjectLibrary(File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "projects"))
+    @After fun saveFinalUi() {
+        runCatching { device.takeScreenshot(File(evidence, "last-ui.png")); device.dumpWindowHierarchy(File(evidence, "last-ui.xml")) }
+    }
     private fun waitFor(label: String, ready: () -> Boolean) {
         val end = SystemClock.elapsedRealtime() + 45_000
         while (SystemClock.elapsedRealtime() < end) { if (ready()) return; SystemClock.sleep(250) }
@@ -97,6 +101,7 @@ class WorkspaceSmokeTest {
     private fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
 
     @Test fun projectPlannerFiniteCaptureTestPhotoGalleryAndTrashPreserveOriginals() {
+        device.wakeUp(); device.executeShellCommand("wm dismiss-keyguard"); device.pressMenu()
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         clickDescription("Open projects library")
         assertTrue(device.wait(Until.hasObject(By.desc("Create project")), 15_000))

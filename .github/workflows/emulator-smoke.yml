@@ -65,6 +65,28 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
           script: bash tools/emulator-smoke.sh
+      - name: Summarize application and UI failures
+        if: failure()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import tarfile
+          log = Path("emulator-evidence/logcat.txt")
+          if log.exists():
+              lines = log.read_text(errors="replace").splitlines()
+              for i, line in enumerate(lines):
+                  if "FATAL EXCEPTION" in line or "TimelapseWorkspace" in line:
+                      print("\n".join(lines[max(0,i-2):i+35]))
+              print("\n".join([line for line in lines if "AndroidRuntime" in line][-100:]))
+          archive = Path("emulator-evidence/recording-evidence.tar")
+          if archive.exists():
+              with tarfile.open(archive) as data:
+                  for member in data.getmembers():
+                      if member.isfile() and member.name.endswith(".xml"):
+                          print("UI EVIDENCE:", member.name)
+                          print(data.extractfile(member).read().decode(errors="replace")[:24000])
+          PY
       - name: Upload emulator evidence
         if: always()
         uses: actions/upload-artifact@v4

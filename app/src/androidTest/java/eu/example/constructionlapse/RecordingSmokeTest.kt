@@ -17,6 +17,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import org.junit.Assert.*
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +35,15 @@ class RecordingSmokeTest {
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
     private val evidence = File(context.filesDir, "recording-evidence").apply { mkdirs() }
+
+    @After fun saveFinalUi() {
+        runCatching { device.takeScreenshot(File(evidence, "last-ui.png")); device.dumpWindowHierarchy(File(evidence, "last-ui.xml")) }
+    }
+    private fun unlockTestDevice() {
+        device.wakeUp()
+        device.executeShellCommand("wm dismiss-keyguard")
+        device.pressMenu()
+    }
 
     private fun waitFor(label: String, timeout: Long = 60_000L, ready: () -> Boolean) {
         val end = SystemClock.elapsedRealtime() + timeout
@@ -67,6 +77,7 @@ class RecordingSmokeTest {
         val root = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "projects")
         val before = root.listFiles().orEmpty().map { it.name }.toSet()
         val launch = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        unlockTestDevice()
         context.startActivity(launch)
         waitFor("preview service") { CaptureService.activeService?.isPreviewing == true }
         device.takeScreenshot(File(evidence, "idle.png"))
@@ -93,7 +104,8 @@ class RecordingSmokeTest {
             // Activity stopped and PreviewView detached: service must keep saving.
             device.pressHome()
             waitFor("additional background JPEGs", 30_000) { frames(project).size >= visibleCount + 2 }
-            context.startActivity(launch)
+            unlockTestDevice()
+        context.startActivity(launch)
             click("Stop capture")
             waitFor("stopped") { CaptureService.activeService?.isCapturing != true }
             // Let a callback already saving finish; it must preserve its original.
@@ -172,6 +184,7 @@ class RecordingSmokeTest {
     @Test fun unavailableCameraReportsFailureWithoutClaimingRecording() {
         val launch = Intent(context, MainActivity::class.java).addFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        unlockTestDevice()
         context.startActivity(launch)
         assertTrue(device.wait(Until.hasObject(By.desc("Start capture")), 10_000))
         val project = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
