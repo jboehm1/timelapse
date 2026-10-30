@@ -48,6 +48,7 @@ class WorkspaceActivity : ComponentActivity() {
     override fun onResume() { super.onResume(); revision++ }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CaptureDiagnostics.initialize(this)
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
                 primary = Color(0xFF6DE0C5), onPrimary = Color(0xFF002E26),
@@ -86,7 +87,7 @@ class WorkspaceActivity : ComponentActivity() {
         var createMode by remember { mutableStateOf(ProjectLibrary.Mode.TIMELAPSE) }
         val scope = rememberCoroutineScope()
         fun operation(action: () -> Unit) { scope.launch {
-            runCatching { withContext(Dispatchers.IO) { action() } }.onFailure { error = it.message }
+            runCatching { withContext(Dispatchers.IO) { action() } }.onFailure { error = it.message; android.util.Log.e("TimelapseWorkspace", "Project operation failed", it) }
             revision++
         } }
         LaunchedEffect(revision) {
@@ -124,8 +125,13 @@ class WorkspaceActivity : ComponentActivity() {
                 }
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
                 when {
-                    planner -> PlannerPanel(selected?.project, selected?.inventory, onSave = { preset ->
-                        selected?.let { row -> operation { library.savePreset(row.project.id, preset) } }
+                    planner -> PlannerPanel(selected?.project, selected?.inventory, onSave = { preset, completed ->
+                        selected?.let { row -> scope.launch {
+                            runCatching { withContext(Dispatchers.IO) { library.savePreset(row.project.id, preset) } }
+                                .onSuccess { completed("Preset saved. Applies next time this project starts.") }
+                                .onFailure { completed("Save failed: ${it.message}") }
+                            revision++
+                        } }
                     })
                     selected != null -> ProjectPanel(selected, onCamera = { openCamera(selected.project.id) },
                         onRename = { rename = selected.project }, onDuplicate = { operation { library.duplicatePreset(selected.project.id) } },
@@ -246,7 +252,7 @@ class WorkspaceActivity : ComponentActivity() {
         }, confirmButton = { TextButton(onClick = { preview = null }) { Text("Close preview") } }) }
     }
 
-    @Composable private fun PlannerPanel(project: ProjectLibrary.Project?, inventory: ProjectLibrary.Inventory?, onSave: (ProjectLibrary.Preset) -> Unit) {
+    @Composable private fun PlannerPanel(project: ProjectLibrary.Project?, inventory: ProjectLibrary.Inventory?, onSave: (ProjectLibrary.Preset, (String) -> Unit) -> Unit) {
         val initial = project?.preset ?: ProjectLibrary.Preset()
         var interval by rememberSaveable(project?.id) { mutableStateOf((initial.intervalMs / 1000.0).toString()) }
         var hours by rememberSaveable { mutableStateOf("8") }
@@ -310,7 +316,7 @@ class WorkspaceActivity : ComponentActivity() {
                 Button(onClick = {
                     runCatching { ProjectLibrary.Preset(CapturePlanner.intervalMillis(interval), dayOnly, from, until, weekdays,
                         if (unlimited) 0 else frameLimit.toLong().also { require(it > 0) }) }
-                        .onSuccess { onSave(it); note = "Preset saved. Applies next time this project starts." }
+                        .onSuccess { preset -> note = "Saving…"; onSave(preset) { message -> note = message } }
                         .onFailure { note = it.message }
                 }, Modifier.fillMaxWidth()) { Text("Save capture preset") }
                 note?.let { Text(it, style = MaterialTheme.typography.bodySmall) }

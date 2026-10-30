@@ -98,6 +98,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var stampColor: Spinner
     private lateinit var stampSize: EditText
     private var projectNames: List<String> = emptyList()
+    private var projectInfo: Map<String, ProjectLibrary.Project> = emptyMap()
+    private val inventoryExecutor = Executors.newSingleThreadExecutor()
+    private val inventoryPending = java.util.concurrent.atomic.AtomicBoolean(false)
+    private var inventoryProject: String? = null
+    private var inventoryCount = 0
+    private var inventoryAt = 0L
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -323,6 +329,7 @@ class MainActivity : ComponentActivity() {
     private fun selectProjects(name: String? = null) {
         val entries = projectLibrary().list()
         projectNames = entries.map { it.id }
+        projectInfo = entries.associateBy { it.id }
         projects.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
             if (projectNames.isEmpty()) listOf("(Create a project)") else entries.map { it.title })
         val previous = name ?: getSharedPreferences("lapse", MODE_PRIVATE)
@@ -845,7 +852,7 @@ class MainActivity : ComponentActivity() {
 
     private fun updateProjectChip() {
         if(::projectChip.isInitialized)
-            projectChip.text=selectedProject()?.let { runCatching { projectLibrary().read(it.name).title }.getOrDefault(it.name) } ?: "PROJECTS · Gallery & planner ›"
+            projectChip.text=selectedProject()?.let { projectInfo[it.name]?.title ?: it.name } ?: "PROJECTS · Gallery & planner ›"
     }
 
     private fun showProjectBrowser() {
@@ -1082,17 +1089,36 @@ class MainActivity : ComponentActivity() {
             } finally { exporting = false; exportStatus = null }
         }
     }
+    private fun refreshInventory() {
+        if (isDestroyed || inventoryExecutor.isShutdown) return
+        val id = projectNames.getOrNull(projects.selectedItemPosition) ?: return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (inventoryProject != id) { inventoryProject = id; inventoryAt = 0; inventoryCount = 0 }
+        if (service?.isCapturing == true || now - inventoryAt < 5000 || !inventoryPending.compareAndSet(false, true)) return
+        inventoryExecutor.execute {
+            try {
+                val count = runCatching { projectLibrary().inventory(id).count }.getOrElse { return@execute }
+                val scannedAt = android.os.SystemClock.elapsedRealtime()
+                runOnUiThread { if (!isDestroyed && inventoryProject == id) { inventoryCount = count; inventoryAt = scannedAt } }
+            } finally { inventoryPending.set(false) }
+        }
+    }
+
     private fun refreshStatus(message: String? = null) {
         val s=service
+        refreshInventory()
+        val selectedId = projectNames.getOrNull(projects.selectedItemPosition)
+        val saved = if (s != null && s.selectedProject == selectedId && (s.isCapturing || s.lastCommitElapsed > inventoryAt)) s.savedCount else inventoryCount
         if (::status.isInitialized) status.text = message ?: exportStatus ?:
             ((s?.status ?: getSharedPreferences("timelapse_status", MODE_PRIVATE)
                 .getString("last_state", "CAMERA READY")) + " · " +
-                (if (s?.isCapturing == true) s.savedCount else frameFiles().size) + " photos · " +
+                saved + " photos · " +
                 (s?.failures ?: 0) + " errors" +
+                (s?.takeIf { it.isCapturing }?.let { " · ${it.attempts} attempts · ${it.skippedSlots} skipped" } ?: "") +
                 (s?.actualPhotoSize?.takeIf { it!="Not captured yet" }?.let { " · " + it } ?: ""))
         if(::mainRecordButton.isInitialized)
             mainRecordButton.text = when {
-                s?.isCapturing != true -> if (selectedProject()?.let { runCatching { projectLibrary().read(it.name).mode }.getOrNull() } == ProjectLibrary.Mode.PHOTOLAPSE) "+  FRAME" else "●  START"
+                s?.isCapturing != true -> if (projectInfo[projectNames.getOrNull(projects.selectedItemPosition)]?.mode == ProjectLibrary.Mode.PHOTOLAPSE) "+  FRAME" else "●  START"
                 s.status.startsWith("NEEDS_USER_ACTION") -> "!  CAMERA ERROR"
                 s.status.startsWith("RECORDING") && s.hasSessionFrame -> "●  RECORDING"
                 s.status.startsWith("STARTING") -> "◌  STARTING"
@@ -1119,6 +1145,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        inventoryExecutor.shutdown()
         exporter.shutdown()
         super.onDestroy()
     }

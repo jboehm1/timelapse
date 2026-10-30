@@ -31,6 +31,8 @@ class WorkspaceSmokeTest {
     private fun waitFor(label: String, ready: () -> Boolean) {
         val end = SystemClock.elapsedRealtime() + 45_000
         while (SystemClock.elapsedRealtime() < end) { if (ready()) return; SystemClock.sleep(250) }
+        device.takeScreenshot(File(evidence, "failure.png"))
+        device.dumpWindowHierarchy(File(evidence, "failure.xml"))
         fail("Timed out $label: ${CaptureService.activeService?.status}")
     }
     private fun clickText(text: String) {
@@ -42,8 +44,17 @@ class WorkspaceSmokeTest {
         assertNotNull("Missing $description", item); item.click(); device.waitForIdle()
     }
     private fun set(description: String, value: String) {
-        val field = device.wait(Until.findObject(By.desc(description)), 10_000)
-        assertNotNull("Missing field $description", field); field.text = value
+        val container = device.wait(Until.findObject(By.desc(description)), 10_000)
+        assertNotNull("Missing field $description", container)
+        val field = if (container.className == "android.widget.EditText") container
+            else container.findObject(By.clazz("android.widget.EditText"))
+                ?: device.findObjects(By.clazz("android.widget.EditText")).singleOrNull()
+        if (field == null) {
+            device.dumpWindowHierarchy(File(evidence, "input-failure.xml"))
+            fail("No editable child for $description (${container.className})")
+        }
+        field!!.text = value
+        assertEquals("Text entry did not reach $description", value, field.text)
     }
     private fun hideKeyboard() {
         device.waitForIdle()
@@ -73,10 +84,14 @@ class WorkspaceSmokeTest {
     @Test fun projectPlannerFiniteCaptureTestPhotoGalleryAndTrashPreserveOriginals() {
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         clickDescription("Open projects library")
+        assertTrue(device.wait(Until.hasObject(By.desc("Create project")), 15_000))
         device.takeScreenshot(File(evidence, "projects-home.png"))
         clickDescription("Create project")
         val title = "Solar roof ${System.currentTimeMillis()}"
         set("New project name", title)
+        device.takeScreenshot(File(evidence, "new-project-dialog.png"))
+        device.dumpWindowHierarchy(File(evidence, "new-project-dialog.xml"))
+        assertNotNull("Create stays disabled after name entry", device.wait(Until.findObject(By.text("Create").enabled(true)), 5000))
         clickText("Create")
         waitFor("create project") { library.list().any { it.title == title } }
         val project = library.list().single { it.title == title }

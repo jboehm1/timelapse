@@ -63,6 +63,7 @@ class CaptureService : LifecycleService() {
 
         const val ACTION_STOP = "eu.example.constructionlapse.STOP"
         const val ACTION_SCHEDULE_ALARM = "eu.example.constructionlapse.SCHEDULE_ALARM"
+        private val thermalRecovery = ThermalRecoveryGate()
         @Volatile var activeService: CaptureService? = null
             private set
         const val EXTRA_PROJECT = "project"
@@ -103,6 +104,14 @@ class CaptureService : LifecycleService() {
     val hasSessionFrame: Boolean get() = sessionFrames > 0
     private var sessionFrames = 0L
     private var maxSessionFrames = 0L
+    var attempts = 0L
+        private set
+    var skippedSlots = 0L
+        private set
+    var lastCommitElapsed = 0L
+        private set
+    private var cadencePaused = false
+    private var lastSafetyTrace = 0L
     private var sessionGeneration = 0L
     private var bindGeneration = 0L
     private var firstFrameWatchdog: Runnable? = null
@@ -177,6 +186,8 @@ class CaptureService : LifecycleService() {
                 if (running && !previewOnly) return START_NOT_STICKY
                 val session = ++sessionGeneration
                 sessionFrames = 0L
+                attempts = 0L; skippedSlots = 0L; cadencePaused = false
+                lastCommitElapsed = 0L; captureCount = 0L
                 lastFailure = ""
                 captureGeneration++
                 inFlight = false
@@ -537,13 +548,22 @@ class CaptureService : LifecycleService() {
         val stat = StatFs(dir.absolutePath)
         val thermal = power.currentThermalStatus
         latestThermalStatus = thermal
-        val decision = policy.evaluate(
+        val cooling = thermalRecovery.paused(SystemClock.elapsedRealtime(), thermal)
+        val policyDecision = policy.evaluate(
             SafetySnapshot(Instant.now(), thermal, stat.availableBytes,
                 stat.totalBytes, percent, plugged != 0, recoveryBlocked),
             schedule
         )
+        val decision = if (cooling && policyDecision !in setOf(CaptureDecision.NEEDS_USER_ACTION,
+            CaptureDecision.STORAGE_PAUSED, CaptureDecision.BATTERY_PAUSED)) CaptureDecision.THERMAL_COOLDOWN else policyDecision
+        val elapsed = SystemClock.elapsedRealtime()
+        if (elapsed - lastSafetyTrace >= 30_000) {
+            trace("SAFETY", "thermal=$thermal free=${stat.availableBytes} battery=$percent plugged=$plugged attempts=$attempts skipped=$skippedSlots")
+            lastSafetyTrace = elapsed
+        }
         when (decision) {
             CaptureDecision.CAPTURE -> {
+                if (cadencePaused) { deadlineElapsed = SystemClock.elapsedRealtime(); cadencePaused = false }
                 state(if (hasSessionFrame) "RECORDING ${captureCount} saved, ${errorCount} errors"
                     else "STARTING no new JPEG saved")
                 armFirstFrameDeadline()
@@ -558,6 +578,7 @@ class CaptureService : LifecycleService() {
                 takePhoto()
             }
             CaptureDecision.NIGHT_STANDBY -> {
+                cadencePaused = true
                 disarmFirstFrameDeadline()
                 state("NIGHT_STANDBY display may be OFF")
                 releaseWakeLock()
@@ -571,6 +592,7 @@ class CaptureService : LifecycleService() {
                 scheduleNext(60_000)
             }
             else -> {
+                cadencePaused = true
                 disarmFirstFrameDeadline()
                 releaseWakeLock()
                 if (decision == CaptureDecision.THERMAL_COOLDOWN && !inFlight && cameraBound) {
@@ -670,6 +692,7 @@ class CaptureService : LifecycleService() {
         inFlight = true
         lastAttemptElapsed = SystemClock.elapsedRealtime()
         val generation = ++captureGeneration
+        attempts++
         val store = frameStore ?: run { inFlight = false; cameraFailure("FRAME_STORE_UNAVAILABLE"); return }
         val id = nextId++
         val base = "frame_${id.toString().padStart(10, '0')}_${System.currentTimeMillis()}"
@@ -698,6 +721,7 @@ class CaptureService : LifecycleService() {
                         inFlight = false
                         if (publication.isSuccess) {
                             captureCount++
+                            lastCommitElapsed = SystemClock.elapsedRealtime()
                             actualPhotoSize = "${bounds.outWidth} × ${bounds.outHeight}"
                             sessionFrames++
                             disarmFirstFrameDeadline()
@@ -767,6 +791,9 @@ class CaptureService : LifecycleService() {
         }
         val now = SystemClock.elapsedRealtime()
         val safeInterval = policy.effectiveIntervalMs(intervalMs, latestThermalStatus)
+        val skipped = TimelapseLogic.skippedDeadlines(deadlineElapsed, now, safeInterval)
+        skippedSlots = Math.addExact(skippedSlots, skipped)
+        if (skipped > 0) trace("MISSED_SLOTS", "new=$skipped total=$skippedSlots attempts=$attempts")
         deadlineElapsed = TimelapseLogic.nextDeadlineMs(deadlineElapsed, now, safeInterval)
         scheduleNext(deadlineElapsed - now)
     }
@@ -774,12 +801,9 @@ class CaptureService : LifecycleService() {
     /** Schedule a best-effort wake, not a guarantee of exact 07:00 under Doze. */
     private fun scheduleMorningWakeAlarm() {
         if (!schedule.enabled) return
-        val zone = schedule.zone
-        val now = ZonedDateTime.now(zone)
-        var morning = now.toLocalDate().atTime(schedule.start).atZone(zone)
-        if (!morning.isAfter(now)) morning = morning.plusDays(1)
+        val morning = schedule.nextOpeningAfter(Instant.now()) ?: return
         val manager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, morning.toInstant().toEpochMilli(), wakeIntent())
+        manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, morning.toEpochMilli(), wakeIntent())
     }
 
     private fun wakeIntent(): PendingIntent = PendingIntent.getBroadcast(this, 4,

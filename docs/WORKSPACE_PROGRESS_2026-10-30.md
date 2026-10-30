@@ -27,3 +27,11 @@ Host verifier requires actual JPEG and MP4 archives plus project evidence; missi
 ## Scope still unfinished
 
 Full Compose camera controls, RAW, external SD persistence, advanced color/monitoring, full timeline/editor, real hardware export quality/4K/8K, unattended morning wake, long soaks, localization/accessibility certification and commercial signing remain incomplete. Reversible trash does not permanently delete or reclaim storage. Metadata is filesystem-based; Room frame indexing is not implemented.
+
+## First emulator results and follow-up
+
+Source `009b331`: Android/JUnit/lint PASS [41069297379](https://github.com/jboehm1/timelapse/actions/runs/41069297379); pure Kotlin PASS [41069297428](https://github.com/jboehm1/timelapse/actions/runs/41069297428).
+
+Emulator run [41069297365](https://github.com/jboehm1/timelapse/actions/runs/41069297365): unavailable-camera and real capture/export tests PASS. Three actual H.264 MP4s (None/Motion Blur/Light Trails), each 640×360, 4 samples, 30 FPS, duration 0.133333 s, were decoded on Android and independently inspected with local `ffprobe` after downloading the artifact. Original JPEG hashes unchanged. The overall run FAILED in the new workspace test at project-name entry/creation; no successful workspace journey is claimed. The test now resolves the actual editable Compose descendant, verifies entered text/enabled Create, and saves dialog/failure hierarchies.
+
+Follow-up implementation: sustained-low-temperature hysteresis (minimum 3 min at NONE/LIGHT after SEVERE), explicit attempted/skipped-slot counters, periodic thermal/battery/disk diagnostic events, active-only missed-slot accounting, asynchronous camera-screen inventory with bounded pending scans, and success feedback after actual preset persistence. Morning alarms skip excluded weekdays and handle both autumn overlap offsets and missing spring windows. New deterministic thermal/telemetry/DST tests increase local JUnit coverage to **22 tests**. Hardware behavior remains unverified.

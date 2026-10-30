@@ -13,6 +13,12 @@ object TimelapseLogic {
         return Math.addExact(previousDeadlineMs, Math.multiplyExact(intervals, intervalMs))
     }
 
+    /** Delayed nominal slots skipped after one attempt; paused schedule windows are rebased by caller. */
+    fun skippedDeadlines(previousDeadlineMs: Long, finishedAtMs: Long, intervalMs: Long): Long {
+        require(intervalMs > 0)
+        return (finishedAtMs - previousDeadlineMs).coerceAtLeast(0) / intervalMs
+    }
+
     /** Bound a Motion Blur or Light Trails window to real source frame indices. */
     fun blurWindow(frameIndex: Int, totalFrames: Int, blendCount: Int): IntRange {
         require(totalFrames > 0) { "No input frames" }

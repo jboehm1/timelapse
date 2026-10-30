@@ -23,17 +23,17 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 21 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 22 %** — **14/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **31 %** |
 | B — Projets, Photolapse, import et stockage | 19 | **23 %** |
-| C — Capture caméra, objectifs, format et qualité | 22 | **15 %** |
+| C — Capture caméra, objectifs, format et qualité | 22 | **16 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
-| E — Programmation, écran OFF et consommation | 20 | **13 %** |
-| F — Fiabilité, sécurité matérielle et récupération | 30 | **14 %** |
-| G — Export, formats, effets et montage vidéo | 27 | **25 %** |
+| E — Programmation, écran OFF et consommation | 20 | **15 %** |
+| F — Fiabilité, sécurité matérielle et récupération | 30 | **21 %** |
+| G — Export, formats, effets et montage vidéo | 27 | **29 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **18 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
 | J — Tests, mesures, robustesse validée et release | 24 | **11 %** |
@@ -109,7 +109,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
 
-### C. Capture caméra, objectifs, format et qualité — 15 %
+### C. Capture caméra, objectifs, format et qualité — 16 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -128,7 +128,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | C-13 | P0 | **10 %** | Capture écran physique OFF | Dumpsys power prouve état display OFF |
 | [ ] | C-14 | P1 | **0 %** | Délai d'exposition et shutter long | Cadence respecte temps exposition + traitement |
 | [ ] | C-15 | P1 | **40 %** | Photo unique immédiate | Télécommande/volume sans collision avec timer |
-| [ ] | C-16 | P1 | **25 %** | Compteur et progression en direct | Tentatives, photos sauvées et ratées distinctes |
+| [ ] | C-16 | P1 | **40 %** | Compteur et progression en direct | Tentatives, photos sauvées et ratées distinctes |
 | [ ] | C-17 | P1 | **0 %** | Contrôle résolution/cadence adaptatif | Capteur limite thermique sans corruption |
 | [ ] | C-18 | P1 | **0 %** | Flou et photo noire détectés | Qualité signalée sans suppression d'image |
 | [ ] | C-19 | P1 | **0 %** | Anti-flicker capture/posttraitement | Transition jour/nuages non clignotante sur vidéos |
@@ -164,14 +164,14 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | D-22 | P1 | **0 %** | Presets scène chantier | Sauver/télécharger réglages d'un chantier |
 | [ ] | D-23 | P1 | **0 %** | Recalibrage focus sans chasse excessive | Recalibrage ponctuel optionnel et traçable |
 
-### E. Programmation, écran OFF et consommation — 13 %
+### E. Programmation, écran OFF et consommation — 15 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | E-01 | P0 | **25 %** | Plages quotidiennes heures début/fin | Mesure 07:00–18:00 sur vraie journée |
 | [ ] | E-02 | P0 | **10 %** | Date de début et date de fin absolues | Arrêt planifié au bon jour et heure |
 | [ ] | E-03 | P0 | **40 %** | Choix jours de la semaine | Weekends et jours fériés facultatifs |
-| [ ] | E-04 | P0 | **25 %** | Gestion fuseau horaire et DST | Tests transitions hiver/été et heure reculée |
+| [ ] | E-04 | P0 | **55 %** | Gestion fuseau horaire et DST | Tests transitions hiver/été et heure reculée |
 | [ ] | E-05 | P0 | **25 %** | Écran physiquement éteint pendant capture | Capture réelle sans écran noir simulé |
 | [ ] | E-06 | P0 | **25 %** | Veille nocturne sans images | Pas de photos pendant fenêtre interdite |
 | [ ] | E-07 | P0 | **25 %** | Caméra libérée durant nuit | Libération mesurée, réouverture vérifiée sur S21 |
@@ -189,17 +189,17 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | E-19 | P2 | **0 %** | Pilotage appareils gérés/kiosk optionnel | Documentation et tests device-owner |
 | [ ] | E-20 | P1 | **0 %** | Comparaison consommation 24h 3 stratégies | Graphes Wh nuit noire/écran OFF/caméra idle |
 
-### F. Fiabilité, sécurité matérielle et récupération — 14 %
+### F. Fiabilité, sécurité matérielle et récupération — 21 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | F-01 | P0 | **25 %** | Protection thermique initiale | Pause immédiate à statut SEVERE |
-| [ ] | F-02 | P0 | **10 %** | Hystérésis thermique et cooldown | Pas de boucle chaud/refroidi |
+| [ ] | F-02 | P0 | **55 %** | Hystérésis thermique et cooldown | Pas de boucle chaud/refroidi |
 | [ ] | F-03 | P0 | **25 %** | Vérification espace disponible | Arrêt sûr avec réserve disque |
 | [ ] | F-04 | P0 | **25 %** | Batterie faible et charge détectée | Pause sûre quand non branché seuil atteint |
 | [ ] | F-05 | P0 | **25 %** | Tentatives caméra bornées | Max échecs et délai exponentiel testés |
 | [ ] | F-06 | P0 | **25 %** | Watchdog capture bloquée | Timeout photo et état recover explicite |
-| [ ] | F-07 | P0 | **10 %** | Prévention ANR UI | Encodeur et I/O hors thread UI validés |
+| [ ] | F-07 | P0 | **40 %** | Prévention ANR UI | Encodeur et I/O hors thread UI validés |
 | [ ] | F-08 | P0 | **10 %** | Prévention OOM/mémoire bornée | 48h sans croissance mémoire significative |
 | [ ] | F-09 | P0 | **10 %** | File capture à taille bornée | Une image active; retard => skip et audit |
 | [ ] | F-10 | P0 | **40 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
@@ -212,30 +212,30 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-17 | P0 | **10 %** | Gestion caméra occupée par autre app | Retenter borné puis message explicite |
 | [ ] | F-18 | P0 | **0 %** | Stockage SD retiré ou en lecture seule | Aucune écriture hasardeuse, alerte et reprise |
 | [ ] | F-19 | P0 | **0 %** | Limites poids vidéo et support format | Préflight allocation, codec et fichiers |
-| [ ] | F-20 | P0 | **0 %** | Surveillance progression indépendamment UI | Démontre captures sans activité en avant-plan |
+| [ ] | F-20 | P0 | **40 %** | Surveillance progression indépendamment UI | Démontre captures sans activité en avant-plan |
 | [ ] | F-21 | P1 | **0 %** | Recovery après permission retirée | Erreur claire sans boucle |
 | [ ] | F-22 | P1 | **0 %** | Eviter mise en veille optimisations OEM | Samsung policies testées et notifications adaptées |
 | [ ] | F-23 | P0 | **25 %** | Gestion stockage endommagé et JPEG tronqué | Fichier partiel détecté et quarantiné |
-| [ ] | F-24 | P0 | **0 %** | Comptabilisation frames manquées | Journal taux et plus gros intervalle |
+| [ ] | F-24 | P0 | **40 %** | Comptabilisation frames manquées | Journal taux et plus gros intervalle |
 | [ ] | F-25 | P1 | **0 %** | Gestion peu d'espace RAM et pressure | Dégrader sans perdre photos sauvegardées |
 | [ ] | F-26 | P1 | **0 %** | Concurrence capture/export/import | Capture prioritaire, aucune deadlock |
 | [ ] | F-27 | P1 | **0 %** | Protection contre boucles de restart | Budget global de tentatives et arrêt explicite |
 | [ ] | F-28 | P1 | **0 %** | Téléphone trop chaud pour toucher | Notification/action sécurité, pas override |
-| [ ] | F-29 | P0 | **0 %** | Mode dégradation contrôlée | Captures ralentissent, reprennent avec hysteresis |
+| [ ] | F-29 | P0 | **40 %** | Mode dégradation contrôlée | Captures ralentissent, reprennent avec hysteresis |
 | [ ] | F-30 | P1 | **0 %** | Test mémoire/thermique avec instrumentation | Rapports p95, courbes et seuils |
 
-### G. Export, formats, effets et montage vidéo — 25 %
+### G. Export, formats, effets et montage vidéo — 29 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | G-01 | P0 | **40 %** | Choix export photos ou vidéo | Les deux produisent des fichiers lisibles vérifiés |
-| [ ] | G-02 | P0 | **40 %** | MP4 H.264 | ffprobe vérifie codec, durée et lecture |
-| [ ] | G-03 | P0 | **40 %** | Vidéo sans effet (None) | Chaque image correspond à un original |
-| [ ] | G-04 | P0 | **40 %** | Motion Blur temporel | N images intégrées avec réglage force |
-| [ ] | G-05 | P0 | **40 %** | Light Trails | Composition max-luminance, intensité configurable |
-| [ ] | G-06 | P0 | **40 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
+| [ ] | G-02 | P0 | **55 %** | MP4 H.264 | ffprobe vérifie codec, durée et lecture |
+| [ ] | G-03 | P0 | **55 %** | Vidéo sans effet (None) | Chaque image correspond à un original |
+| [ ] | G-04 | P0 | **55 %** | Motion Blur temporel | N images intégrées avec réglage force |
+| [ ] | G-05 | P0 | **55 %** | Light Trails | Composition max-luminance, intensité configurable |
+| [ ] | G-06 | P0 | **55 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
 | [ ] | G-07 | P1 | **0 %** | Effet poids temporels et ghosting réglable | Réglages clairs vs moyenne brute |
-| [ ] | G-08 | P0 | **40 %** | Encodeur matériel MediaCodec/MediaMuxer | MP4 produit sans stall et métadonnées correctes |
+| [ ] | G-08 | P0 | **55 %** | Encodeur matériel MediaCodec/MediaMuxer | MP4 produit sans stall et métadonnées correctes |
 | [ ] | G-09 | P0 | **25 %** | Résolution 1080p | Sortie validée sur S21 |
 | [ ] | G-10 | P0 | **25 %** | Résolution 4K si supportée | Source réellement 4K et encodeur validé |
 | [ ] | G-11 | P1 | **25 %** | Résolution 8K si supportée | Source et encodeur 8K vérifiés, refus propre sinon |
