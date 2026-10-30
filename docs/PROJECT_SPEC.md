@@ -25,7 +25,7 @@ This specification outranks README, issue titles, UI mockups and optimistic prio
 - **EXP-007 (P1):** Project gallery, scrub/preview, select/delete with confirmation, import existing images, resume/add to project, reverse at export.
 - **EXP-008 (P1):** Export under low storage: preflight estimated temp size with reserve, cleanup on failures.
 
-- **CAM-001 (P0):** Capture JPEG originals at configurable interval (initial 1–3600 s, capability-dependent), timestamps and monotonic frame IDs. Sequence must survive app restart and resume without duplicate names.
+- **CAM-001 (P0):** Capture JPEG originals at configurable interval (initial 0.5–3600 s, capability-dependent), timestamps and monotonic frame IDs. Sequence must survive app restart and resume without duplicate names.
 - **CAM-002 (P0):** **Tap-to-focus** independent from exposure; user selects Focus, Exposure, Both. CameraX AF/AE metering point uses preview coordinate transform. Show focus confirmation or failure; never report AE-only as AF success.
 - **CAM-003 (P1):** Focus lock / manual distance if supported; focus must not hunt unnecessarily through a static construction scene. AE lock/unlock, exposure compensation, ISO/shutter and white balance where camera supports them.
 - **CAM-004 (P0):** Camera interruption must never corrupt previously saved photographs. Expose recoverable vs fatal error states and bounded recovery.
@@ -108,3 +108,10 @@ As verified on GitHub on 2026-10-29, the repository is **private**. GitHub-hoste
 ## 13. Avancement global et strict suivi 100 %
 
 **[MASTER_TODO.md](MASTER_TODO.md)** est le tableau exhaustif de 233 sous-tâches (fonctionnalités, fiabilité, sécurité, tests, documentation, packaging) avec scores, priorités et critères de réussite. **MASTER_TODO.csv** est la source canonique modifiable ; exécuter `python tools/progress.py --write` après tout changement et `--check` lors de la validation. Les pourcentages de code non compilé ne dépassent pas 25 %, la certification longue sur S21 exige les preuves des tests réels. **Ne pas confondre la moyenne d'avancement avec la qualité de production.** Les exigences PRO-001..018 ainsi que CAM/EXP/REL sont des prérequis absolus pour 100 %.
+
+## 14. Diagnostic v0.3 additions — 2026-10-30
+
+- Requested interval supports 0.5–3600 seconds with exact millisecond parsing. This is nominal cadence; slow camera calls skip slots, never queue a burst. 0.5 seconds is not an S21 throughput claim.
+- A finite session stops after N newly committed frames; existing project originals do not count toward N. A Test Photo and Photolapse action each save exactly one new original, subject to thermal/storage/battery safety.
+- Trash is reversible metadata, with stable original paths. It hides a project and frees no disk space; active projects cannot be archived. No permanent deletion has been added.
+- Planner days mean active shooting days. Fixed-frame sessions compute totals from N; unlimited sessions show per-day and active-day projections. Photo-size medians and storage reserve are explicit estimates, not capacity guarantees.

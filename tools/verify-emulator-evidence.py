@@ -52,7 +52,27 @@ def verify(archive_path: str, destination: str) -> dict:
         for name in ("idle.png", "starting.png", "recording.png", "reopened.png", "invalid-camera.png", "invalid-camera.txt"):
             (output / name).write_bytes(read(name))
         (output / "jpeg-validation.tsv").write_bytes(table)
-        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images}
+        videos = json.loads(read("video-validation.json"))
+        if {row["effect"] for row in videos} != {"NONE", "MOTION_BLUR", "LIGHT_TRAILS"}:
+            raise ValueError("Missing exported effect proof")
+        (output / "exports").mkdir(exist_ok=True)
+        for video in videos:
+            name = video["file"]
+            if not re.fullmatch(r"[a-z_]+\.mp4", name):
+                raise ValueError("Invalid video evidence name")
+            content = read("exports/" + name)
+            if hashlib.sha256(content).hexdigest() != video["sha256"] or len(content) != video["bytes"] or len(content) < 100:
+                raise ValueError("Video archive differs from tested MP4")
+            if video["samples"] != 4 or video["width"] != 640 or video["height"] != 360:
+                raise ValueError("Unexpected MP4 dimensions/frame accounting")
+            (output / "exports" / name).write_bytes(content)
+        (output / "video-validation.json").write_text(json.dumps(videos, indent=2) + "\n")
+        for name in ("projects-home.png", "planner.png", "project-gallery.png", "restored-project.png", "project-validation.txt"):
+            member = archive.getmember("workspace-evidence/" + name)
+            if not member.isfile() or member.size > 16 * 1024 * 1024:
+                raise ValueError("Invalid workspace evidence")
+            (output / name).write_bytes(archive.extractfile(member).read())
+        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "videos": videos, "workspace": "PASS"}
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
 

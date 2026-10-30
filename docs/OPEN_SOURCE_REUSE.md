@@ -51,3 +51,12 @@
 ## Environment limitation
 
 Current ChatGPT sandbox has JDK and Kotlin CLI, but no Gradle/Android SDK and no outbound DNS to official Android/Gradle servers. Attempts to fetch toolchain failed. The existing private GitHub Actions jobs end before any runner starts. Hence **no installable APK was compiled here**. On a network-enabled computer the prepared scripts tools/build-linux.sh or tools/build-windows.ps1 can install the official SDK and compile the APK; both need real execution and error review.
+
+## Diagnostic v0.3 components actually adopted
+
+- Jetpack Compose BOM **2025.04.01**, Material 3, Activity Compose **1.10.1**, Kotlin Compose compiler **2.1.20**: standard AndroidX Apache-2.0 dependencies. Only Material icons core is included; the extended icon set is intentionally excluded to limit size. No copied third-party application UI/assets.
+- Coil Compose **3.2.0**, Apache-2.0 verified in the resolved official Maven POM: async, size-constrained local image loading and EXIF-aware thumbnails. No Coil network module and no new app Internet/storage permissions.
+- Existing Java NIO/Properties APIs provide a small atomic project-settings file, stable legacy project IDs and reversible trash flags. FrameStore remains the original durability layer. Room adoption is deferred until an indexed frame database is needed; no second competing capture store introduced.
+- Existing MediaCodec/EGL encoder is retained and now tested with real emulator JPEGs. Media3 is still a future benchmark, not claimed integrated. Atomic MediaStore publication now receives finalization failures; cancellation and disk reserve are explicit.
+
+Current execution environment now has a local JDK 17, Gradle 8.13 and SDK 36; the old environment limitation paragraph is historical. Device S21 validation remains outstanding.

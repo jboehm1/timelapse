@@ -4,7 +4,7 @@ mkdir -p emulator-evidence
 # Always preserve evidence, including failing startup/capture traces.
 collect() {
   adb logcat -d -v threadtime > emulator-evidence/logcat.txt || true
-  adb exec-out run-as eu.example.constructionlapse tar -C files -cf - recording-evidence \
+  adb exec-out run-as eu.example.constructionlapse tar -C files -cf - recording-evidence workspace-evidence \
     > emulator-evidence/recording-evidence.tar 2>/dev/null || true
 }
 trap collect EXIT
@@ -54,11 +54,11 @@ fi
 # JPEGs, verifies hashes/index, backgrounds the Activity and reopens the project.
 adb shell input keyevent 4
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell am instrument -w -r \
-  -e class eu.example.constructionlapse.RecordingSmokeTest \
+timeout 300s adb shell am instrument -w -r \
+  -e class eu.example.constructionlapse.RecordingSmokeTest,eu.example.constructionlapse.WorkspaceSmokeTest \
   eu.example.constructionlapse.test/androidx.test.runner.AndroidJUnitRunner \
   | tee emulator-evidence/instrumentation.txt
-grep -q 'OK (2 tests)' emulator-evidence/instrumentation.txt
+grep -q 'OK (3 tests)' emulator-evidence/instrumentation.txt
 if grep -Eq 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' emulator-evidence/instrumentation.txt; then
   exit 3
 fi

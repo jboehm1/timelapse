@@ -55,7 +55,9 @@ class MainActivity : ComponentActivity() {
     private val exporter = Executors.newSingleThreadExecutor()
     private var service: CaptureService? = null
     private var bound = false
-    private var exporting = false
+    @Volatile private var exporting = false
+    @Volatile private var cancelExportRequested = false
+    @Volatile private var exportStatus: String? = null
     private lateinit var status: TextView
     private lateinit var preview: PreviewView
     private lateinit var projects: Spinner
@@ -109,6 +111,7 @@ class MainActivity : ComponentActivity() {
             refreshStatus("Camera service disconnected")
         }
     }
+    private var pendingTestShot = false
     private var startAfterPermission = false
     private val cameraPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -116,11 +119,30 @@ class MainActivity : ComponentActivity() {
         refreshStatus(if (granted) "Camera ready" else "Camera permission denied")
         if (granted && startAfterPermission) {
             startAfterPermission = false
-            startCapture()
+            startCapture(pendingTestShot)
         } else {
             startAfterPermission = false
             if (granted) requestCameraPreview()
         }
+    }
+
+    private val workspace = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val id = result.data?.getStringExtra("project")
+        if (id != null && service?.isCapturing != true) {
+            selectProjects(id)
+            loadProjectPreset()
+        }
+        updateProjectChip()
+    }
+
+    private fun projectLibrary() = ProjectLibrary(root())
+    private fun loadProjectPreset() {
+        if (service?.isCapturing == true) return
+        selectedProject()?.let { dir -> runCatching { projectLibrary().read(dir.name).preset }.onSuccess { preset ->
+            interval.setText(java.math.BigDecimal.valueOf(preset.intervalMs, 3).stripTrailingZeros().toPlainString())
+            dayOnly.isChecked = preset.dayOnly
+            timeStart.setText(preset.from); timeEnd.setText(preset.until)
+        } }
     }
 
     private val exportDiagnostics = registerForActivityResult(
@@ -256,6 +278,7 @@ class MainActivity : ComponentActivity() {
         createUi()
         redesignUi()
         selectProjects()
+        loadProjectPreset()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) cameraPermission.launch(Manifest.permission.CAMERA)
         if (Build.VERSION.SDK_INT >= 33 &&
@@ -277,6 +300,7 @@ class MainActivity : ComponentActivity() {
         statusHandler.removeCallbacks(statusTicker)
         if (bound) {
             service?.setPreviewSurface(null)
+            if (service?.isPreviewing == true) startService(Intent(this, CaptureService::class.java).apply { action = CaptureService.ACTION_RELEASE_PREVIEW })
             unbindService(connection)
             bound = false
             service = null
@@ -297,9 +321,10 @@ class MainActivity : ComponentActivity() {
     }?.sortedBy { it.name } ?: emptyList()
 
     private fun selectProjects(name: String? = null) {
-        projectNames = root().listFiles { f -> f.isDirectory }?.map { it.name }?.sorted() ?: emptyList()
+        val entries = projectLibrary().list()
+        projectNames = entries.map { it.id }
         projects.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item,
-            if (projectNames.isEmpty()) listOf("(Create a project)") else projectNames)
+            if (projectNames.isEmpty()) listOf("(Create a project)") else entries.map { it.title })
         val previous = name ?: getSharedPreferences("lapse", MODE_PRIVATE)
             .getString("lastProject", "")
         projectNames.indexOf(previous).takeIf { it >= 0 }?.let { projects.setSelection(it) }
@@ -341,10 +366,11 @@ class MainActivity : ComponentActivity() {
         scroll.addView(controls)
         main.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1.6f))
         fun row(): LinearLayout = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        fun button(text: String, parent: LinearLayout, action: () -> Unit) {
-            parent.addView(Button(this).apply {
-                this.text = text; setOnClickListener { action() }
-            }, LinearLayout.LayoutParams(0, -2, 1f))
+        fun button(text: String, parent: LinearLayout, action: () -> Unit): Button {
+            val button = Button(this).apply { this.text = text; setOnClickListener { action() } }
+            parent.addView(button, if (parent.orientation == LinearLayout.VERTICAL)
+                LinearLayout.LayoutParams(-1, -2) else LinearLayout.LayoutParams(0, -2, 1f))
+            return button
         }
         fun labeledEdit(label: String, initial: String, parent: LinearLayout): EditText {
             val r = row()
@@ -366,7 +392,7 @@ class MainActivity : ComponentActivity() {
         controls.addView(projectRow)
         interval = labeledEdit("Interval(s) ", "20", controls)
         interval.contentDescription = "Capture interval seconds"
-        interval.inputType = android.text.InputType.TYPE_CLASS_NUMBER
+        interval.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
         val scheduleRow = row()
         dayOnly = CheckBox(this).apply { text = "Daily time range"; isChecked = false }
         scheduleRow.addView(dayOnly)
@@ -535,6 +561,11 @@ class MainActivity : ComponentActivity() {
         })
         setContentView(main)
         restoreMeteringSelection()
+        button("Cancel video export", controls) {
+            cancelExportRequested = true; refreshStatus("Cancelling video export; originals remain intact")
+        }
+        button("Test photo · save one original", controls) { startCapture(true) }.contentDescription = "Take test photo"
+        button("Projects, gallery & planner", controls) { workspace.launch(Intent(this, WorkspaceActivity::class.java)) }
         button("Save capture diagnostics (.txt)", controls) {
             exportDiagnostics.launch("Timelapse-diagnostics.txt")
         }
@@ -746,6 +777,8 @@ class MainActivity : ComponentActivity() {
             targetOverlay.target=MeteringOverlay.Target.EXPOSURE
             refreshStatus("Tap a different spot for exposure")
         }
+        quick("TEST PHOTO") { startCapture(true) }
+        touchBar.getChildAt(touchBar.childCount - 1).contentDescription = "Take test photo"
         cameraView.addView(touchBar,FrameLayout.LayoutParams(-1,dp(57),Gravity.BOTTOM).apply {
             setMargins(dp(10),0,dp(10),dp(9))
         })
@@ -762,7 +795,8 @@ class MainActivity : ComponentActivity() {
         overview.addView(name,LinearLayout.LayoutParams(dp(85),dp(40)))
         projectChip=text("NO PROJECT • Tap to choose",14f,Color.WHITE)
         overview.addView(projectChip,LinearLayout.LayoutParams(0,dp(40),1f))
-        projectChip.setOnClickListener{showProjectBrowser()}
+        projectChip.contentDescription = "Open projects library"
+        projectChip.setOnClickListener{workspace.launch(Intent(this, WorkspaceActivity::class.java))}
         bottom.addView(overview)
         val statusHolder=currentStatus as TextView
         statusHolder.setTextColor(grey)
@@ -791,6 +825,12 @@ class MainActivity : ComponentActivity() {
         root.addView(bottom,LinearLayout.LayoutParams(-1,-2))
 
         // On selection, report all sensor sizes; user can choose truly highest.
+        projects.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, index: Int, id: Long) {
+                loadProjectPreset(); updateProjectChip()
+            }
+        }
         lens.onItemSelectedListener=object:AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(p:AdapterView<*>?){}
             override fun onItemSelected(p:AdapterView<*>?,v:android.view.View?,index:Int,id:Long){
@@ -805,7 +845,7 @@ class MainActivity : ComponentActivity() {
 
     private fun updateProjectChip() {
         if(::projectChip.isInitialized)
-            projectChip.text=selectedProject()?.name ?: "NO PROJECT • Tap to choose"
+            projectChip.text=selectedProject()?.let { runCatching { projectLibrary().read(it.name).title }.getOrDefault(it.name) } ?: "PROJECTS · Gallery & planner ›"
     }
 
     private fun showProjectBrowser() {
@@ -853,23 +893,32 @@ class MainActivity : ComponentActivity() {
         }.onFailure { refreshStatus("Camera preview unavailable: " + it.message) }
     }
 
-    private fun startCapture() {
+    private fun startCapture(testPhoto: Boolean = false) {
+        if (service?.isCapturing == true) { refreshStatus("Stop the current session before changing capture mode"); return }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED) {
+            pendingTestShot = testPhoto
             startAfterPermission = true
             cameraPermission.launch(Manifest.permission.CAMERA); return
         }
         if (selectedProject() == null) newProject()
         val p = selectedProject() ?: return
-        val seconds = interval.text.toString().toLongOrNull()
-        if (seconds == null || seconds !in 1..3600) {
-            refreshStatus("Interval must be 1–3600s"); return
+        val intervalMillis = runCatching { CapturePlanner.intervalMillis(interval.text.toString()) }.getOrElse {
+            refreshStatus("Interval must be 0.5–3600s, with at most three decimals"); return
         }
         try {
+            val projectInfo = projectLibrary().read(p.name)
+            val manualFrame = testPhoto || projectInfo.mode == ProjectLibrary.Mode.PHOTOLAPSE
+            val previous = projectInfo.preset
+            val preset = ProjectLibrary.Preset(intervalMillis, dayOnly.isChecked, timeStart.text.toString(),
+                timeEnd.text.toString(), previous.weekdays, previous.maxFrames)
+            projectLibrary().savePreset(p.name, preset)
             val intent = Intent(this, CaptureService::class.java).apply {
                 action = CaptureService.ACTION_START
                 putExtra(CaptureService.EXTRA_PROJECT, p.name)
-                putExtra(CaptureService.EXTRA_INTERVAL, seconds * 1000L)
+                putExtra(CaptureService.EXTRA_INTERVAL, intervalMillis)
+                putExtra(CaptureService.EXTRA_MAX_FRAMES, if (manualFrame) 1L else preset.maxFrames)
+                putExtra(CaptureService.EXTRA_WEEKDAYS, preset.weekdays.toIntArray())
                 supportedPhotoSizes.getOrNull(photoResolution.selectedItemPosition)?.let {
                     putExtra(CaptureService.EXTRA_PHOTO_WIDTH,it.width)
                     putExtra(CaptureService.EXTRA_PHOTO_HEIGHT,it.height)
@@ -877,7 +926,7 @@ class MainActivity : ComponentActivity() {
                 availableLenses.getOrNull(lens.selectedItemPosition)?.first?.let {
                     putExtra(CaptureService.EXTRA_CAMERA_ID, it)
                 }
-                putExtra(CaptureService.EXTRA_DAY_ONLY, dayOnly.isChecked)
+                putExtra(CaptureService.EXTRA_DAY_ONLY, if (manualFrame) false else dayOnly.isChecked)
                 putExtra(CaptureService.EXTRA_FROM, timeStart.text.toString())
                 putExtra(CaptureService.EXTRA_TO, timeEnd.text.toString())
             }
@@ -975,7 +1024,7 @@ class MainActivity : ComponentActivity() {
 
 
     private fun exportVideo() {
-        if (exporting || service?.status?.startsWith("RECORDING") == true) {
+        if (exporting || service?.isCapturing == true) {
             refreshStatus("Stop capture/export before MP4 export"); return
         }
         val photos = frameFiles()
@@ -996,8 +1045,14 @@ class MainActivity : ComponentActivity() {
         if (!VideoExporter.canEncode(w,h,rate,mime)) {
             refreshStatus("No compatible AVC encoder for ${w}x${h}/${rate}fps"); return
         }
+        val storage = android.os.StatFs((getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir).absolutePath)
+        if (storage.availableBytes < ExportBudget.requiredFreeBytes(photos.size, rate, bitrate, storage.totalBytes)) {
+            refreshStatus("Not enough free space for video plus safety reserve"); return
+        }
         exporting = true
-        refreshStatus("Encoding ${photos.size} frames...")
+        cancelExportRequested = false
+        exportStatus = "Encoding 0/${photos.size} frames…"
+        refreshStatus(exportStatus)
         exporter.execute {
             var uri: android.net.Uri? = null
             try {
@@ -1011,8 +1066,10 @@ class MainActivity : ComponentActivity() {
                     ?: throw IOException("Cannot create video")
                 contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
                     VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,
-                        listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay) {
-                        if (it % 20 == 0) runOnUiThread { refreshStatus("Encoded $it/${photos.size}") }
+                        listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay,
+                        cancelled = { cancelExportRequested }) {
+                        exportStatus = "Encoding $it/${photos.size} frames…"
+                        if (it % 20 == 0) runOnUiThread { refreshStatus(exportStatus) }
                     }
                 } ?: throw IOException("Output unavailable")
                 contentResolver.update(uri, ContentValues().apply {
@@ -1022,12 +1079,12 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 uri?.let { contentResolver.delete(it,null,null) }
                 runOnUiThread { refreshStatus("Export failed: ${e.message}") }
-            } finally { exporting = false }
+            } finally { exporting = false; exportStatus = null }
         }
     }
     private fun refreshStatus(message: String? = null) {
         val s=service
-        if (::status.isInitialized) status.text = message ?:
+        if (::status.isInitialized) status.text = message ?: exportStatus ?:
             ((s?.status ?: getSharedPreferences("timelapse_status", MODE_PRIVATE)
                 .getString("last_state", "CAMERA READY")) + " · " +
                 (if (s?.isCapturing == true) s.savedCount else frameFiles().size) + " photos · " +
@@ -1035,7 +1092,7 @@ class MainActivity : ComponentActivity() {
                 (s?.actualPhotoSize?.takeIf { it!="Not captured yet" }?.let { " · " + it } ?: ""))
         if(::mainRecordButton.isInitialized)
             mainRecordButton.text = when {
-                s?.isCapturing != true -> "●  START"
+                s?.isCapturing != true -> if (selectedProject()?.let { runCatching { projectLibrary().read(it.name).mode }.getOrNull() } == ProjectLibrary.Mode.PHOTOLAPSE) "+  FRAME" else "●  START"
                 s.status.startsWith("NEEDS_USER_ACTION") -> "!  CAMERA ERROR"
                 s.status.startsWith("RECORDING") && s.hasSessionFrame -> "●  RECORDING"
                 s.status.startsWith("STARTING") -> "◌  STARTING"

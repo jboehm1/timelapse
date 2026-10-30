@@ -61,7 +61,7 @@ object VideoExporter {
                 it.equals(mime, true)
             } && runCatching {
                 info.getCapabilitiesForType(mime)
-                    .videoCapabilities.areSizeAndRateSupported(w, h, fps.toDouble())
+                    .videoCapabilities?.areSizeAndRateSupported(w, h, fps.toDouble()) == true
             }.getOrDefault(false)
         }?.name
 
@@ -80,8 +80,10 @@ object VideoExporter {
         effect: VideoEffect, window: Int, bitrate: Int,
         mime: String = MediaFormat.MIMETYPE_VIDEO_AVC,
         timestamp: TimestampOverlay? = null,
+        cancelled: () -> Boolean = { false },
         progress: (Int) -> Unit
     ) {
+        if (cancelled()) throw java.util.concurrent.CancellationException("Export cancelled")
         require(files.size >= 2 && fps in 1..60)
         require(width > 0 && height > 0 && width % 2 == 0 && height % 2 == 0)
         require(window >= 1 && window % 2 == 1 && window <= 9)
@@ -117,6 +119,7 @@ object VideoExporter {
                 if(end) encoder.signalEndOfInputStream()
                 var empty = 0
                 while(true) {
+                    if (cancelled()) throw java.util.concurrent.CancellationException("Export cancelled")
                     val index = encoder.dequeueOutputBuffer(info, if(end) 10_000L else 0L)
                     when(index) {
                         MediaCodec.INFO_TRY_AGAIN_LATER -> {
@@ -147,6 +150,7 @@ object VideoExporter {
                 }
             }
             files.indices.forEach { i ->
+                if (cancelled()) throw java.util.concurrent.CancellationException("Export cancelled")
                 val frame = makeFrame(files,i,width,height,effect,window,timestamp)
                 try {
                     renderer.render(frame, i.toLong() * 1_000_000_000L / fps)
@@ -155,6 +159,9 @@ object VideoExporter {
                 progress(i+1)
             }
             drain(true)
+            check(muxerStarted) { "Encoder produced no MP4 video track" }
+            muxer!!.stop() // Finalization failure must propagate; never publish a corrupt MP4.
+            muxerStarted = false
         } finally {
             try { renderer?.close() } catch (_: Exception) {}
             try { if(muxerStarted) muxer?.stop() } catch (_: Exception) {}

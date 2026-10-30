@@ -66,7 +66,7 @@ data class SafetyPolicy(
 
     /** In moderate thermal throttling we may reduce capture frequency rather than overheat. */
     fun effectiveIntervalMs(baseIntervalMs: Long, thermalStatus: Int): Long {
-        require(baseIntervalMs >= 1000L)
+        require(baseIntervalMs >= 500L)
         return if (thermalStatus == 2) Math.multiplyExact(baseIntervalMs, 2L) else baseIntervalMs
     }
 }

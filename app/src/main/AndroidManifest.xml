@@ -20,6 +20,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".WorkspaceActivity" android:exported="false" />
         <service
             android:name=".CaptureService"
             android:exported="false"

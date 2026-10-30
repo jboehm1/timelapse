@@ -71,3 +71,9 @@ bash tools/build-linux.sh
 ```
 
 The script verifies checksums of the official Android command-line SDK and Gradle, requests SDK licence acceptance and builds the debug APK to dist/Timelapse-debug.apk. The current chat container cannot reach download servers; this **has not been built here**. Pure Kotlin logic can be tested locally with bash tools/test-policy.sh even without Android SDK.
+
+## Diagnostic v0.3 workspace
+
+Projects now have a Compose Material 3 workspace: tap the project name below the camera to open the library, photo gallery, reversible trash and capture planner. Configure per-project intervals (nominal 0.5–3600 s), weekdays/time window, unlimited recording or a limit of new photos. Test Photo / Photolapse saves one new original. The planner estimates storage and video duration and learns JPEG size from recent originals. Export has cancellation and a disk preflight.
+
+Implementation/validation record: [WORKSPACE_PROGRESS_2026-10-30.md](docs/WORKSPACE_PROGRESS_2026-10-30.md). These additions do not close the S21 hardware release gate.

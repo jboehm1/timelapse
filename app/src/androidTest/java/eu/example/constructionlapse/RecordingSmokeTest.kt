@@ -4,6 +4,12 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Environment
 import android.os.SystemClock
+import android.os.ParcelFileDescriptor
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -109,6 +115,46 @@ class RecordingSmokeTest {
                 file.copyTo(File(archived, file.name), overwrite = false)
                 "${file.name}\t${file.length()}\t$dimensions\t${hashes[file.name]}"
             }
+            // Real camera originals -> three playable MP4 effects, never synthetic fixture input.
+            val exports = File(evidence, "exports").apply { mkdirs() }
+            val videoMetrics = JSONArray()
+            for (effect in VideoEffect.entries) {
+                val video = File(exports, "${effect.name.lowercase()}.mp4")
+                ParcelFileDescriptor.open(video, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_TRUNCATE or ParcelFileDescriptor.MODE_READ_WRITE).use { output ->
+                    VideoExporter.encode(originals.take(4), output.fileDescriptor, 640, 360, 30, effect, 3, 1_000_000, progress = {})
+                }
+                val extractor = MediaExtractor()
+                val times = mutableListOf<Long>()
+                try {
+                    extractor.setDataSource(video.absolutePath)
+                    val track = (0 until extractor.trackCount).first { extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true }
+                    val format = extractor.getTrackFormat(track)
+                    assertEquals(640, format.getInteger(MediaFormat.KEY_WIDTH))
+                    assertEquals(360, format.getInteger(MediaFormat.KEY_HEIGHT))
+                    assertEquals("video/avc", format.getString(MediaFormat.KEY_MIME))
+                    extractor.selectTrack(track)
+                    while (extractor.sampleTime >= 0) { times.add(extractor.sampleTime); if (!extractor.advance()) break }
+                    assertEquals(4, times.size)
+                    assertTrue(times.zipWithNext().all { (a, b) -> b > a })
+                    val duration = format.getLong(MediaFormat.KEY_DURATION)
+                    assertTrue(kotlin.math.abs(duration - 4_000_000L / 30) <= 34_000)
+                    val retriever = MediaMetadataRetriever()
+                    try {
+                        retriever.setDataSource(video.absolutePath)
+                        val bitmap = requireNotNull(retriever.getFrameAtTime(0)) { "MP4 cannot be decoded" }
+                        assertEquals(640, bitmap.width); assertEquals(360, bitmap.height); bitmap.recycle()
+                    } finally { retriever.release() }
+                    videoMetrics.put(JSONObject().put("effect", effect.name).put("file", video.name).put("bytes", video.length())
+                        .put("width", 640).put("height", 360).put("samples", times.size).put("duration_us", duration).put("sha256", digest(video)))
+                } finally { extractor.release() }
+            }
+            File(evidence, "video-validation.json").writeText(videoMetrics.toString(2))
+            val cancelled = File(exports, "cancelled.partial")
+            ParcelFileDescriptor.open(cancelled, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_READ_WRITE).use { output ->
+                assertTrue(runCatching { VideoExporter.encode(originals.take(4), output.fileDescriptor, 640, 360, 30,
+                    VideoEffect.NONE, 1, 1_000_000, cancelled = { true }, progress = {}) }.exceptionOrNull() is java.util.concurrent.CancellationException)
+            }
+            assertEquals(hashes, originals.associate { it.name to digest(it) })
             // Recreate Activity, reconcile the persistent filesystem index and compare every hash.
             device.pressHome()
             context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))

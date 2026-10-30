@@ -67,6 +67,8 @@ class CaptureService : LifecycleService() {
             private set
         const val EXTRA_PROJECT = "project"
         const val EXTRA_INTERVAL = "interval"
+        const val EXTRA_MAX_FRAMES = "max_frames"
+        const val EXTRA_WEEKDAYS = "weekdays"
         const val EXTRA_CAMERA_ID = "camera_id"
         const val EXTRA_PHOTO_WIDTH = "photo_width"
         const val EXTRA_PHOTO_HEIGHT = "photo_height"
@@ -100,6 +102,7 @@ class CaptureService : LifecycleService() {
     val isPreviewing: Boolean get() = running && previewOnly
     val hasSessionFrame: Boolean get() = sessionFrames > 0
     private var sessionFrames = 0L
+    private var maxSessionFrames = 0L
     private var sessionGeneration = 0L
     private var bindGeneration = 0L
     private var firstFrameWatchdog: Runnable? = null
@@ -196,12 +199,15 @@ class CaptureService : LifecycleService() {
                     photoTargetWidth = intent.getIntExtra(EXTRA_PHOTO_WIDTH, 0)
                     photoTargetHeight = intent.getIntExtra(EXTRA_PHOTO_HEIGHT, 0)
                     actualPhotoSize = "Awaiting first JPEG"
-                    intervalMs = intent.getLongExtra(EXTRA_INTERVAL, 20_000L).coerceIn(1_000L, 3_600_000L)
+                    intervalMs = intent.getLongExtra(EXTRA_INTERVAL, 20_000L).coerceIn(500L, 3_600_000L)
+                    maxSessionFrames = intent.getLongExtra(EXTRA_MAX_FRAMES, 0).coerceIn(0, 10_000_000)
+                    val days = (intent.getIntArrayExtra(EXTRA_WEEKDAYS)?.toSet() ?: (1..7).toSet())
+                    require(days.isNotEmpty() && days.all { it in 1..7 }) { "Select at least one valid weekday" }
                     val dayOnly = intent.getBooleanExtra(EXTRA_DAY_ONLY, false)
                     val from = LocalTime.parse(intent.getStringExtra(EXTRA_FROM) ?: "07:00")
                     val until = LocalTime.parse(intent.getStringExtra(EXTRA_TO) ?: "18:00")
                     schedule = DayWindow(enabled = dayOnly, start = from, end = until,
-                        zone = ZoneId.systemDefault())
+                        zone = ZoneId.systemDefault(), days = days.map { java.time.DayOfWeek.of(it) }.toSet())
                     val store = FrameStore(dir)
                     frameStore = store
                     running = true
@@ -248,6 +254,9 @@ class CaptureService : LifecycleService() {
             .setContentTitle("Construction timelapse")
             .setContentText(message)
             .setContentIntent(pending)
+            .addAction(android.R.drawable.ic_media_pause, "Stop", PendingIntent.getService(this, 7,
+                Intent(this, CaptureService::class.java).apply { action = ACTION_STOP },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             .setOngoing(true)
             .build()
     }
@@ -694,6 +703,10 @@ class CaptureService : LifecycleService() {
                             disarmFirstFrameDeadline()
                             state("RECORDING ${captureCount} saved · $actualPhotoSize")
                             retries.clearAfterVerifiedSuccess()
+                            if (maxSessionFrames > 0 && sessionFrames >= maxSessionFrames) {
+                                stopCaptureAndService("COMPLETED $sessionFrames new photos saved · $actualPhotoSize")
+                                return@post
+                            }
                             // Persist last successful project selection across process death.
                             getSharedPreferences("lapse", MODE_PRIVATE).edit()
                                 .putString("lastProject", dir.name).apply()
