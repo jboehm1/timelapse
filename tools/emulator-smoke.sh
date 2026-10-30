@@ -56,7 +56,7 @@ fi
 # JPEGs, verifies hashes/index, backgrounds the Activity and reopens the project.
 adb shell input keyevent 4
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-timeout 300s adb shell am instrument -w -r \
+timeout 420s adb shell am instrument -w -r \
   -e class eu.example.constructionlapse.RecordingSmokeTest,eu.example.constructionlapse.WorkspaceSmokeTest \
   eu.example.constructionlapse.test/androidx.test.runner.AndroidJUnitRunner \
   | tee emulator-evidence/instrumentation.txt

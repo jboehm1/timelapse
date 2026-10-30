@@ -29,6 +29,9 @@ import java.util.Locale
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+data class ExportStatistics(val decodedFrames: Int, val cacheHits: Int, val peakCacheBytes: Long,
+                            val elapsedMs: Long, val codecName: String, val hardwareAccelerated: Boolean)
+
 enum class VideoEffect { NONE, MOTION_BLUR, LIGHT_TRAILS }
 enum class StampPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
 data class TimestampOverlay(
@@ -56,12 +59,14 @@ object VideoExporter {
     }
 
     private fun compatibleCodec(w: Int, h: Int, fps: Int, mime: String): String? =
-        MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.firstOrNull { info ->
+        MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.sortedByDescending { it.isHardwareAccelerated }.firstOrNull { info ->
             info.isEncoder && info.supportedTypes.any {
                 it.equals(mime, true)
             } && runCatching {
-                info.getCapabilitiesForType(mime)
-                    .videoCapabilities?.areSizeAndRateSupported(w, h, fps.toDouble()) == true
+                info.getCapabilitiesForType(mime).let { caps ->
+                    caps.colorFormats.contains(MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface) &&
+                        caps.videoCapabilities?.areSizeAndRateSupported(w, h, fps.toDouble()) == true
+                }
             }.getOrDefault(false)
         }?.name
 
@@ -81,11 +86,17 @@ object VideoExporter {
         mime: String = MediaFormat.MIMETYPE_VIDEO_AVC,
         timestamp: TimestampOverlay? = null,
         cancelled: () -> Boolean = { false },
+        cacheBudgetBytes: Long = minOf(64L * 1024 * 1024, Runtime.getRuntime().maxMemory() / 8),
         progress: (Int) -> Unit
-    ) {
+    ): ExportStatistics {
+        val startedAt = android.os.SystemClock.elapsedRealtime()
+        require(cacheBudgetBytes >= 0)
         if (cancelled()) throw java.util.concurrent.CancellationException("Export cancelled")
-        require(files.size >= 2 && fps in 1..60)
+        require(files.isNotEmpty() && fps in 1..60)
         require(width > 0 && height > 0 && width % 2 == 0 && height % 2 == 0)
+        require(width.toLong() * height * 4 <= Runtime.getRuntime().maxMemory() / 4) {
+            "Export resolution exceeds the safe bitmap memory budget; choose a lower resolution"
+        }
         require(window >= 1 && window % 2 == 1 && window <= 9)
         val codecName = compatibleCodec(width,height,fps,mime)
             ?: error("No $mime encoder supporting ${width}x${height}/${fps}fps")
@@ -108,6 +119,8 @@ object VideoExporter {
         var muxerStarted = false
         var track = -1
         val info = MediaCodec.BufferInfo()
+        var composer: FrameComposer? = null
+        var result: ExportStatistics? = null
         try {
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             input = encoder.createInputSurface()
@@ -149,12 +162,12 @@ object VideoExporter {
                     }
                 }
             }
+            val frames = FrameComposer(files, width, height, effect, window, timestamp, cacheBudgetBytes)
+            composer = frames
             files.indices.forEach { i ->
                 if (cancelled()) throw java.util.concurrent.CancellationException("Export cancelled")
-                val frame = makeFrame(files,i,width,height,effect,window,timestamp)
-                try {
-                    renderer.render(frame, i.toLong() * 1_000_000_000L / fps)
-                } finally { frame.recycle() }
+                val frame = frames.make(i)
+                renderer.render(frame, i.toLong() * 1_000_000_000L / fps)
                 drain(false)
                 progress(i+1)
             }
@@ -162,7 +175,10 @@ object VideoExporter {
             check(muxerStarted) { "Encoder produced no MP4 video track" }
             muxer!!.stop() // Finalization failure must propagate; never publish a corrupt MP4.
             muxerStarted = false
+            result = ExportStatistics(frames.decodedFrames, frames.cache.hits, frames.cache.peakBytes,
+                android.os.SystemClock.elapsedRealtime() - startedAt, codecName, encoder.codecInfo.isHardwareAccelerated)
         } finally {
+            composer?.close()
             try { renderer?.close() } catch (_: Exception) {}
             try { if(muxerStarted) muxer?.stop() } catch (_: Exception) {}
             try { muxer?.release() } catch (_: Exception) {}
@@ -170,61 +186,61 @@ object VideoExporter {
             try { encoder.release() } catch (_: Exception) {}
             try { input?.release() } catch (_: Exception) {}
         }
+        return checkNotNull(result)
     }
 
-    /** Source frames are immutable. Only a single output bitmap is kept. */
-    private fun makeFrame(
-        frames: List<File>, index: Int, width: Int, height: Int,
-        effect: VideoEffect, window: Int, timestamp: TimestampOverlay?
-    ): Bitmap {
-        val samples = if(effect == VideoEffect.NONE) index..index
-            else TimelapseLogic.blurWindow(index, frames.size, window)
-        val out = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        try {
-            var count = 0
-            for (i in samples) {
-                val source = decodeFrame(frames[i],width,height)
-                try {
-                    paint.alpha = if(effect == VideoEffect.MOTION_BLUR && count > 0)
-                        (255.0/(count+1)).toInt() else 255
-                    paint.xfermode = if(effect == VideoEffect.LIGHT_TRAILS && count > 0)
-                        PorterDuffXfermode(PorterDuff.Mode.LIGHTEN) else null
-                    canvas.drawBitmap(source, 0f, 0f, paint)
-                } finally { source.recycle() }
-                count++
-            }
-            paint.xfermode = null
-            if(timestamp != null) {
-                val stampMillis = frames[index].name.substringAfterLast('_')
-                    .substringBefore('.').toLongOrNull() ?: frames[index].lastModified()
-                val text = SimpleDateFormat(timestamp.format, Locale.getDefault())
-                    .format(Date(stampMillis))
-                val typography = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = timestamp.color
-                    textSize = timestamp.fontSizePx.coerceIn(12, 300).toFloat()
-                    typeface = Typeface.DEFAULT_BOLD
-                    setShadowLayer(3f, 1.5f, 1.5f, Color.BLACK)
+    /** One reusable output, plus a bounded cache of scaled immutable neighbours. Never cache full originals. */
+    private class FrameComposer(val frames: List<File>, val width: Int, val height: Int,
+                                val effect: VideoEffect, val window: Int, val timestamp: TimestampOverlay?,
+                                budget: Long) : AutoCloseable {
+        val cache = ExportFrameWindow<Bitmap>(budget, { it.allocationByteCount.toLong() }, { it.recycle() })
+        private val formatter = timestamp?.let { SimpleDateFormat(it.format, Locale.getDefault()) }
+        private val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        private val canvas = Canvas(output)
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        private val lighten = PorterDuffXfermode(PorterDuff.Mode.LIGHTEN)
+        private val typography = timestamp?.let { stamp -> Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = stamp.color; textSize = stamp.fontSizePx.coerceIn(12, 300).toFloat()
+            typeface = Typeface.DEFAULT_BOLD; setShadowLayer(3f, 1.5f, 1.5f, Color.BLACK)
+        } }
+        private var directDecodes = 0
+        val decodedFrames: Int get() = directDecodes + cache.loads
+        fun make(index: Int): Bitmap {
+            if (effect == VideoEffect.NONE) {
+                // Decode/crop directly into the reusable output; no second frame-sized copy.
+                decodeFrame(frames[index], width, height, output)
+                directDecodes++
+            } else {
+                val samples = TimelapseLogic.blurWindow(index, frames.size, window)
+                cache.retain(samples)
+                canvas.drawColor(Color.BLACK, PorterDuff.Mode.SRC)
+                var count = 0
+                for (i in samples) {
+                    cache.use(i, { decodeFrame(frames[i], width, height) }) { source ->
+                        paint.alpha = if (effect == VideoEffect.MOTION_BLUR && count > 0)
+                            (255.0 / (count + 1)).toInt() else 255
+                        paint.xfermode = if (effect == VideoEffect.LIGHT_TRAILS && count > 0) lighten else null
+                        canvas.drawBitmap(source, 0f, 0f, paint)
+                    }
+                    count++
                 }
-                val margin = maxOf(12f, width * 0.025f)
-                val textWidth = typography.measureText(text)
-                val x = if (timestamp.position == StampPosition.TOP_RIGHT ||
-                            timestamp.position == StampPosition.BOTTOM_RIGHT)
-                    (width - margin - textWidth).coerceAtLeast(margin) else margin
-                val y = if (timestamp.position == StampPosition.TOP_LEFT ||
-                            timestamp.position == StampPosition.TOP_RIGHT)
-                    margin + typography.textSize else height - margin
-                canvas.drawText(text,x,y,typography)
+                paint.xfermode = null
             }
-            return out
-        } catch(e: Throwable) {
-            out.recycle()
-            throw e
+            timestamp?.let { stamp ->
+                val text = checkNotNull(formatter).format(Date(ExportDayPlanner.captureMillis(frames[index])))
+                val type = checkNotNull(typography)
+                val margin = maxOf(12f, width * 0.025f)
+                val right = stamp.position == StampPosition.TOP_RIGHT || stamp.position == StampPosition.BOTTOM_RIGHT
+                val top = stamp.position == StampPosition.TOP_LEFT || stamp.position == StampPosition.TOP_RIGHT
+                canvas.drawText(text, if (right) (width - margin - type.measureText(text)).coerceAtLeast(margin) else margin,
+                    if (top) margin + type.textSize else height - margin, type)
+            }
+            return output
         }
+        override fun close() { cache.close(); output.recycle() }
     }
 
-    private fun decodeFrame(file: File, w: Int, h: Int): Bitmap {
+    private fun decodeFrame(file: File, w: Int, h: Int, destination: Bitmap? = null): Bitmap {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
         require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Corrupt image: ${file.name}" }
@@ -249,15 +265,20 @@ object VideoExporter {
             if(result !== input) input.recycle()
             result
         }
-        val out = Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
+        val out = destination ?: Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888)
         try {
             val factor=maxOf(w.toFloat()/source.width,h.toFloat()/source.height)
             val cropW=(w/factor).toInt().coerceIn(1,source.width)
             val cropH=(h/factor).toInt().coerceIn(1,source.height)
             val x=(source.width-cropW)/2
             val y=(source.height-cropH)/2
-            Canvas(out).drawBitmap(source,Rect(x,y,x+cropW,y+cropH),Rect(0,0,w,h),
-                Paint(Paint.FILTER_BITMAP_FLAG))
+            Canvas(out).apply {
+                drawColor(Color.BLACK, PorterDuff.Mode.SRC)
+                drawBitmap(source,Rect(x,y,x+cropW,y+cropH),Rect(0,0,w,h),Paint(Paint.FILTER_BITMAP_FLAG))
+            }
+        } catch (e: Throwable) {
+            if (destination == null) out.recycle()
+            throw e
         } finally { source.recycle() }
         return out
     }
@@ -272,6 +293,7 @@ private class GlEncoderSurface(target: Surface,private val width:Int,private val
     private val texture: Int
     private val position: Int
     private val uv: Int
+    private val sampler: Int
     private val vertices = ByteBuffer.allocateDirect(4*4*4).order(ByteOrder.nativeOrder())
         .asFloatBuffer().apply {
             put(floatArrayOf(-1f,-1f,0f,1f, 1f,-1f,1f,1f,
@@ -317,6 +339,7 @@ private class GlEncoderSurface(target: Surface,private val width:Int,private val
         GLES20.glDeleteShader(vertex);GLES20.glDeleteShader(fragment)
         position=GLES20.glGetAttribLocation(program,"aPos")
         uv=GLES20.glGetAttribLocation(program,"aUv")
+        sampler=GLES20.glGetUniformLocation(program,"uTexture")
         val textures=IntArray(1)
         GLES20.glGenTextures(1,textures,0)
         texture=textures[0]
@@ -325,6 +348,8 @@ private class GlEncoderSurface(target: Surface,private val width:Int,private val
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_MAG_FILTER,GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_WRAP_S,GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D,0,GLES20.GL_RGBA,width,height,0,
+            GLES20.GL_RGBA,GLES20.GL_UNSIGNED_BYTE,null)
     }
     fun render(bitmap: Bitmap, timestampNs: Long) {
         GLES20.glViewport(0,0,width,height)
@@ -333,8 +358,8 @@ private class GlEncoderSurface(target: Surface,private val width:Int,private val
         GLES20.glUseProgram(program)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,texture)
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D,0,bitmap,0)
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(program,"uTexture"),0)
+        GLUtils.texSubImage2D(GLES20.GL_TEXTURE_2D,0,0,0,bitmap)
+        GLES20.glUniform1i(sampler,0)
         vertices.position(0)
         GLES20.glVertexAttribPointer(position,2,GLES20.GL_FLOAT,false,16,vertices)
         GLES20.glEnableVertexAttribArray(position)

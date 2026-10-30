@@ -53,3 +53,8 @@ adb logcat -v time > capture-logcat.txt
 ffprobe -v error -show_entries format=duration:stream=width,height,r_frame_rate,bit_rate -of json output.mp4
 ```
 Check Samsung "Unrestricted" battery setting during device runs but do not use it as a substitute for app lifecycle engineering.
+
+
+## Export efficiency and day batches (new gate)
+
+Run ExportPlanningTest plus ExportPerformanceCheck in RecordingSmokeTest. Require 30 output frames in both cache modes, decoded-source calls 88→30 for window 3, bounded bitmap bytes, playable one-frame output, inclusive timezone/DST day grouping, two separately readable two-frame day MP4s, first-day persistence and zero pending rows after mid-second-day cancellation, and original hashes unchanged. Record real elapsed time and encoder hardware/software identity without claiming an S21 speedup. Require host benchmark/batch JSON and MP4 bytes. 10k/4K/8K and thermal stress remain separate unexecuted device checks.

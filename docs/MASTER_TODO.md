@@ -249,7 +249,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | G-19 | P1 | **0 %** | Prévisualisation effets et rendu court | Prévisualiser sans encoder toute séquence |
 | [ ] | G-20 | P0 | **40 %** | Export atomique, suppression vidéo partielle | Interruption laisse originaux et aucun MP4 corrompu public |
 | [ ] | G-21 | P0 | **40 %** | Progression et annulation export | Stop propre, reprise éventuelle |
-| [ ] | G-22 | P1 | **0 %** | Optimisation GPU et cache image pour longues séquences | 10k images sans OOM et temps mesuré |
+| [ ] | G-22 | P1 | **25 %** | Optimisation GPU et cache image pour longues séquences | 10k images sans OOM et temps mesuré |
 | [ ] | G-23 | P1 | **0 %** | Orientation, recadrage et aspect export | Conserver composition 16:9 ou 9:16 |
 | [ ] | G-24 | P1 | **0 %** | Lecture MP4 vérifiée sur Android/Windows | Compatibilité H264 et HEVC testée |
 | [ ] | G-25 | P1 | **0 %** | Export inversé/accélération | Reverse et speed ramps sans toucher originaux |

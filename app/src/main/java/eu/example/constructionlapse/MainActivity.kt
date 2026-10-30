@@ -99,6 +99,9 @@ class MainActivity : ComponentActivity() {
         }
     }
     private lateinit var resolution: Spinner
+    private lateinit var exportPerDay: CheckBox
+    private lateinit var exportFromDay: EditText
+    private lateinit var exportThroughDay: EditText
     private lateinit var stampEnabled: CheckBox
     private lateinit var stampPattern: EditText
     private lateinit var stampPosition: Spinner
@@ -558,6 +561,30 @@ class MainActivity : ComponentActivity() {
         }
         stampOptions.addView(stampSize,LinearLayout.LayoutParams(0,-2,0.5f))
         controls.addView(stampOptions)
+        val exportPreferences = getSharedPreferences("video_export", MODE_PRIVATE)
+        val dayRange = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        exportFromDay = EditText(this).apply {
+            hint = "From YYYY-MM-DD (optional)"; isSingleLine = true
+            setText(exportPreferences.getString("from", ""))
+            contentDescription = "Export from day"
+        }
+        exportThroughDay = EditText(this).apply {
+            hint = "Through YYYY-MM-DD (optional)"; isSingleLine = true
+            setText(exportPreferences.getString("through", ""))
+            contentDescription = "Export through day"
+        }
+        dayRange.addView(exportFromDay); dayRange.addView(exportThroughDay)
+        dayRange.addView(TextView(this).apply {
+            text = "Local days: ${java.time.ZoneId.systemDefault()}. Effects restart each day. Imported photos use file time when capture time is unavailable."
+            textSize = 12f
+        })
+        exportPerDay = CheckBox(this).apply {
+            text = "One MP4 per local day"; contentDescription = "Separate video per day"
+            isChecked = exportPreferences.getBoolean("perDay", true)
+            setOnCheckedChangeListener { _, checked -> dayRange.visibility = if (checked) android.view.View.VISIBLE else android.view.View.GONE }
+        }
+        dayRange.visibility = if (exportPerDay.isChecked) android.view.View.VISIBLE else android.view.View.GONE
+        controls.addView(exportPerDay); controls.addView(dayRange)
         val exportRow = row()
         button("Photos ZIP", exportRow) {
             if (captureArmed()) {
@@ -1047,58 +1074,68 @@ class MainActivity : ComponentActivity() {
         if (exporting || captureArmed()) {
             refreshStatus("Stop capture/export before MP4 export"); return
         }
-        val photos = frameFiles()
-        if (photos.size < 2) { refreshStatus("At least 2 frames needed"); return }
+        val project = selectedProject() ?: run { refreshStatus("Choose a project"); return }
+        val separateDays = exportPerDay.isChecked
+        val from: java.time.LocalDate?
+        val through: java.time.LocalDate?
+        try {
+            from = if (separateDays && exportFromDay.text.isNotBlank()) java.time.LocalDate.parse(exportFromDay.text.toString().trim()) else null
+            through = if (separateDays && exportThroughDay.text.isNotBlank()) java.time.LocalDate.parse(exportThroughDay.text.toString().trim()) else null
+            require(from == null || through == null || !from.isAfter(through)) { "From day must precede through day" }
+        } catch (e: Exception) { refreshStatus("Invalid export date range: ${e.message}"); return }
         val (w,h) = listOf(1920 to 1080,3840 to 2160,7680 to 4320)[resolution.selectedItemPosition]
         val rate = listOf(30,24,25,60)[fps.selectedItemPosition]
-        val effectSelected = VideoEffect.entries[effect.selectedItemPosition]
+        val selectedEffect = VideoEffect.entries[effect.selectedItemPosition]
         val bitrate = VideoExporter.bitrateFor(w,h,rate,quality.selectedItemPosition)
         val overlay = if (!stampEnabled.isChecked) null else {
             val color = listOf(Color.WHITE,Color.YELLOW,Color.BLACK)[stampColor.selectedItemPosition]
             val position = listOf(StampPosition.BOTTOM_LEFT,StampPosition.BOTTOM_RIGHT,
                 StampPosition.TOP_LEFT,StampPosition.TOP_RIGHT)[stampPosition.selectedItemPosition]
-            TimestampOverlay(stampPattern.text.toString(),
-                stampSize.text.toString().toIntOrNull()?.coerceIn(12,300) ?: 44,color,position)
+            TimestampOverlay(stampPattern.text.toString(), stampSize.text.toString().toIntOrNull()?.coerceIn(12,300) ?: 44,color,position)
         }
         val mime = codecOptions.getOrNull(codec.selectedItemPosition)?.first
             ?: run { refreshStatus("No compatible encoder"); return }
         if (!VideoExporter.canEncode(w,h,rate,mime)) {
-            refreshStatus("No compatible AVC encoder for ${w}x${h}/${rate}fps"); return
+            refreshStatus("No compatible encoder for ${w}x${h}/${rate}fps"); return
         }
-        val storage = android.os.StatFs((getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir).absolutePath)
-        if (storage.availableBytes < ExportBudget.requiredFreeBytes(photos.size, rate, bitrate, storage.totalBytes)) {
-            refreshStatus("Not enough free space for video plus safety reserve"); return
-        }
-        exporting = true
-        cancelExportRequested = false
-        exportStatus = "Encoding 0/${photos.size} frames…"
+        val settings = VideoBatchExporter.Settings(w,h,rate,selectedEffect,
+            listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay)
+        val zone = java.time.ZoneId.systemDefault()
+        getSharedPreferences("video_export", MODE_PRIVATE).edit().putBoolean("perDay", separateDays)
+            .putString("from", exportFromDay.text.toString()).putString("through", exportThroughDay.text.toString()).apply()
+        exporting = true; cancelExportRequested = false; exportStatus = "Planning video export…"
         refreshStatus(exportStatus)
+        val app = applicationContext
         exporter.execute {
-            var uri: android.net.Uri? = null
             try {
-                val values = ContentValues().apply {
-                    put(MediaStore.Video.Media.DISPLAY_NAME, "${selectedProject()?.name}_${effectSelected.name}.mp4")
-                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                    put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/Timelapse")
-                    put(MediaStore.Video.Media.IS_PENDING, 1)
+                // Enumerate/stat originals off the UI thread, after capture/import ownership is held.
+                val photos = project.listFiles().orEmpty().filter {
+                    it.isFile && it.extension.lowercase(Locale.ROOT) in setOf("jpg", "jpeg", "png")
+                }.sortedBy { it.name }
+                require(photos.isNotEmpty()) { "No original photos to export" }
+                val parts = if (separateDays) ExportDayPlanner.plan(photos, zone, from, through)
+                    else listOf(ExportDay(null, photos))
+                require(parts.isNotEmpty()) { "No photos in this date range" }
+                val selectedCount = parts.sumOf { it.files.size }
+                val storage = android.os.StatFs((app.getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: app.filesDir).absolutePath)
+                require(storage.availableBytes >= ExportBudget.requiredFreeBytes(selectedCount, rate, bitrate, storage.totalBytes)) {
+                    "Not enough free space for selected videos plus safety reserve"
                 }
-                uri = contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
-                    ?: throw IOException("Cannot create video")
-                contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
-                    VideoExporter.encode(photos,pfd.fileDescriptor,w,h,rate,effectSelected,
-                        listOf(1,3,5,7,9)[blurStrength.selectedItemPosition],bitrate,mime,overlay,
-                        cancelled = { cancelExportRequested }) {
-                        exportStatus = "Encoding $it/${photos.size} frames…"
-                        if (it % 20 == 0) runOnUiThread { refreshStatus(exportStatus) }
-                    }
-                } ?: throw IOException("Output unavailable")
-                contentResolver.update(uri, ContentValues().apply {
-                    put(MediaStore.Video.Media.IS_PENDING, 0)
-                },null,null)
-                runOnUiThread { refreshStatus("MP4 saved: Movies/Timelapse") }
+                val result = VideoBatchExporter.export(app, project.name, parts, zone.id, settings,
+                    cancelled = { cancelExportRequested }) { item ->
+                    exportStatus = "${item.day} · MP4 ${item.part}/${item.parts} · ${item.frame}/${item.frames} frames" +
+                        if (item.published) " · saved" else ""
+                    if (item.frame % 20 == 0 || item.published) runOnUiThread { if (!isDestroyed) refreshStatus(exportStatus) }
+                }
+                runOnUiThread { if (!isDestroyed) {
+                    val message = "Saved ${result.outputs.size} MP4s (${result.frames} frames) in Movies/Timelapse/${project.name}"
+                    refreshStatus(message); android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+                } }
             } catch (e: Exception) {
-                uri?.let { contentResolver.delete(it,null,null) }
-                runOnUiThread { refreshStatus("Export failed: ${e.message}") }
+                runOnUiThread { if (!isDestroyed) {
+                    val message = if (e is java.util.concurrent.CancellationException) "Export cancelled: ${e.message}" else "Export failed: ${e.message}"
+                    refreshStatus(message); android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+                } }
             } finally { exporting = false; exportStatus = null }
         }
     }

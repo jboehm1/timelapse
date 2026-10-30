@@ -109,7 +109,8 @@ class PlannerLibraryTest {
     @Test fun exportBudgetIncludesVideoContainerOverheadAndReserve() {
         val required = ExportBudget.requiredFreeBytes(300, 30, 10_000_000, 128_000_000_000)
         assertTrue(required > 6_400_000_000L + 12_500_000L)
-        assertTrue(runCatching { ExportBudget.requiredFreeBytes(1, 30, 10_000_000, 1000) }.isFailure)
+        assertTrue(ExportBudget.requiredFreeBytes(1, 30, 10_000_000, 128_000_000_000) > 6_400_000_000L)
+        assertTrue(runCatching { ExportBudget.requiredFreeBytes(0, 30, 10_000_000, 1000) }.isFailure)
     }
 
 }

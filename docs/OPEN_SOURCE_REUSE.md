@@ -60,3 +60,6 @@ Current ChatGPT sandbox has JDK and Kotlin CLI, but no Gradle/Android SDK and no
 - Existing MediaCodec/EGL encoder is retained and now tested with real emulator JPEGs. Media3 is still a future benchmark, not claimed integrated. Atomic MediaStore publication now receives finalization failures; cancellation and disk reserve are explicit.
 
 Current execution environment now has a local JDK 17, Gradle 8.13 and SDK 36; the old environment limitation paragraph is historical. Device S21 validation remains outstanding.
+
+
+Export follow-up: retain the existing MediaCodec/EGL backend while benchmarking bounded neighbour caching and texture/buffer reuse. Prefer capability-checked hardware encoding. Calendar-day batches use Android MediaStore pending publication and AtomicFile manifests; no new dependency or imported source. Media3 replacement is not assumed faster without measurement. See EXPORT_PERFORMANCE_2026-10-30.md.

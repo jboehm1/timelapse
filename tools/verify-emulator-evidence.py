@@ -67,12 +67,27 @@ def verify(archive_path: str, destination: str) -> dict:
                 raise ValueError("Unexpected MP4 dimensions/frame accounting")
             (output / "exports" / name).write_bytes(content)
         (output / "video-validation.json").write_text(json.dumps(videos, indent=2) + "\n")
+        performance = json.loads(read("export-performance.json"))
+        if performance["uncached_decodes"] != 88 or performance["cached_decodes"] != 30 or performance["cache_hits"] != 58:
+            raise ValueError("Sliding cache did not reduce repeated JPEG decoding")
+        if performance["peak_cache_bytes"] > 4 * 640 * 360 * 4 or not performance["single_frame_pass"]:
+            raise ValueError("Cache budget or one-frame export proof failed")
+        batch = json.loads(read("batch-export-validation.json"))
+        if batch != {"days": 2, "frames_per_day": 2, "kept_after_cancel": 1, "pending_after_cancel": 0, "state": "CANCELLED"}:
+            raise ValueError("Day batch publication/cancellation proof failed")
+        for name in ("benchmark_uncached.mp4", "benchmark_cached.mp4", "single_frame.mp4", "batch_day_1.mp4", "batch_day_2.mp4"):
+            content = read("exports/" + name)
+            if len(content) < 100 or content[4:8] != b"ftyp":
+                raise ValueError("Missing benchmark/batch MP4 bytes")
+            (output / "exports" / name).write_bytes(content)
+        (output / "export-performance.json").write_text(json.dumps(performance, indent=2) + "\n")
+        (output / "batch-export-validation.json").write_text(json.dumps(batch, indent=2) + "\n")
         for name in ("projects-home.png", "planner.png", "project-gallery.png", "restored-project.png", "photolapse.png", "project-validation.txt"):
             member = archive.getmember("workspace-evidence/" + name)
             if not member.isfile() or member.size > 16 * 1024 * 1024:
                 raise ValueError("Invalid workspace evidence")
             (output / name).write_bytes(archive.extractfile(member).read())
-        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "videos": videos, "workspace": "PASS"}
+        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "videos": videos, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
 

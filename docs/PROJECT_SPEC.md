@@ -115,3 +115,8 @@ As verified on GitHub on 2026-10-29, the repository is **private**. GitHub-hoste
 - A finite session stops after N newly committed frames; existing project originals do not count toward N. A Test Photo and Photolapse action each save exactly one new original, subject to thermal/storage/battery safety.
 - Trash is reversible metadata, with stable original paths. It hides a project and frees no disk space; active projects cannot be archived. No permanent deletion has been added.
 - Planner days mean active shooting days. Fixed-frame sessions compute totals from N; unlimited sessions show per-day and active-day projections. Photo-size medians and storage reserve are explicit estimates, not capacity guarantees.
+
+
+## Export day-batch decision — 2026-10-30
+
+User requested efficient video export and at least a separator per day. G-20/G-21/G-22 now include independent local-calendar-day MP4s, optional inclusive date selection, sequential bounded-memory rendering, preserved completed outputs on cancellation, and measurable decode/cache/timing evidence. Effects restart at day boundaries; originals remain immutable. Hardware throughput and long-sequence stress are acceptance gates, not inferred from prototype code. See [EXPORT_PERFORMANCE_2026-10-30.md](EXPORT_PERFORMANCE_2026-10-30.md).

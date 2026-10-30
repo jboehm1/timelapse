@@ -159,6 +159,7 @@ class RecordingSmokeTest {
                 } finally { extractor.release() }
             }
             File(evidence, "video-validation.json").writeText(videoMetrics.toString(2))
+            ExportPerformanceCheck.run(context, evidence, originals)
             val cancelled = File(exports, "cancelled.partial")
             ParcelFileDescriptor.open(cancelled, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_READ_WRITE).use { output ->
                 assertTrue(runCatching { VideoExporter.encode(originals.take(4), output.fileDescriptor, 640, 360, 30,
