@@ -66,4 +66,18 @@ class ExportPlanningTest {
         assertEquals(listOf(7), disposed); assertEquals(0L, cache.peakBytes)
         cache.close(); assertEquals(listOf(7), disposed)
     }
+    @Test fun partialBudgetsReuseForwardNeighboursWithoutWaitingForAFullWindow() {
+        for ((budget, expectedLoads) in listOf(1L to 59, 2L to 30)) {
+            val cache = ExportFrameWindow<Int>(budget, { 1 }, {})
+            repeat(30) { index ->
+                val range = TimelapseLogic.blurWindow(index, 30, 3)
+                cache.retain(range)
+                range.forEach { source -> cache.use(source, { source }) { assertEquals(source, it) } }
+                assertTrue(cache.bytes <= budget)
+            }
+            assertEquals(expectedLoads, cache.loads)
+            assertTrue(cache.hits > 0)
+            cache.close()
+        }
+    }
 }

@@ -1,0 +1,45 @@
+{
+  "benchmark_uncached.mp4": {
+    "codec_name": "h264",
+    "width": 640,
+    "height": 360,
+    "r_frame_rate": "30/1",
+    "duration": "1.000000",
+    "nb_read_frames": "30"
+  },
+  "benchmark_cached.mp4": {
+    "codec_name": "h264",
+    "width": 640,
+    "height": 360,
+    "r_frame_rate": "30/1",
+    "duration": "1.000000",
+    "nb_read_frames": "30"
+  },
+  "single_frame.mp4": {
+    "codec_name": "h264",
+    "width": 640,
+    "height": 360,
+    "r_frame_rate": "30/1",
+    "duration": "0.033333",
+    "nb_read_frames": "1"
+  },
+  "batch_day_1.mp4": {
+    "codec_name": "h264",
+    "width": 640,
+    "height": 360,
+    "r_frame_rate": "30/1",
+    "duration": "0.066667",
+    "nb_read_frames": "2"
+  },
+  "batch_day_2.mp4": {
+    "codec_name": "h264",
+    "width": 640,
+    "height": 360,
+    "r_frame_rate": "30/1",
+    "duration": "0.066667",
+    "nb_read_frames": "2"
+  },
+  "decoded_frames_identical": true,
+  "source": "f023070f9fad157c75139a2974869dca3b52f4da",
+  "artifact_id": 13001684647
+}
