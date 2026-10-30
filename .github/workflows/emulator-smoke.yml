@@ -72,6 +72,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import tarfile
+          import xml.etree.ElementTree as ET
           log = Path("emulator-evidence/logcat.txt")
           if log.exists():
               lines = log.read_text(errors="replace").splitlines()
@@ -85,7 +86,15 @@ jobs:
                   for member in data.getmembers():
                       if member.isfile() and member.name.endswith(".xml"):
                           print("UI EVIDENCE:", member.name)
-                          print(data.extractfile(member).read().decode(errors="replace")[:24000])
+                          raw = data.extractfile(member).read()
+                          try:
+                              root = ET.fromstring(raw)
+                              for node in root.iter("node"):
+                                  attrs = node.attrib
+                                  if attrs.get("package") == "eu.example.constructionlapse":
+                                      print({k: attrs.get(k) for k in ("text", "class", "content-desc", "enabled", "focused", "bounds")})
+                          except ET.ParseError:
+                              print(raw.decode(errors="replace")[:24000])
           PY
       - name: Upload emulator evidence
         if: always()

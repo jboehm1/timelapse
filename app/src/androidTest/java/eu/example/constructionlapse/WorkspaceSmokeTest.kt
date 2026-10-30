@@ -3,6 +3,10 @@ package eu.example.constructionlapse
 import android.content.Intent
 import android.os.Environment
 import android.os.SystemClock
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -23,6 +27,7 @@ import java.security.MessageDigest
 
 @RunWith(AndroidJUnit4::class)
 class WorkspaceSmokeTest {
+    @get:Rule val compose = createEmptyComposeRule()
     @get:Rule val permissions: GrantPermissionRule = GrantPermissionRule.grant(
         android.Manifest.permission.CAMERA, android.Manifest.permission.POST_NOTIFICATIONS)
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -48,32 +53,13 @@ class WorkspaceSmokeTest {
         assertNotNull("Missing $description", item); item.click(); device.waitForIdle()
     }
     private fun set(description: String, value: String) {
-        val container = device.wait(Until.findObject(By.desc(description)), 10_000)
-        assertNotNull("Missing field $description", container)
-        val field = if (container.className == "android.widget.EditText") container
-            else container.findObject(By.clazz("android.widget.EditText"))
-                ?: device.findObjects(By.clazz("android.widget.EditText")).singleOrNull()
-        if (field == null) {
-            device.dumpWindowHierarchy(File(evidence, "input-failure.xml"))
-            fail("No editable child for $description (${container.className})")
-        }
-        typeInto(field!!, value)
+        // Drive Compose's real text-edit semantics and wait for recomposition.
+        compose.onNodeWithContentDescription(description).performTextReplacement(value)
+        compose.waitForIdle()
     }
-    private fun typeInto(field: androidx.test.uiautomator.UiObject2, value: String) {
-        // Compose semantics updates asynchronously; use actual focus/key input and re-query,
-        // never read a stale accessibility node immediately after ACTION_SET_TEXT.
-        require(value.matches(Regex("[A-Za-z0-9 ._-]+")))
-        field.click()
-        device.waitForIdle()
-        device.pressKeyCode(android.view.KeyEvent.KEYCODE_A, android.view.KeyEvent.META_CTRL_ON)
-        device.pressKeyCode(android.view.KeyEvent.KEYCODE_DEL)
-        device.executeShellCommand("input text '" + value.replace(" ", "%s") + "'")
-        val entered = device.wait(Until.findObject(By.clazz("android.widget.EditText").text(value)), 5000)
-        if (entered == null) {
-            device.takeScreenshot(File(evidence, "input-failure.png"))
-            device.dumpWindowHierarchy(File(evidence, "input-failure.xml"))
-            fail("Typed value did not appear in editable node: $value")
-        }
+    private fun renameText(value: String) {
+        compose.onNode(hasSetTextAction()).performTextReplacement(value)
+        compose.waitForIdle()
     }
     private fun hideKeyboard() {
         device.waitForIdle()
@@ -152,7 +138,7 @@ class WorkspaceSmokeTest {
         device.takeScreenshot(File(evidence, "project-gallery.png"))
         clickText("Rename")
         val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 10_000)
-        assertNotNull(field); typeInto(field, "$title renamed")
+        assertNotNull(field); renameText("$title renamed")
         clickText("Save name")
         waitFor("rename") { library.read(project.id).title.endsWith("renamed") }
         clickText("Copy preset")
