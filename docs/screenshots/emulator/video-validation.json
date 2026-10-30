@@ -2,31 +2,31 @@
   {
     "effect": "NONE",
     "file": "none.mp4",
-    "bytes": 10456,
+    "bytes": 9196,
     "width": 640,
     "height": 360,
     "samples": 4,
     "duration_us": 133333,
-    "sha256": "78c1cb8f7323c6723155abb9bfd7ac19503c6477d42fb569b87da620540bbb52"
+    "sha256": "dbda979883822f9f118bd0240c47558c63921353220ebb244067e91a64cf5047"
   },
   {
     "effect": "MOTION_BLUR",
     "file": "motion_blur.mp4",
-    "bytes": 9716,
+    "bytes": 9556,
     "width": 640,
     "height": 360,
     "samples": 4,
     "duration_us": 133333,
-    "sha256": "fff6c6e8f97941d29aa1b31cd634ed8b2ca38a9d614ede3d9f33a7f457148948"
+    "sha256": "2237ce9a27bc3fbf975bd28961ef1f456ebe83145a73215c50a5a58ebd10f4a9"
   },
   {
     "effect": "LIGHT_TRAILS",
     "file": "light_trails.mp4",
-    "bytes": 8281,
+    "bytes": 9118,
     "width": 640,
     "height": 360,
     "samples": 4,
     "duration_us": 133333,
-    "sha256": "1c27dc7704dd70758956283a61d0fc7e3fc4fd62469305046ae43198462e5175"
+    "sha256": "59ec650a203210f209a9ed06b5db116a2d68b620f3c33abd0c44453f54434d2c"
   }
 ]
