@@ -1,0 +1,111 @@
+{
+  "result": "PASS",
+  "scope": "Android emulator only; S21 unverified",
+  "jpeg_count": 13,
+  "frames": [
+    {
+      "file": "frame_0000000001_1793367765693.jpg",
+      "bytes": "60114",
+      "dimensions": "1856x1392",
+      "sha256": "4cf8c8976b1a09f2617df69de9df3addf8fb3b062dee807422fe05890897079a",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000002_1793367769588.jpg",
+      "bytes": "60097",
+      "dimensions": "1856x1392",
+      "sha256": "89c1d832ab782a780b1e0651c7f1152f3c552ed9fd7062c267d41510a448b914",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000003_1793367771532.jpg",
+      "bytes": "60101",
+      "dimensions": "1856x1392",
+      "sha256": "4b8a5ec3cf8896bb54442dbef394d708e1b43dadff04d802c6be68b335ee3d72",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000004_1793367773560.jpg",
+      "bytes": "60101",
+      "dimensions": "1856x1392",
+      "sha256": "32b95ede20f843345e32be73b35047ce855339b81ddcf58826da72843fb1c0d2",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000005_1793367775521.jpg",
+      "bytes": "60101",
+      "dimensions": "1856x1392",
+      "sha256": "590a5f5d5841481433de9f52ad7924adeb331d168e6d65d8979512589a74287c",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000006_1793367777551.jpg",
+      "bytes": "60101",
+      "dimensions": "1856x1392",
+      "sha256": "9f8f9b70da231d8bf8fd792180a38e9604b5feaafcbac73d253127d30170859c",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000007_1793367779586.jpg",
+      "bytes": "60488",
+      "dimensions": "1856x1392",
+      "sha256": "f06a4950f98e5cd19ba00cc49b7e0c761f486886d24730c73e22fd50c5cc9a79",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000008_1793367781540.jpg",
+      "bytes": "60808",
+      "dimensions": "1856x1392",
+      "sha256": "3f6735afc8479a639e84ded57e457471956e14cac596521a29aeff25e6400391",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000009_1793367783522.jpg",
+      "bytes": "60512",
+      "dimensions": "1856x1392",
+      "sha256": "b6c4c84c1d7a69e04b010d1cf1be16692dce692cd277b02fcfdc5985d91171a7",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000010_1793367785514.jpg",
+      "bytes": "61118",
+      "dimensions": "1856x1392",
+      "sha256": "b7148ae284c00b4c08b90068216fe7140e5b5455e957b806f843af64a725ecc2",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000011_1793367787535.jpg",
+      "bytes": "60488",
+      "dimensions": "1856x1392",
+      "sha256": "b9f3409579cf6b950d55b646d5cc60b3912c99ab2461dd2c9482a95e269a6123",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000013_1793367809898.jpg",
+      "bytes": "60900",
+      "dimensions": "1856x1392",
+      "sha256": "6eaf06bd6ba38be9f3b634c1ca8ce6e6802597bdaa416e015ae66061a515f0be",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000014_1793367811549.jpg",
+      "bytes": "60510",
+      "dimensions": "1856x1392",
+      "sha256": "7c7e421d411708d4b74259f8814a7de627c0700e69aa76ee9ab847014d982866",
+      "width": 1856,
+      "height": 1392
+    }
+  ]
+}
