@@ -2,6 +2,12 @@
 
 # Timelapse — construction camera for Android
 
+## Critical capture blocker and full engineering handoff (2026-10-30)
+
+**STOP THE LINE:** The user reports that pressing Start/Record on the Samsung Galaxy S21 saves **zero photos**. Successful Gradle/lint and emulator screenshot runs are NOT proofs of recording. **No public release or usable APK claim until ten validated JPEGs are saved and survive restart on the real S21**, with the reproducible evidence in [issue #3](https://github.com/jboehm1/timelapse/issues/3). Internal diagnostic APK artifacts are for debugging only.
+
+**[Complete self-contained new-chat engineering handbook](docs/HANDOFF_MASTER_2026-10-30.md)** (deep UI rebuild, camera controls, reference Velocity Lapse study, capacity estimates, release and test gates). Baseline emulator screenshots: [home](docs/screenshots/emulator/app-home.png), [settings](docs/screenshots/emulator/app-settings.png), [settings scroll](docs/screenshots/emulator/app-settings-scroll.png). These images may only appear once the emulator screenshot publishing workflow finishes.
+
 Independent, **reliability-first** timelapse application for construction sites, initially targeting **Samsung Galaxy S21 / Android 15**.
 
 > **Source of truth:** [docs/PROJECT_SPEC.md](docs/PROJECT_SPEC.md). All development, reviews, and test plans MUST respect the numbered requirements there. [AGENTS.md](AGENTS.md) defines the required developer workflow.
