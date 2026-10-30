@@ -40,9 +40,7 @@ class RecordingSmokeTest {
         runCatching { device.takeScreenshot(File(evidence, "last-ui.png")); device.dumpWindowHierarchy(File(evidence, "last-ui.xml")) }
     }
     private fun unlockTestDevice() {
-        device.wakeUp()
-        device.executeShellCommand("wm dismiss-keyguard")
-        device.pressMenu()
+        EmulatorTestDevice.prepare(device, evidence)
     }
 
     private fun waitFor(label: String, timeout: Long = 60_000L, ready: () -> Boolean) {
@@ -169,6 +167,7 @@ class RecordingSmokeTest {
             assertEquals(hashes, originals.associate { it.name to digest(it) })
             // Recreate Activity, reconcile the persistent filesystem index and compare every hash.
             device.pressHome()
+            unlockTestDevice()
             context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK))
             device.wait(Until.hasObject(By.desc("Start capture")), 10_000)
             assertEquals(hashes, frames(project).associate { it.name to digest(it) })

@@ -108,7 +108,7 @@ class WorkspaceSmokeTest {
     private fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
 
     @Test fun projectPlannerFiniteCaptureTestPhotoGalleryAndTrashPreserveOriginals() {
-        device.wakeUp(); device.executeShellCommand("wm dismiss-keyguard"); device.pressMenu()
+        EmulatorTestDevice.prepare(device, evidence)
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         clickDescription("Open projects library")
         assertTrue(device.wait(Until.hasObject(By.desc("Create project")), 15_000))
