@@ -1,0 +1,1 @@
+PASS: create/rename/copy preset/trash/restore; interval=500ms; finite=3 new JPEGs; test photo=1 new JPEG; 4 original hashes unchanged; separate Photolapse project adds exactly 1 frame per action (2 total); capture blocked during file job

@@ -1,0 +1,32 @@
+[
+  {
+    "effect": "NONE",
+    "file": "none.mp4",
+    "bytes": 9099,
+    "width": 640,
+    "height": 360,
+    "samples": 4,
+    "duration_us": 133333,
+    "sha256": "daea6571e0ff590481d8e41fa213106dc8a314fb7eed9dce9c140adec75aaec4"
+  },
+  {
+    "effect": "MOTION_BLUR",
+    "file": "motion_blur.mp4",
+    "bytes": 9097,
+    "width": 640,
+    "height": 360,
+    "samples": 4,
+    "duration_us": 133333,
+    "sha256": "8b84fddfe81088cd3c4c34a4b4bd168e2d0465cb0cd15f84cfc46757d31bedaa"
+  },
+  {
+    "effect": "LIGHT_TRAILS",
+    "file": "light_trails.mp4",
+    "bytes": 9225,
+    "width": 640,
+    "height": 360,
+    "samples": 4,
+    "duration_us": 133333,
+    "sha256": "f6a9acaeb75cf96c869feb1c958218e79b92e7c8803b5b4f7b82bf64ba0d7f27"
+  }
+]
