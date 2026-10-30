@@ -15,3 +15,5 @@ captures/
 dist/
 
 /.kotlin/
+
+__pycache__/

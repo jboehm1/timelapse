@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.security.MessageDigest
+import java.util.regex.Pattern
 
 /** Real UI -> foreground service -> emulated camera -> durable JPEG. No fixture images. */
 @RunWith(AndroidJUnit4::class)
@@ -79,6 +80,7 @@ class RecordingSmokeTest {
         device.takeScreenshot(File(evidence, "starting.png"))
         try {
             waitFor("ten independently saved JPEGs", 90_000) { frames(project).size >= 10 }
+            assertTrue(device.wait(Until.hasObject(By.text(Pattern.compile(".*[1-9][0-9]+ photos.*"))), 5000))
             device.takeScreenshot(File(evidence, "recording.png"))
             val visibleCount = frames(project).size
             assertEquals(visibleCount.toLong(), CaptureService.activeService?.savedCount)
@@ -96,6 +98,7 @@ class RecordingSmokeTest {
             val ids = originals.map { it.name.split('_')[1].toLong() }
             assertEquals(ids.size, ids.toSet().size)
             assertEquals(ids.sorted(), ids)
+            val archived = File(evidence, "originals").apply { mkdirs() }
             val metrics = originals.map { file ->
                 assertTrue(file.length() > 100)
                 val bitmap = requireNotNull(BitmapFactory.decodeFile(file.absolutePath)) {
@@ -103,6 +106,7 @@ class RecordingSmokeTest {
                 }
                 val dimensions = "${bitmap.width}x${bitmap.height}"
                 bitmap.recycle()
+                file.copyTo(File(archived, file.name), overwrite = false)
                 "${file.name}\t${file.length()}\t$dimensions\t${hashes[file.name]}"
             }
             // Recreate Activity, reconcile the persistent filesystem index and compare every hash.
@@ -119,4 +123,41 @@ class RecordingSmokeTest {
             context.startService(Intent(context, CaptureService::class.java).apply { action = CaptureService.ACTION_STOP })
         }
     }
+    @Test fun unavailableCameraReportsFailureWithoutClaimingRecording() {
+        val launch = Intent(context, MainActivity::class.java).addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        context.startActivity(launch)
+        assertTrue(device.wait(Until.hasObject(By.desc("Start capture")), 10_000))
+        val project = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+            "projects/fault_${System.currentTimeMillis()}").apply { mkdirs() }
+        // Deliberate fault injection, never a fixture or a production debug endpoint.
+        instrumentation.runOnMainSync {
+            context.startService(Intent(context, CaptureService::class.java).apply {
+                action = CaptureService.ACTION_STOP
+            })
+            context.startForegroundService(Intent(context, CaptureService::class.java).apply {
+                action = CaptureService.ACTION_START
+                putExtra(CaptureService.EXTRA_PROJECT, project.name)
+                putExtra(CaptureService.EXTRA_INTERVAL, 2000L)
+                putExtra(CaptureService.EXTRA_DAY_ONLY, false)
+                putExtra(CaptureService.EXTRA_CAMERA_ID, "NONEXISTENT_TEST_CAMERA")
+            })
+        }
+        try {
+            waitFor("bounded actionable camera failure", 40_000) {
+                CaptureService.activeService?.status?.startsWith("NEEDS_USER_ACTION") == true
+            }
+            val service = requireNotNull(CaptureService.activeService)
+            assertFalse(service.hasSessionFrame)
+            assertEquals(0L, service.savedCount)
+            assertTrue(frames(project).isEmpty())
+            assertFalse(service.status.startsWith("RECORDING"))
+            assertTrue(service.status.contains("CAMERA_BIND") || service.status.contains("no JPEG"))
+            File(evidence, "invalid-camera.txt").writeText(service.status)
+            device.takeScreenshot(File(evidence, "invalid-camera.png"))
+        } finally {
+            context.startService(Intent(context, CaptureService::class.java).apply { action = CaptureService.ACTION_STOP })
+        }
+    }
+
 }

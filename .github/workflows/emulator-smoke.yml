@@ -54,6 +54,8 @@ jobs:
             echo "System image provisioning attempt $attempt failed; retrying official download."
           done
           test -s "$image"
+      - name: Host JPEG validation dependency
+        run: python3 -m pip install Pillow==11.3.0
       - name: Run emulator and capture UI
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -84,7 +86,11 @@ jobs:
             test -s "emulator-evidence/$f"
             cp "emulator-evidence/$f" "docs/screenshots/emulator/$f"
           done
-          printf '%s\n' '# Timelapse emulator UI screenshots' '' 'Generated with .github/workflows/emulator-smoke.yml (Android emulator API 35).' 'Synthetic emulated camera imagery. These images prove only UI rendering, NOT successful JPEG capture.' > docs/screenshots/emulator/README.md
+          for f in starting.png recording.png reopened.png invalid-camera.png jpeg-validation.tsv verification.json; do
+            test -s "emulator-evidence/verified/$f"
+            cp "emulator-evidence/verified/$f" "docs/screenshots/emulator/$f"
+          done
+          printf '%s\n' '# Timelapse emulator UI screenshots' '' 'Generated with .github/workflows/emulator-smoke.yml (Android emulator API 35).' 'Synthetic emulator camera imagery. Recording proof is the host-decoded JPEG archive, jpeg-validation.tsv and verification.json; screenshots alone are not capture proof. S21 hardware remains unverified.' > docs/screenshots/emulator/README.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/screenshots/emulator

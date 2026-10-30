@@ -35,3 +35,18 @@ No new runtime dependencies or copied upstream application code. Test-only Andro
 ## Follow-up: on-device diagnostic export
 
 Settings → Export → **Save capture diagnostics (.txt)** now offers an Android document picker. Logs remain private until the user explicitly chooses a file. No images or network upload are included. The trace has a bounded 64-event worker queue and two 256 KiB rotating files; slow/failing diagnostics cannot block the capture/UI thread. Export reports dropped diagnostic events. A JVM regression test checks rotation, recent-error retention and multiline sanitization; all five JUnit tests pass locally. F-13/F-14/H-03/J-03 are compiled-stage only (40%); S21 and actual emulator recording remain unverified at this checkpoint.
+
+## Validation update
+
+- `d499a91`: GitHub Android/JUnit/lint PASS in [41063353243](https://github.com/jboehm1/timelapse/actions/runs/41063353243); pure Kotlin PASS in [41063353156](https://github.com/jboehm1/timelapse/actions/runs/41063353156).
+- Local current app: both APKs + five JUnit tests + lint PASS (1m 33s). Diagnostic APK SHA-256: `c70bb5936bf0e7144b2522b744f5350154493095ec19bb7f3f065da4ea31ae3c` (17,854,254 bytes).
+- Added and compiled a second instrumentation case: unavailable camera must reach a bounded NEEDS_USER_ACTION error with zero JPEGs and no Recording claim. This is fault injection, not a fake camera producing fixture photos.
+- Local software emulator could not finish boot promptly without `/dev/kvm`; stopped in favor of the KVM-enabled CI run. No local camera-runtime result claimed.
+
+## First actual emulator recording proof
+
+Run [41063353155](https://github.com/jboehm1/timelapse/actions/runs/41063353155), source `d499a91`, passed the UI-driven recording test: **12 real CameraX JPEGs**, each decoded on Android, **1856×1392**, 59,125–61,397 bytes, unique IDs 1–12, original SHA-256 hashes unchanged after background capture and Activity reopening. The downloaded TSV and capture logs agree. This is emulated camera output, not S21 photography.
+
+Evidence review found a collection defect: `adb exec-out run-as ... tar /sdcard/...` produced a nonempty permission-error text file, which the script accepted as an archive. It did NOT invalidate the Android image-decoding/hash assertions, but raw JPEG bytes were absent from the downloadable archive. The next iteration copies the synthetic test JPEGs to app-private test evidence and requires independent host-side Pillow decoding, dimensions and SHA-256 agreement. Merely nonempty artifact output is no longer accepted.
+
+Screenshot inspection also showed the capture label lagging the filesystem count (9 displayed while the test had ten files). The test now waits for a visible double-digit count before taking its recording screenshot. Full Compose UX work remains pending; capture functionality takes priority.

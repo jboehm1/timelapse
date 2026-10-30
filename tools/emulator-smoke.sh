@@ -58,13 +58,12 @@ adb shell am instrument -w -r \
   -e class eu.example.constructionlapse.RecordingSmokeTest \
   eu.example.constructionlapse.test/androidx.test.runner.AndroidJUnitRunner \
   | tee emulator-evidence/instrumentation.txt
-grep -q 'OK (1 test)' emulator-evidence/instrumentation.txt
+grep -q 'OK (2 tests)' emulator-evidence/instrumentation.txt
 if grep -Eq 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' emulator-evidence/instrumentation.txt; then
   exit 3
 fi
-# These files are synthetic emulator camera output, never user footage.
-adb exec-out run-as eu.example.constructionlapse tar \
-  -C /sdcard/Android/data/eu.example.constructionlapse/files/Pictures \
-  -cf - projects > emulator-evidence/emulator-jpeg-originals.tar
-[ -s emulator-evidence/emulator-jpeg-originals.tar ]
-echo 'PASS: ten real camera JPEGs decoded; background capture and persistence verified on emulator.'
+# run-as cannot access /sdcard on every Android image. The test explicitly
+# copies its synthetic JPEGs to private test evidence after validating originals.
+collect
+python3 tools/verify-emulator-evidence.py emulator-evidence/recording-evidence.tar emulator-evidence/verified
+echo 'PASS: camera JPEGs independently decoded on host; background capture and persistence verified on emulator.'
