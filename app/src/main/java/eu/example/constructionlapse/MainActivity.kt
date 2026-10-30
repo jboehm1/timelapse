@@ -123,6 +123,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val exportDiagnostics = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) Thread {
+            runCatching {
+                CaptureDiagnostics.initialize(this)
+                val snapshot = CaptureDiagnostics.snapshot()
+                requireNotNull(contentResolver.openOutputStream(uri, "wt")).bufferedWriter().use {
+                    it.write(snapshot)
+                }
+            }.onSuccess { runOnUiThread { refreshStatus("Capture diagnostics saved") } }
+                .onFailure { error -> runOnUiThread { refreshStatus("Diagnostic export failed: ${error.message}") } }
+        }.start()
+    }
+
     private val importFolder = registerForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { tree ->
@@ -520,6 +535,9 @@ class MainActivity : ComponentActivity() {
         })
         setContentView(main)
         restoreMeteringSelection()
+        button("Save capture diagnostics (.txt)", controls) {
+            exportDiagnostics.launch("Timelapse-diagnostics.txt")
+        }
         refreshStatus()
     }
 

@@ -40,6 +40,20 @@ class CoreReliabilityTest {
         } finally { dir.deleteRecursively() }
     }
 
+    @Test fun diagnosticLogIsBoundedAndKeepsRecentFailure() {
+        val dir = Files.createTempDirectory("capture-log-test").toFile()
+        try {
+            val log = CaptureEventLog(dir, 4096)
+            repeat(100) { log.append("event=$it " + "x".repeat(5000)) }
+            log.append("FAILURE JPEG_COMMIT\ninjected-line")
+            assertTrue(dir.listFiles()!!.sumOf { it.length() } <= 8192L)
+            val snapshot = log.snapshot()
+            assertTrue(snapshot.contains("event=99"))
+            assertTrue(snapshot.contains("FAILURE JPEG_COMMIT injected-line"))
+            assertFalse(snapshot.contains("event=0 "))
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun scheduleRespectsDaylightAndNight() {
         val zone=java.time.ZoneId.of("Europe/Berlin")
         val schedule=DayWindow(true,java.time.LocalTime.of(7,0),

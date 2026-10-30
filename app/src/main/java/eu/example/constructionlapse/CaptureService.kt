@@ -137,6 +137,7 @@ class CaptureService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         activeService = this
+        CaptureDiagnostics.initialize(this)
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(NotificationChannel(CHANNEL_ID, "Timelapse capture",
                 NotificationManager.IMPORTANCE_LOW))
@@ -252,8 +253,10 @@ class CaptureService : LifecycleService() {
     }
 
     private fun trace(event: String, detail: String = "") {
-        Log.i("TimelapseCapture", "elapsed=${SystemClock.elapsedRealtime()} wall=${System.currentTimeMillis()} " +
-            "session=$sessionGeneration project=${project?.name} camera=$requestedCameraId event=$event $detail")
+        val line = "elapsed=${SystemClock.elapsedRealtime()} wall=${System.currentTimeMillis()} " +
+            "session=$sessionGeneration project=${project?.name} camera=$requestedCameraId event=$event $detail"
+        Log.i("TimelapseCapture", line)
+        CaptureDiagnostics.record(line)
     }
 
     private fun state(value: String) {

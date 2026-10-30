@@ -32,11 +32,11 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | C — Capture caméra, objectifs, format et qualité | 22 | **14 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **10 %** |
-| F — Fiabilité, sécurité matérielle et récupération | 30 | **11 %** |
+| F — Fiabilité, sécurité matérielle et récupération | 30 | **14 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **19 %** |
-| H — Commandes externes, UI, ergonomie | 18 | **8 %** |
+| H — Commandes externes, UI, ergonomie | 18 | **10 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **19 %** |
-| J — Tests, mesures, robustesse validée et release | 24 | **9 %** |
+| J — Tests, mesures, robustesse validée et release | 24 | **10 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **54 %** |
 
 <!-- PROGRESS-SCORE-END -->
@@ -189,7 +189,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | E-19 | P2 | **0 %** | Pilotage appareils gérés/kiosk optionnel | Documentation et tests device-owner |
 | [ ] | E-20 | P1 | **0 %** | Comparaison consommation 24h 3 stratégies | Graphes Wh nuit noire/écran OFF/caméra idle |
 
-### F. Fiabilité, sécurité matérielle et récupération — 11 %
+### F. Fiabilité, sécurité matérielle et récupération — 14 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -205,8 +205,8 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-10 | P0 | **40 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
 | [ ] | F-11 | P0 | **40 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
 | [ ] | F-12 | P0 | **10 %** | Photos originales immuables | Export raté ne modifie aucun hash source |
-| [ ] | F-13 | P0 | **0 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
-| [ ] | F-14 | P0 | **0 %** | Diagnostics exportables et consentement | ZIP anonymisé pour analyse |
+| [ ] | F-13 | P0 | **40 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
+| [ ] | F-14 | P0 | **40 %** | Diagnostics exportables et consentement | ZIP anonymisé pour analyse |
 | [ ] | F-15 | P0 | **0 %** | Gestion sous tension USB instable | Débranchement/connexion repris ou pause sûre |
 | [ ] | F-16 | P0 | **0 %** | Détection surchauffe en charge | Pause même si batterie 100% |
 | [ ] | F-17 | P0 | **10 %** | Gestion caméra occupée par autre app | Retenter borné puis message explicite |
@@ -256,13 +256,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | G-26 | P1 | **0 %** | Anti-flicker au montage | Courbes luminosité corrigées sans débordement |
 | [ ] | G-27 | P1 | **0 %** | Conversion RAW en MP4 | DNG décodé dans budget mémoire |
 
-### H. Commandes externes, UI, ergonomie — 8 %
+### H. Commandes externes, UI, ergonomie — 10 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | H-01 | P0 | **25 %** | Interface mobile de capture basique | Start Stop Status Preview utilisables |
 | [ ] | H-02 | P0 | **25 %** | Tap séparé focus / exposition | Marqueurs verts/jaunes corrects sur téléphone |
-| [ ] | H-03 | P0 | **25 %** | Mises en garde fonctions non validées | Aucun label pro prêt avant tests |
+| [ ] | H-03 | P0 | **40 %** | Mises en garde fonctions non validées | Aucun label pro prêt avant tests |
 | [ ] | H-04 | P1 | **25 %** | Volume +/− commande shutter | Start/stop et photo sans double déclenchement |
 | [ ] | H-05 | P1 | **10 %** | Bluetooth remote standard | Média key event selon appareil testé |
 | [ ] | H-06 | P1 | **0 %** | Bluetooth sans interface active | Capacités Android et permissions validées |
@@ -299,13 +299,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | I-14 | P1 | **0 %** | Signatures et mises à jour sécurisées | Clés protégées et stratégie rotation |
 | [ ] | I-15 | P2 | **0 %** | Gestion crash telemetry opt-in | Aucune transmission sans consentement |
 
-### J. Tests, mesures, robustesse validée et release — 9 %
+### J. Tests, mesures, robustesse validée et release — 10 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | J-01 | P0 | **55 %** | Tests purs Kotlin politique calendrier | Tous scénarios exécutés et journal CI vert |
 | [x] | J-02 | P0 | **100 %** | Tests Android JVM exécutables | Gradle testDebugUnitTest vert |
-| [ ] | J-03 | P0 | **25 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
+| [ ] | J-03 | P0 | **40 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
 | [ ] | J-04 | P0 | **0 %** | APK compile et s'installe S21 | Installation et lancement constatés |
 | [ ] | J-05 | P0 | **0 %** | Photo réelle / métadonnées / fichiers | Capture JPEG décodable avec EXIF |
 | [ ] | J-06 | P0 | **0 %** | Tap AF AE deux zones réelles | Test mur/sky sur S21 |

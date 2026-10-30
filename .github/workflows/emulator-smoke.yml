@@ -41,6 +41,19 @@ jobs:
           "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
           gradle :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
           test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Install camera test system image with bounded download retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          image="$ANDROID_HOME/system-images/android-35/google_apis/x86_64/system.img"
+          for attempt in 1 2 3; do
+            if "$SDKMANAGER" --install 'system-images;android-35;google_apis;x86_64' && test -s "$image"; then
+              break
+            fi
+            echo "System image provisioning attempt $attempt failed; retrying official download."
+          done
+          test -s "$image"
       - name: Run emulator and capture UI
         uses: reactivecircus/android-emulator-runner@v2
         with:

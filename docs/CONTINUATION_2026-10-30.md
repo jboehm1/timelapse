@@ -27,6 +27,11 @@ No new runtime dependencies or copied upstream application code. Test-only Andro
 ## Validation
 
 - Static diff/CI shell syntax and progress consistency: executed locally.
-- Local JDK 17, Gradle 8.13 and Android SDK 36 installed; compilation underway when this report was first written. See subsequent update for actual outcome.
-- Emulator recording test: not yet executed at this checkpoint.
+- Local Temurin JDK 17.0.21, Gradle 8.13 and Android SDK 36 installed. Initial full `testDebugUnitTest assembleDebug assembleDebugAndroidTest lintDebug` passed (4m 7s).
+- GitHub Android/JUnit/lint PASS: run [41062374462](https://github.com/jboehm1/timelapse/actions/runs/41062374462). Pure Kotlin PASS: [41062374351](https://github.com/jboehm1/timelapse/actions/runs/41062374351).
+- Emulator run [41062374354](https://github.com/jboehm1/timelapse/actions/runs/41062374354) compiled both APKs but FAILED during official SDK system-image ZIP provisioning, before app installation/test. Added three bounded provisioning attempts; no JPEG evidence claimed.
 - Physical S21, screen physically OFF, MP4/8h/72h/7d: not executed. No production release or merge authorized by this evidence.
+
+## Follow-up: on-device diagnostic export
+
+Settings → Export → **Save capture diagnostics (.txt)** now offers an Android document picker. Logs remain private until the user explicitly chooses a file. No images or network upload are included. The trace has a bounded 64-event worker queue and two 256 KiB rotating files; slow/failing diagnostics cannot block the capture/UI thread. Export reports dropped diagnostic events. A JVM regression test checks rotation, recent-error retention and multiline sanitization; all five JUnit tests pass locally. F-13/F-14/H-03/J-03 are compiled-stage only (40%); S21 and actual emulator recording remain unverified at this checkpoint.
