@@ -80,6 +80,8 @@ class WorkspaceActivity : ComponentActivity() {
         var filter by rememberSaveable { mutableStateOf("All") }
         var query by rememberSaveable { mutableStateOf("") }
         var create by remember { mutableStateOf(false) }
+        var createBusy by remember { mutableStateOf(false) }
+        var createError by remember { mutableStateOf<String?>(null) }
         var rename by remember { mutableStateOf<ProjectLibrary.Project?>(null) }
         var trash by remember { mutableStateOf<ProjectLibrary.Project?>(null) }
         var error by remember { mutableStateOf<String?>(null) }
@@ -179,7 +181,7 @@ class WorkspaceActivity : ComponentActivity() {
                 }
             }
         }
-        if (create) AlertDialog(onDismissRequest = { create = false }, title = { Text("A new perspective") }, text = {
+        if (create) AlertDialog(onDismissRequest = { if (!createBusy) create = false }, title = { Text("A new perspective") }, text = {
             Column {
                 OutlinedTextField(createName, { createName = it }, label = { Text("Project name") }, singleLine = true,
                     modifier = Modifier.semantics { contentDescription = "New project name" })
@@ -190,11 +192,25 @@ class WorkspaceActivity : ComponentActivity() {
                     }
                 }
                 Text("Photolapse keeps manually added frames in the same original-preserving project format.", style = MaterialTheme.typography.bodySmall)
+                createError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
-        }, confirmButton = { TextButton(enabled = createName.isNotBlank(), onClick = {
+        }, confirmButton = { TextButton(enabled = createName.isNotBlank() && !createBusy, onClick = {
             val title = createName; val mode = createMode
-            operation { library.create(title, mode) }; create = false; createName = ""
-        }) { Text("Create") } }, dismissButton = { TextButton(onClick = { create = false }) { Text("Cancel") } })
+            createBusy = true; createError = null
+            scope.launch {
+                runCatching { withContext(Dispatchers.IO) { library.create(title, mode) } }
+                    .onSuccess { project ->
+                        selectedId = project.id
+                        create = false; createName = ""
+                        revision++
+                    }
+                    .onFailure {
+                        createError = it.message ?: "Cannot create project"
+                        android.util.Log.e("TimelapseWorkspace", "Project creation failed", it)
+                    }
+                createBusy = false
+            }
+        }) { Text(if (createBusy) "Creating…" else "Create") } }, dismissButton = { TextButton(enabled = !createBusy, onClick = { create = false }) { Text("Cancel") } })
         rename?.let { project ->
             var title by remember(project.id) { mutableStateOf(project.title) }
             AlertDialog(onDismissRequest = { rename = null }, title = { Text("Rename project") }, text = {

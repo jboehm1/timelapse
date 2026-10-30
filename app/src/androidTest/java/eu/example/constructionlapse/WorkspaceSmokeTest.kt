@@ -122,7 +122,7 @@ class WorkspaceSmokeTest {
         clickText("Create")
         waitFor("create project") { library.list().any { it.title == title } }
         val project = library.list().single { it.title == title }
-        openProject(title)
+        assertNotNull("New project must open directly", awaitUi(By.text("Open camera & export"), 15_000))
         clickText("Plan")
         set("Interval (seconds)", "0.5")
         // A continuous project runs 24h/day; the separate JVM test verifies 57,600 for an 8h shift.
@@ -186,7 +186,7 @@ class WorkspaceSmokeTest {
         clickText("Create")
         waitFor("manual project create") { library.list().any { it.title == manualTitle } }
         val manual = library.list().single { it.title == manualTitle }
-        openProject(manualTitle)
+        assertNotNull("New Photolapse must open directly", awaitUi(By.text("Open camera & export"), 15_000))
         clickText("Open camera & export")
         clickDescription("Start capture")
         waitFor("first manual frame") { library.frames(manual.id).size == 1 && CaptureService.activeService?.isCapturing != true }
