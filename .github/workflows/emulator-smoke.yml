@@ -3,7 +3,9 @@ on:
   pull_request:
     paths:
       - 'app/**'
+      - 'core/**'
       - 'tools/emulator-smoke.sh'
+      - 'tools/verify-emulator-evidence.py'
       - '.github/workflows/emulator-smoke.yml'
   workflow_dispatch:
 concurrency:
@@ -20,20 +22,56 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: true
+          fetch-depth: 0
+      - name: Decide whether this update needs emulator regression
+        id: plan
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            run_emulator=true
+            reason="manual full run"
+          else
+            checkpoint="$(git log -1 --format=%H --grep='^docs(ui): commit real emulator screenshots for handoff$' || true)"
+            if [[ -n "$checkpoint" ]]; then
+              changed="$(git diff --name-only "$checkpoint...HEAD")"
+              reason="changes since the last committed emulator evidence"
+            elif [[ -n "$PR_BASE_SHA" ]]; then
+              changed="$(git diff --name-only "$PR_BASE_SHA...HEAD")"
+              reason="no prior emulator evidence checkpoint; checking the full PR"
+            else
+              changed="$(git show --format= --name-only HEAD)"
+              reason="no PR base or emulator evidence checkpoint; checking latest commit"
+            fi
+            if grep -Eq '^(app/src/main/|app/src/androidTest/|core/|tools/emulator-smoke\.sh$|tools/verify-emulator-evidence\.py$|\.github/workflows/emulator-smoke\.yml$|app/build\.gradle\.kts$|build\.gradle\.kts$|settings\.gradle\.kts$)' <<< "$changed"; then
+              run_emulator=true
+            else
+              run_emulator=false
+            fi
+          fi
+          echo "run_emulator=$run_emulator" >> "$GITHUB_OUTPUT"
+          echo "Emulator regression: $run_emulator ($reason)"
       - uses: actions/setup-java@v4
+        if: steps.plan.outputs.run_emulator == 'true'
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.plan.outputs.run_emulator == 'true'
         with:
           gradle-version: '8.13'
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
       - name: Enable KVM
+        if: steps.plan.outputs.run_emulator == 'true'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Build APK to install on emulator
+        if: steps.plan.outputs.run_emulator == 'true'
         run: |
           set -euo pipefail
           : "${ANDROID_HOME:?Android SDK path missing}"
@@ -43,6 +81,7 @@ jobs:
           gradle :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
           test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Install camera test system image with bounded download retries
+        if: steps.plan.outputs.run_emulator == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -56,8 +95,10 @@ jobs:
           done
           test -s "$image"
       - name: Host JPEG validation dependency
+        if: steps.plan.outputs.run_emulator == 'true'
         run: python3 -m pip install Pillow==11.3.0
       - name: Run emulator and capture UI
+        if: steps.plan.outputs.run_emulator == 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -68,7 +109,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
           script: bash tools/emulator-smoke.sh
       - name: Summarize application and UI failures
-        if: failure()
+        if: failure() && steps.plan.outputs.run_emulator == 'true'
         shell: bash
         run: |
           python3 - <<'PY'
@@ -105,7 +146,7 @@ jobs:
                               print(raw.decode(errors="replace")[:24000])
           PY
       - name: Upload emulator evidence
-        if: always()
+        if: always() && steps.plan.outputs.run_emulator == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: timelapse-emulator-ui
@@ -114,7 +155,7 @@ jobs:
           retention-days: 7
       # Keep screenshot evidence in Git instead of only short-lived artifacts.
       - name: Publish emulator screenshots to PR branch
-        if: ${{ success() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        if: ${{ success() && steps.plan.outputs.run_emulator == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
         shell: bash

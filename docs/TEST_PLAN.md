@@ -12,7 +12,7 @@
 ### Fast feedback and expensive simulation
 - Local/core feedback: `bash tools/test-policy.sh` compiles the three deterministic JVM policy suites in one Kotlin compiler invocation, runs each independently, then checks the generated progress dashboard. It needs JDK 17 and Kotlin CLI 2.0.21, but no Android SDK.
 - The pure-policy GitHub workflow caches that pinned Kotlin CLI by version/runner OS, so warm runs do not download and unpack the compiler again.
-- Android PR CI remains the authoritative build/unit/lint check. The emulator job is separate: it provisions a virtual device and exercises camera, saved JPEGs, export effects/batches and workspace UI, then independently verifies evidence on the host.
+- Android PR CI remains the authoritative build/unit/lint check. The emulator job reuses its existing committed screenshot-evidence commit as a checkpoint: any app/core/emulator-harness changes since that tested commit trigger the full virtual-device path; documentation-only and unrelated tool updates skip it. Manual dispatch always runs the full simulation. It exercises camera, saved JPEGs, export effects/batches and workspace UI, then independently verifies evidence on the host.
 - Emulator success is a simulated-camera regression signal only; the S21 gate below remains mandatory for device claims.
 
 ## 2. Device test matrix (Samsung S21 target)
