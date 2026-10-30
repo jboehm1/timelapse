@@ -88,10 +88,11 @@ class WorkspaceSmokeTest {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 val activity = ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).firstOrNull()
                 activity?.let {
-                    it.currentFocus?.clearFocus()
                     WindowInsetsControllerCompat(it.window, it.window.decorView).hide(WindowInsetsCompat.Type.ime())
                 }
             }
+            device.findObject(By.pkg("com.google.android.inputmethod.latin").desc("Back"))?.click()
+            device.waitForIdle()
             SystemClock.sleep(300)
             pumpCompose()
             if (!device.hasObject(By.pkg("com.google.android.inputmethod.latin"))) {

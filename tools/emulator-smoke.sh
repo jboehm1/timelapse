@@ -11,6 +11,8 @@ collect() {
 }
 trap collect EXIT
 adb wait-for-device
+# UI text is entered through Compose semantics; keep the virtual IME from occluding action targets.
+adb shell settings put secure show_ime_with_hard_keyboard 0
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell pm grant eu.example.constructionlapse android.permission.CAMERA || true
 adb shell pm grant eu.example.constructionlapse android.permission.POST_NOTIFICATIONS || true
