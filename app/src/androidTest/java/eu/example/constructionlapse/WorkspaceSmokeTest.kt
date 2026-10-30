@@ -39,18 +39,28 @@ class WorkspaceSmokeTest {
     }
     private fun waitFor(label: String, ready: () -> Boolean) {
         val end = SystemClock.elapsedRealtime() + 45_000
-        while (SystemClock.elapsedRealtime() < end) { if (ready()) return; SystemClock.sleep(250) }
+        while (SystemClock.elapsedRealtime() < end) { compose.waitForIdle(); if (ready()) return; SystemClock.sleep(250) }
         device.takeScreenshot(File(evidence, "failure.png"))
         device.dumpWindowHierarchy(File(evidence, "failure.xml"))
         fail("Timed out $label: ${CaptureService.activeService?.status}")
     }
+    private fun awaitUi(selector: androidx.test.uiautomator.BySelector, timeout: Long): androidx.test.uiautomator.UiObject2? {
+        val end = SystemClock.elapsedRealtime() + timeout
+        while (SystemClock.elapsedRealtime() < end) {
+            // Compose's test clock must advance between external UiAutomator actions.
+            compose.waitForIdle()
+            device.findObject(selector)?.let { return it }
+            SystemClock.sleep(100)
+        }
+        return null
+    }
     private fun clickText(text: String) {
-        val item = device.wait(Until.findObject(By.text(text)), 10_000)
-        assertNotNull("Missing $text", item); item.click(); device.waitForIdle()
+        val item = awaitUi(By.text(text), 10_000)
+        assertNotNull("Missing $text", item); item.click(); compose.waitForIdle(); device.waitForIdle()
     }
     private fun clickDescription(description: String) {
-        val item = device.wait(Until.findObject(By.desc(description)), 15_000)
-        assertNotNull("Missing $description", item); item.click(); device.waitForIdle()
+        val item = awaitUi(By.desc(description), 15_000)
+        assertNotNull("Missing $description", item); item.click(); compose.waitForIdle(); device.waitForIdle()
     }
     private fun set(description: String, value: String) {
         // Drive Compose's real text-edit semantics and wait for recomposition.
@@ -74,15 +84,17 @@ class WorkspaceSmokeTest {
     }
     private fun scrollTo(text: String) {
         repeat(8) {
+            compose.waitForIdle()
             if (device.hasObject(By.text(text))) return
             device.findObject(By.scrollable(true))?.scroll(Direction.DOWN, .7f)
+            compose.waitForIdle()
             device.waitForIdle()
         }
         assertTrue("Cannot scroll to $text", device.hasObject(By.text(text)))
     }
     private fun openProject(title: String) {
-        val item = device.wait(Until.findObject(By.textContains(title)), 15_000)
-        assertNotNull("Missing project $title", item); item.click(); device.waitForIdle()
+        val item = awaitUi(By.text(title), 15_000)
+        assertNotNull("Missing project $title", item); item.click(); compose.waitForIdle(); device.waitForIdle()
     }
     private fun hash(file: File) = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
 
