@@ -1,3 +1,5 @@
+> **CAPTURE-P0-001 STOP THE LINE (2026-10-30):** The user reports zero JPEG photos after Start on Samsung S21. Before any public release: emulator UI automation **and** real S21 must each produce at least 10 valid, correctly dimensioned, unique JPEG originals in the selected project, surviving restart. An emulator screenshot, compile, lint or UI counter alone does **not** satisfy this gate. The UI must show STARTING until a real first JPEG is verified, then RECORDING. [Issue #3](https://github.com/jboehm1/timelapse/issues/3) · [Master handoff](HANDOFF_MASTER_2026-10-30.md).
+
 # TEST_PLAN — deterministic tests and multi-day device validation
 
 ## 1. Continuous integration (every PR)
