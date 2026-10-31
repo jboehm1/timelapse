@@ -1,15 +1,16 @@
 {
   "result": "PASS",
-  "scene": "synthetic person walks left to right in front of a fixed construction-site background",
+  "scene": "two synthetic workers walk left to right in front of a fixed construction-site background",
+  "people": 2,
   "source_frames": 7,
   "person_centroids_x": [
-    114.5,
-    182.49527,
-    250.5,
-    318.49527,
-    386.5095,
-    454.49527,
-    522.5
+    132.0945,
+    189.90039,
+    268.09448,
+    325.9004,
+    404.09448,
+    461.9004,
+    540.0945
   ],
   "width": 640,
   "height": 360,
@@ -17,8 +18,8 @@
   "effect_window": 5,
   "normal": {
     "file": "person-walk-none.mp4",
-    "bytes": 21808,
-    "sha256": "f1991a5ffa70dc55daad3a12ee4556c9796b2e29b49d69998aaa56e8e40c1f2e",
+    "bytes": 34001,
+    "sha256": "e7b7c34f779a0315d13a018924572b9c75f0b85d256c6f6772a0e1dd43da7b37",
     "samples": 7,
     "width": 640,
     "height": 360,
@@ -27,8 +28,8 @@
   },
   "motion_blur": {
     "file": "person-walk-motion-blur.mp4",
-    "bytes": 21728,
-    "sha256": "0ab9c031006de216bacc6809bce14611bcd471792e206975f3c391c347f1ffbb",
+    "bytes": 32390,
+    "sha256": "b072a19f15fca79d0e65dc78d4c08b18e457028daa2ec5733097cfdb4dedbd55",
     "samples": 7,
     "width": 640,
     "height": 360,
@@ -36,37 +37,47 @@
     "duration_us": 1000000
   },
   "comparison_frame_us": 428571,
-  "pixels_delta_over_30": 17815,
-  "sum_absolute_rgb_delta": 1577888,
+  "pixels_delta_over_30": 29626,
+  "sum_absolute_rgb_delta": 2579832,
   "comparison_image": "person-walk-comparison.png",
   "host_outputs": {
     "normal": {
       "file": "person-walk-none.mp4",
-      "bytes": 21808,
-      "sha256": "f1991a5ffa70dc55daad3a12ee4556c9796b2e29b49d69998aaa56e8e40c1f2e",
+      "bytes": 34001,
+      "sha256": "e7b7c34f779a0315d13a018924572b9c75f0b85d256c6f6772a0e1dd43da7b37",
       "samples": 7,
       "width": 640,
       "height": 360,
       "fps": 7,
       "duration_us": 1000000,
-      "host_decode": {
+      "host_validation": {
         "ffprobe": true,
-        "ffmpeg": true,
+        "ffmpeg_full_decode": true,
+        "codec": "h264",
+        "width": 640,
+        "height": 360,
+        "fps": 7.000077778641985,
+        "frames": 7,
         "duration_seconds": 0.999989
       }
     },
     "motion_blur": {
       "file": "person-walk-motion-blur.mp4",
-      "bytes": 21728,
-      "sha256": "0ab9c031006de216bacc6809bce14611bcd471792e206975f3c391c347f1ffbb",
+      "bytes": 32390,
+      "sha256": "b072a19f15fca79d0e65dc78d4c08b18e457028daa2ec5733097cfdb4dedbd55",
       "samples": 7,
       "width": 640,
       "height": 360,
       "fps": 7,
       "duration_us": 1000000,
-      "host_decode": {
+      "host_validation": {
         "ffprobe": true,
-        "ffmpeg": true,
+        "ffmpeg_full_decode": true,
+        "codec": "h264",
+        "width": 640,
+        "height": 360,
+        "fps": 7.000077778641985,
+        "frames": 7,
         "duration_seconds": 0.999989
       }
     }
