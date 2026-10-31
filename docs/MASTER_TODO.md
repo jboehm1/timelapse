@@ -23,7 +23,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 36 %** — **48/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 36 %** — **49/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
@@ -37,7 +37,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | H — Commandes externes, UI, ergonomie | 18 | **30 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **40 %** |
 | J — Tests, mesures, robustesse validée et release | 24 | **18 %** |
-| K — Documentation, gouvernance et suivi du projet | 18 | **94 %** |
+| K — Documentation, gouvernance et suivi du projet | 18 | **96 %** |
 
 <!-- PROGRESS-SCORE-END -->
 
@@ -328,7 +328,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | J-23 | P0 | **0 %** | Release gate G0/G1/G2/G3/G4/G5 | Aucune version stable sans preuves matérielles |
 | [ ] | J-24 | P1 | **55 %** | CI prévention régressions et matrice erreurs | PR bloquée si tests échouent |
 
-### K. Documentation, gouvernance et suivi du projet — 94 %
+### K. Documentation, gouvernance et suivi du projet — 96 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -347,7 +347,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [x] | K-13 | P1 | **100 %** | Guide exploitation chantier multi-semaines | Alimentation, fixation, chaleur, stockage, sauvegardes |
 | [x] | K-14 | P1 | **100 %** | Guide manuel focus et exposition | Zones indépendantes, AE extérieure, dioptries |
 | [x] | K-15 | P1 | **100 %** | Documentation API contrôle local | Pairing, auth, erreurs |
-| [ ] | K-16 | P1 | **55 %** | Registre preuves test appareils | OS, build, hash APK, logs et mesures |
+| [x] | K-16 | P1 | **100 %** | Registre preuves test appareils | OS, build, hash APK, logs et mesures |
 | [x] | K-17 | P1 | **100 %** | Checklist release sécurité/qualité | Barrières bloquantes explicites |
 | [ ] | K-18 | P1 | **0 %** | Inventaire dépendances et licences | SBOM lisible et contrôlé |
 

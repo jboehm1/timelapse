@@ -229,6 +229,6 @@
 "K-13","K","P1","100","Guide exploitation chantier multi-semaines","Alimentation, fixation, chaleur, stockage, sauvegardes"
 "K-14","K","P1","100","Guide manuel focus et exposition","Zones indépendantes, AE extérieure, dioptries"
 "K-15","K","P1","100","Documentation API contrôle local","Pairing, auth, erreurs"
-"K-16","K","P1","55","Registre preuves test appareils","OS, build, hash APK, logs et mesures"
+"K-16","K","P1","100","Registre preuves test appareils","OS, build, hash APK, logs et mesures"
 "K-17","K","P1","100","Checklist release sécurité/qualité","Barrières bloquantes explicites"
 "K-18","K","P1","0","Inventaire dépendances et licences","SBOM lisible et contrôlé"

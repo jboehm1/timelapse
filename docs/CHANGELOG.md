@@ -3,6 +3,7 @@
 - The merged APK permission gate now allows only the exact non-Internet CameraX/AndroidX permissions observed in CI; `INTERNET` remains rejected.
 - Emulator export validation passed four camera-original MP4 rates (24/25/30/60 fps) with independent ffprobe and full decode; G-12 reaches the automated-test stage only.
 - Compiled APK permission verification passed after narrowly allowing CameraX/AndroidX's non-Internet merged permissions; I-02/I-03 acceptance evidence is complete for the current code.
+- Refreshed the test evidence register with source/checkpoint SHAs, emulator metrics, diagnostic APK hash, workflow links and hardware scope limits (K-16).
 
 This is an engineering changelog for the feature branch. It does not describe a public release. Commits are linked to roadmap items; acceptance scores remain in [MASTER_TODO.csv](MASTER_TODO.csv).
 
