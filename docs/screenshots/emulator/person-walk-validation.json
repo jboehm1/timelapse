@@ -18,7 +18,7 @@
   "normal": {
     "file": "person-walk-none.mp4",
     "bytes": 21808,
-    "sha256": "3daafe6096aa6d5bf2400fd4a8756ee5eb0e57e5947462c906b97bd39f9c5569",
+    "sha256": "f1991a5ffa70dc55daad3a12ee4556c9796b2e29b49d69998aaa56e8e40c1f2e",
     "samples": 7,
     "width": 640,
     "height": 360,
@@ -28,7 +28,7 @@
   "motion_blur": {
     "file": "person-walk-motion-blur.mp4",
     "bytes": 21728,
-    "sha256": "ff87e9b9e7ad87d254fd3f98b6565d375a085d6c6cf6123fff8bf9d899388d9d",
+    "sha256": "0ab9c031006de216bacc6809bce14611bcd471792e206975f3c391c347f1ffbb",
     "samples": 7,
     "width": 640,
     "height": 360,
@@ -43,7 +43,7 @@
     "normal": {
       "file": "person-walk-none.mp4",
       "bytes": 21808,
-      "sha256": "3daafe6096aa6d5bf2400fd4a8756ee5eb0e57e5947462c906b97bd39f9c5569",
+      "sha256": "f1991a5ffa70dc55daad3a12ee4556c9796b2e29b49d69998aaa56e8e40c1f2e",
       "samples": 7,
       "width": 640,
       "height": 360,
@@ -58,7 +58,7 @@
     "motion_blur": {
       "file": "person-walk-motion-blur.mp4",
       "bytes": 21728,
-      "sha256": "ff87e9b9e7ad87d254fd3f98b6565d375a085d6c6cf6123fff8bf9d899388d9d",
+      "sha256": "0ab9c031006de216bacc6809bce14611bcd471792e206975f3c391c347f1ffbb",
       "samples": 7,
       "width": 640,
       "height": 360,
