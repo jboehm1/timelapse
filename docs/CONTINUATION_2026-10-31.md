@@ -1,39 +1,37 @@
 # Continuation report — 2026-10-31
 
-## Verified repository state
+## Repository and PR state
 
-- Repository: `jboehm1/timelapse`; PR #2 is **open, not merged**, targeting `main`.
-- Working branch: `feat/android-capture-export-alpha`.
-- Local HEAD at inspection: `5aca98301f95c6523444dd358cc95a911ab53dab`; remote PR head: `cc8f031a4af31840c00b555f07c38a753f559dc6`.
-- The local branch is one commit ahead of the remote. Commit `5aca983` is present locally and changes all three invalid-input test calls to pass `openOutput` by name. GitHub does not know this SHA yet; it is not in the remote branch or the PR head.
-- The workspace tree was clean when inspected. No files were overwritten or reset.
+- Repository: `jboehm1/timelapse`; PR #2 remains **open and unmerged**, targeting `main`.
+- Branch: `feat/android-capture-export-alpha`.
+- Initial local HEAD was `5aca98301f95c6523444dd358cc95a911ab53dab`; initial remote PR head was `cc8f031a4af31840c00b555f07c38a753f559dc6`.
+- The local `5aca983` fix explicitly passed `openOutput` to all three invalid-input test calls. It was included with the subsequent workspace accessibility correction in tested source commit `ec6daaebce3f4924835f78ef6feeda3d7c6fecb9`.
+- After successful emulator validation, the emulator workflow committed refreshed screenshot and JSON evidence at `9f955557699277c06e4057294a169bbd1c497427`, now the PR head. That commit changes emulator evidence only; it does not change tested app source.
+- Direct `git push` could not authenticate in this environment. The connected GitHub repository integration published the prepared commit with a guarded fast-forward; local branch was then synced to the remote. No force-push or merge occurred.
 
-## CI evidence for remote head `cc8f031`
+## Initial CI failures and fixes
 
-| Workflow | Run | Result | What the evidence says |
-|---|---:|---|---|
-| Pure Kotlin reliability policy tests | [41189583940](https://github.com/jboehm1/timelapse/actions/runs/41189583940) | PASS | Deterministic policy suites and tracker consistency passed. |
-| Android APK and unit tests | [41189583904](https://github.com/jboehm1/timelapse/actions/runs/41189583904) | FAIL | `:app:compileDebugUnitTestKotlin` reports missing `openOutput` at `OriginalPhotoExporterTest.kt:79–81`. Build stopped before JUnit, APK upload and lint. |
-| JPEG recording gate and emulator UI | [41189583923](https://github.com/jboehm1/timelapse/actions/runs/41189583923) | FAIL | APK and test APK compiled; emulator recording/export cases completed. Workspace case failed at `WorkspaceSmokeTest.kt:171`, `Missing Rename`. This is a Compose/UiAutomator locator failure; it does not establish S21 behavior. |
+The initial head `cc8f031` had three Android test compilation errors: missing `openOutput` arguments at `OriginalPhotoExporterTest.kt:79–81` ([Android run #41189583904](https://github.com/jboehm1/timelapse/actions/runs/41189583904)). Its emulator build and recording/export cases passed, but the workspace journey failed at `WorkspaceSmokeTest.kt:171` with `Missing Rename` ([emulator run #41189583923](https://github.com/jboehm1/timelapse/actions/runs/41189583923)). Logs were inspected through the Kotlin compiler errors and the instrumentation stack trace.
 
-The Android job log was inspected through the compile error. The emulator job was inspected through the instrumentation stack trace. The failure does not show a capture failure: the recording/export instrumentation cases passed, while the later workspace test failed.
+The test callbacks were fixed in `5aca983`. Project detail actions now provide explicit accessibility descriptions, and the workspace test selects Rename and Copy preset through those descriptions.
 
-## Changes made in this continuation
+## Validation on tested source `ec6daaebce3f4924835f78ef6feeda3d7c6fecb9`
 
-- Project detail action buttons now provide stable accessibility descriptions for Rename, Copy preset and Plan.
-- The workspace emulator test now selects Rename and Copy preset through those descriptions instead of searching for Compose text labels.
-- `docs/TEST_PLAN.md` records the precise current CI failures and says the emulator evidence checkpoint must not advance until a rerun passes.
-- Checklist scores remain unchanged. The change is code and test-harness work; no successful rerun or hardware proof exists yet.
-- Local `git diff --check`, `python3 tools/progress.py --write`, and `--check` pass. The tracker reports 23%, 14/233 fully accepted.
-- `bash tools/test-policy.sh` could not start because this environment has no `kotlinc`. No Gradle wrapper or installed Gradle executable is present, so local Android compilation/test/lint and emulator execution are unavailable. The edits have not been locally compiled.
+- Pure Kotlin reliability policy suite: **PASS**, [run #41190162316](https://github.com/jboehm1/timelapse/actions/runs/41190162316).
+- Android APK build, JUnit tests and lint: **PASS**, [run #41190162329](https://github.com/jboehm1/timelapse/actions/runs/41190162329). The debug APK remains an unverified diagnostic build.
+- Emulator suite: **PASS**, [run #41190162334](https://github.com/jboehm1/timelapse/actions/runs/41190162334). All three instrumentation tests passed. Host Pillow decoded and hash/length-checked 12 emulator JPEGs at 1856×1392. The workspace test passed project creation, planning, finite capture, Test Photo, gallery, rename, preset copy, trash/restore and Photolapse. None, Motion Blur and Light Trails MP4s decoded at 640×360 with four samples and 133333 μs duration.
+- Export performance on the software emulator: 30 frames; source JPEG decodes 88→30; 58 cache hits; peak cache 2,764,800 bytes; elapsed 1010→606 ms. This single emulator comparison does not predict S21 speed.
+- Two-day batch cancellation kept day one, left zero pending rows and preserved source hashes.
+- Refreshed screenshot and JSON evidence is in commit `9f955557699277c06e4057294a169bbd1c497427`. Workflows created for this evidence-only commit are marked `action_required` with no jobs; the validated app source is the parent `ec6daae`.
 
-## Validation still required
+## Local checks and progress
 
-- Run the batched deterministic Kotlin policy suite in CI, plus Android unit tests, APK compilation and lint once on the current source. Run the emulator suite after that and inspect job logs and captured evidence.
-- Run Android unit tests, APK compilation and lint once on the current source. Run the emulator suite after that and inspect job logs and captured evidence.
-- If the current commit is pushed to PR #2, repeat the GitHub run review on the new PR SHA. Do not merge or publish based on emulator evidence.
-- **CAPTURE-P0-001 remains OPEN.** A physical Galaxy S21 test is required: 10 sequential valid JPEGs, real dimensions/EXIF/timestamps/unique names, stop/reopen persistence, and follow-up screen-off and lens/resolution checks. No S21 evidence was available in this session.
+- `git diff --check`, `python3 tools/progress.py --write` and `python3 tools/progress.py --check` pass.
+- The weighted tracker remains **23%**, with **14/233** items at 100%. No score increased because these results do not meet the item-specific physical-device acceptance criteria.
+- `bash tools/test-policy.sh` could not run locally because `kotlinc` is absent; there is no local Gradle executable or wrapper. The corresponding CI policy and Android workflows passed.
 
-## Progress
+## Remaining blocker
 
-`python3 tools/progress.py` is the authoritative weighted-score calculation. Keep existing task scores unchanged until the item-specific evidence level has actually been reached. The known remote baseline is 23%, 14/233 tasks at 100%; do not call that a post-change acceptance result without rerunning the script.
+**CAPTURE-P0-001 remains OPEN.** Emulator evidence does not validate a Galaxy S21. A physical S21 must save ten consecutive valid JPEGs, retain them after stop/reopen, report real dimensions and EXIF/timestamps, and pass screen-off plus lens/resolution checks. The step-by-step protocol is in `docs/TEST_PLAN.md`.
+
+Do not merge PR #2 or publish an app until the S21 and other required hardware gates pass.
