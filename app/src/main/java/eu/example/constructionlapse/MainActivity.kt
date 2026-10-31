@@ -240,15 +240,19 @@ class MainActivity : ComponentActivity() {
         if (frames.isEmpty()) { refreshStatus("No frames to export"); return@registerForActivityResult }
         exporting = true
         exporter.execute {
+            val createdDocuments = mutableMapOf<String, android.net.Uri>()
             try {
                 val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
                 val result = OriginalPhotoExporter.exportSequence(frames, { name, mime ->
                     val item = DocumentsContract.createDocument(contentResolver, parent, mime, name)
                         ?: throw IOException("Cannot create $name")
+                    createdDocuments[name] = item
                     contentResolver.openOutputStream(item) ?: throw IOException("Cannot write $name")
-                }) { count, total ->
+                }, onFile = { count, total ->
                     if (count % 25 == 0 || count == total) runOnUiThread { refreshStatus("Exported $count/$total") }
-                }
+                }, deleteOutput = { name ->
+                    createdDocuments.remove(name)?.let { contentResolver.delete(it, null, null) }
+                })
                 runOnUiThread { refreshStatus("Exported ${result.files} individual images (${result.bytes} bytes)") }
             } catch (e: Exception) {
                 runOnUiThread { refreshStatus("Image export stopped; originals remain intact: ${e.message}") }

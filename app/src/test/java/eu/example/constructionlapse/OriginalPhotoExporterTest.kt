@@ -5,6 +5,7 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import java.security.MessageDigest
@@ -25,12 +26,12 @@ class OriginalPhotoExporterTest {
             val mime = mutableMapOf<String, String>()
             val progress = mutableListOf<Pair<Int, Int>>()
 
-            val result = OriginalPhotoExporter.exportSequence(listOf(png, jpg), { name, type ->
+            val result = OriginalPhotoExporter.exportSequence(listOf(png, jpg), openOutput = { name, type ->
                 mime[name] = type
                 object : ByteArrayOutputStream() {
                     override fun close() { exported[name] = toByteArray(); super.close() }
                 }
-            }) { done, total -> progress += done to total }
+            }, onFile = { done, total -> progress += done to total })
 
             assertEquals(2, result.files)
             assertEquals(jpg.length() + png.length(), result.bytes)
@@ -105,6 +106,53 @@ class OriginalPhotoExporterTest {
             assertTrue(runCatching { OriginalPhotoExporter.exportZip(photos, FailingOutputStream(12)) }.isFailure)
             assertEquals(before, photos.associate { it.name to sha(it.readBytes()) })
         } finally { dir.deleteRecursively() }
+    }
+
+    @Test fun failedSafDestinationIsDeletedWithoutRemovingEarlierExportsOrOriginals() {
+        val root = createTempDir(prefix = "original-saf-failure-")
+        val source = File(root, "source").apply { mkdirs() }
+        val destination = File(root, "destination").apply { mkdirs() }
+        try {
+            val photos = listOf("frame_1.jpg", "frame_2.jpg").map { name ->
+                File(source, name).apply { writeBytes(ByteArray(90_000) { (it % 233).toByte() }) }
+            }
+            val hashes = photos.associate { it.name to sha(it.readBytes()) }
+            var outputsOpened = 0
+            val failed = runCatching {
+                OriginalPhotoExporter.exportSequence(
+                    photos = photos,
+                    openOutput = { name, _ ->
+                        outputsOpened++
+                        val file = File(destination, name)
+                        val raw = file.outputStream()
+                        if (outputsOpened == 2) object : FilterOutputStream(raw) {
+                            private var remaining = 32
+                            override fun write(bytes: ByteArray, offset: Int, length: Int) {
+                                if (length > remaining) {
+                                    if (remaining > 0) out.write(bytes, offset, remaining)
+                                    remaining = 0
+                                    throw IOException("synthetic SAF destination failure")
+                                }
+                                out.write(bytes, offset, length)
+                                remaining -= length
+                            }
+                            override fun write(value: Int) {
+                                if (remaining <= 0) throw IOException("synthetic SAF destination failure")
+                                out.write(value)
+                                remaining--
+                            }
+                        } else raw
+                    },
+                    deleteOutput = { name -> File(destination, name).delete() }
+                )
+            }.isFailure
+
+            assertTrue(failed)
+            assertEquals(2, outputsOpened)
+            assertTrue(File(destination, "frame_1.jpg").isFile)
+            assertFalse(File(destination, "frame_2.jpg").exists())
+            assertEquals(hashes, photos.associate { it.name to sha(it.readBytes()) })
+        } finally { root.deleteRecursively() }
     }
 
     private class FailingOutputStream(private val maxBytes: Int) : OutputStream() {

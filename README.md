@@ -17,7 +17,7 @@ Independent, **reliability-first** timelapse application for construction sites,
 - **[MASTER_TODO.md : 233 tâches individuelles avec % de progression, priorités, critères de réussite et score global](docs/MASTER_TODO.md)**
 - [MASTER_TODO.csv : liste canonique modifiable](docs/MASTER_TODO.csv)
 - Mise à jour du tableau de bord : `python tools/progress.py --write`, validation `python tools/progress.py --check`.
-- **Progression actuelle : 23 % pondérés, 14/233 tâches entièrement acceptées.** Ce score mesure les critères de la feuille de route, pas le volume de code. Le blocage de capture sur Galaxy S21 reste ouvert ; les APK CI sont diagnostiques et non vérifiés sur téléphone. Voir le tableau de bord pour le détail.
+- **Progression actuelle : voir le tableau de bord généré depuis la checklist canonique.** Ce score mesure les critères de la feuille de route, pas le volume de code. Le blocage de capture sur Galaxy S21 reste ouvert ; les APK CI sont diagnostiques et non vérifiés sur téléphone.
 
 ## Reuse of mature open-source components
 
@@ -49,7 +49,7 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 Velocity Lapse is a **feature reference**, not a code source. Do **not** commit its proprietary APK, resources or decompiled code into this public repository. Use user-observed UI and public documentation to independently implement equivalent behavior.
 
 ## Builds and fast feedback
-Pure JVM policy checks run via `bash tools/test-policy.sh`; one Kotlin compiler invocation runs all three deterministic suites and checks the progress tracker. The policy workflow caches the pinned Kotlin CLI compiler between runs. Android PR CI runs JVM tests, debug APK compilation and lint; emulator CI runs the recording, export and workspace flows with independent host-side JPEG/MP4 validation. The emulator suite is separate because it needs an Android virtual device and its camera simulation. Green CI **does not** validate real camera operation on Samsung S21. See [TEST_PLAN.md](docs/TEST_PLAN.md) for scopes and remaining hardware gates.
+Pure JVM policy checks run via `bash tools/test-policy.sh`; one Kotlin compiler invocation runs all four deterministic suites and checks the progress tracker. The policy workflow caches the pinned Kotlin CLI compiler between runs. Android PR CI runs JVM tests, debug APK compilation and lint; emulator CI runs the recording, export and workspace flows with independent host-side JPEG/MP4 validation. The emulator suite is separate because it needs an Android virtual device and its camera simulation. Green CI **does not** validate real camera operation on Samsung S21. See [TEST_PLAN.md](docs/TEST_PLAN.md) for scopes and remaining hardware gates.
 
 
 ## Repository visibility and build availability (2026-10-30)

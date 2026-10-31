@@ -19,6 +19,7 @@ object OriginalPhotoExporter {
     fun exportSequence(
         photos: List<File>,
         openOutput: (name: String, mimeType: String) -> OutputStream,
+        deleteOutput: (name: String) -> Unit = {},
         onFile: (completed: Int, total: Int) -> Unit = { _, _ -> }
     ): OriginalExportResult {
         val originals = validate(photos)
@@ -28,12 +29,19 @@ object OriginalPhotoExporter {
                 "png" -> "image/png"
                 else -> "image/jpeg"
             }
-            openOutput(photo.name, mime).use { output ->
-                val copied = photo.inputStream().buffered().use { it.copyTo(output, BUFFER_SIZE) }
-                if (copied != photo.length()) throw IOException("Original changed while exporting ${photo.name}")
-                bytes += copied
+            try {
+                openOutput(photo.name, mime).use { output ->
+                    val copied = photo.inputStream().buffered().use { it.copyTo(output, BUFFER_SIZE) }
+                    if (copied != photo.length()) throw IOException("Original changed while exporting ${photo.name}")
+                    bytes += copied
+                }
+                onFile(index + 1, originals.size)
+            } catch (failure: Exception) {
+                // A SAF provider may expose a partially written document after I/O failure.
+                // Remove only this destination; previous completed exports and all originals stay intact.
+                runCatching { deleteOutput(photo.name) }.exceptionOrNull()?.let(failure::addSuppressed)
+                throw failure
             }
-            onFile(index + 1, originals.size)
         }
         return OriginalExportResult(originals.size, bytes)
     }

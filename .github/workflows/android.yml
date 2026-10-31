@@ -21,6 +21,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Progress tracker consistency
         run: python3 tools/progress.py --check
+      - name: Local-only permission and network policy tests
+        run: |
+          python3 tools/test_app_permission_policy.py
+          python3 tools/verify_app_permissions.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
