@@ -8,6 +8,7 @@
 - Deterministic time & timezone tests: leap day, DST start/end Europe/Berlin, crossing midnight, Monday boundary, clock rollback.
 - Encoder tests with synthetic JPEG series: None, blur, light trails; verify output stream FPS, width, duration, playback and sample count by ffprobe or MediaExtractor.
 - Fault-injection fakes: camera callback timeout, MediaMuxer error, disk full, duplicate frame IDs, corrupted staging JPEG, low battery, thermal transition.
+- Original-photo export tests stream JPEG/PNG files through the same bounded exporter used by SAF folder output and ZIP. They compare extracted/output hashes, check ordering and MIME types, reject invalid input sets before writing, and inject destination failures while verifying every source hash remains unchanged.
 
 ### Fast feedback and expensive simulation
 - Local/core feedback: `bash tools/test-policy.sh` compiles the three deterministic JVM policy suites in one Kotlin compiler invocation, runs each independently, then checks the generated progress dashboard. It needs JDK 17 and Kotlin CLI 2.0.21, but no Android SDK.

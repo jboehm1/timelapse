@@ -44,8 +44,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 /**
  * Independent UI. Camera is owned by foreground CaptureService, not Activity.
@@ -242,24 +240,18 @@ class MainActivity : ComponentActivity() {
         if (frames.isEmpty()) { refreshStatus("No frames to export"); return@registerForActivityResult }
         exporting = true
         exporter.execute {
-            var count = 0
             try {
-                val parent = DocumentsContract.buildDocumentUriUsingTree(
-                    tree, DocumentsContract.getTreeDocumentId(tree))
-                for (file in frames) {
-                    val mime = if(file.name.endsWith(".png",true)) "image/png" else "image/jpeg"
-                    val item = DocumentsContract.createDocument(
-                        contentResolver,parent,mime,file.name)
-                        ?: throw IOException("Cannot create ${file.name}")
-                    contentResolver.openOutputStream(item)?.use { output ->
-                        file.inputStream().use { input -> input.copyTo(output) }
-                    } ?: throw IOException("Cannot write ${file.name}")
-                    count++
-                    if(count % 25 == 0) runOnUiThread { refreshStatus("Exported $count/${frames.size}") }
+                val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+                val result = OriginalPhotoExporter.exportSequence(frames, { name, mime ->
+                    val item = DocumentsContract.createDocument(contentResolver, parent, mime, name)
+                        ?: throw IOException("Cannot create $name")
+                    contentResolver.openOutputStream(item) ?: throw IOException("Cannot write $name")
+                }) { count, total ->
+                    if (count % 25 == 0 || count == total) runOnUiThread { refreshStatus("Exported $count/$total") }
                 }
-                runOnUiThread { refreshStatus("Exported $count individual images") }
+                runOnUiThread { refreshStatus("Exported ${result.files} individual images (${result.bytes} bytes)") }
             } catch (e: Exception) {
-                runOnUiThread { refreshStatus("Export interrupted after $count frames: ${e.message}") }
+                runOnUiThread { refreshStatus("Image export stopped; originals remain intact: ${e.message}") }
             } finally { exporting = false }
         }
     }
@@ -274,18 +266,11 @@ class MainActivity : ComponentActivity() {
         exporting = true
         exporter.execute {
             try {
-                contentResolver.openOutputStream(uri)?.use { out ->
-                    ZipOutputStream(out).use { zip ->
-                        photos.forEach {
-                            zip.putNextEntry(ZipEntry(it.name))
-                            it.inputStream().use { input -> input.copyTo(zip) }
-                            zip.closeEntry()
-                        }
-                    }
-                } ?: throw IOException("No output stream")
-                runOnUiThread { refreshStatus("Exported ${photos.size} originals (ZIP)") }
+                val output = contentResolver.openOutputStream(uri) ?: throw IOException("No output stream")
+                val result = output.use { OriginalPhotoExporter.exportZip(photos, it) }
+                runOnUiThread { refreshStatus("Exported ${result.files} originals (${result.bytes} bytes, ZIP)") }
             } catch (e: Exception) {
-                runOnUiThread { refreshStatus("ZIP export failed: ${e.message}") }
+                runOnUiThread { refreshStatus("ZIP export interrupted; originals remain intact: ${e.message}") }
             } finally { exporting = false }
         }
     }
