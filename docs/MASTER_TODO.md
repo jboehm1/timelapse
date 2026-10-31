@@ -128,7 +128,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | C-13 | P0 | **10 %** | Capture écran physique OFF | Dumpsys power prouve état display OFF |
 | [ ] | C-14 | P1 | **0 %** | Délai d'exposition et shutter long | Cadence respecte temps exposition + traitement |
 | [ ] | C-15 | P1 | **40 %** | Photo unique immédiate | Télécommande/volume sans collision avec timer |
-| [ ] | C-16 | P1 | **40 %** | Compteur et progression en direct | Tentatives, photos sauvées et ratées distinctes |
+| [ ] | C-16 | P1 | **55 %** | Compteur et progression en direct | Tentatives, photos sauvées et ratées distinctes |
 | [ ] | C-17 | P1 | **0 %** | Contrôle résolution/cadence adaptatif | Capteur limite thermique sans corruption |
 | [ ] | C-18 | P1 | **0 %** | Flou et photo noire détectés | Qualité signalée sans suppression d'image |
 | [ ] | C-19 | P1 | **0 %** | Anti-flicker capture/posttraitement | Transition jour/nuages non clignotante sur vidéos |
