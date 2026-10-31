@@ -29,7 +29,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **33 %** |
 | B — Projets, Photolapse, import et stockage | 19 | **59 %** |
-| C — Capture caméra, objectifs, format et qualité | 22 | **18 %** |
+| C — Capture caméra, objectifs, format et qualité | 22 | **19 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **19 %** |
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **38 %** |
@@ -109,13 +109,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
 
-### C. Capture caméra, objectifs, format et qualité — 18 %
+### C. Capture caméra, objectifs, format et qualité — 19 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [ ] | C-01 | P0 | **40 %** | Service caméra indépendant de l'écran | Capture écran éteint sur S21 confirmée |
 | [ ] | C-02 | P0 | **40 %** | JPEG originaux haute résolution | Résolution réelle EXIF et qualité vérifiées |
-| [ ] | C-03 | P0 | **40 %** | Intervalle configurable 1 à 3600 s | Mesure de cadence avec p50 p95 p99 |
+| [ ] | C-03 | P0 | **55 %** | Intervalle configurable 1 à 3600 s | Mesure de cadence avec p50 p95 p99 |
 | [ ] | C-04 | P0 | **55 %** | Éviter les rafales après retard | Frames manquées comptées sans rattrapage |
 | [ ] | C-05 | P0 | **25 %** | Sélection des objectifs exposés | Chaque ID réel avant/arrière fonctionne |
 | [ ] | C-06 | P1 | **10 %** | Focale, champ et caméra capacités | Caractéristiques détectées et présentées |

@@ -37,7 +37,7 @@
 "B-19","B","P2","0","Espace cloud facultatif","Transfert opt-in hors chemin critique de capture"
 "C-01","C","P0","40","Service caméra indépendant de l'écran","Capture écran éteint sur S21 confirmée"
 "C-02","C","P0","40","JPEG originaux haute résolution","Résolution réelle EXIF et qualité vérifiées"
-"C-03","C","P0","40","Intervalle configurable 1 à 3600 s","Mesure de cadence avec p50 p95 p99"
+"C-03","C","P0","55","Intervalle configurable 1 à 3600 s","Mesure de cadence avec p50 p95 p99"
 "C-04","C","P0","55","Éviter les rafales après retard","Frames manquées comptées sans rattrapage"
 "C-05","C","P0","25","Sélection des objectifs exposés","Chaque ID réel avant/arrière fonctionne"
 "C-06","C","P1","10","Focale, champ et caméra capacités","Caractéristiques détectées et présentées"
