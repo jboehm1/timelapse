@@ -59,10 +59,10 @@ fi
 adb shell input keyevent 4
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 timeout 420s adb shell am instrument -w -r \
-  -e class eu.example.constructionlapse.RecordingSmokeTest,eu.example.constructionlapse.WorkspaceSmokeTest \
+  -e class eu.example.constructionlapse.RecordingSmokeTest,eu.example.constructionlapse.WorkspaceSmokeTest,eu.example.constructionlapse.PersonWalkExportSimulationTest \
   eu.example.constructionlapse.test/androidx.test.runner.AndroidJUnitRunner \
   | tee emulator-evidence/instrumentation.txt
-grep -q 'OK (3 tests)' emulator-evidence/instrumentation.txt
+grep -q 'OK (4 tests)' emulator-evidence/instrumentation.txt
 if grep -Eq 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' emulator-evidence/instrumentation.txt; then
   exit 3
 fi

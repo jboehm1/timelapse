@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import re
+import shutil
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
@@ -80,6 +82,57 @@ def verify(archive_path: str, destination: str) -> dict:
             if len(content) < 100 or content[4:8] != b"ftyp":
                 raise ValueError("Missing benchmark/batch MP4 bytes")
             (output / "exports" / name).write_bytes(content)
+        walk = json.loads(read("person-walk-validation.json"))
+        centroids = walk.get("person_centroids_x", [])
+        if (walk.get("result") != "PASS" or walk.get("source_frames") != 7 or
+                (walk.get("width"), walk.get("height"), walk.get("fps")) != (640, 360, 7) or
+                walk.get("effect_window") != 5 or walk.get("pixels_delta_over_30", 0) <= 1000 or
+                len(centroids) != 7 or any(after - before <= 30 for before, after in zip(centroids, centroids[1:]))):
+            raise ValueError("Synthetic moving-person normal/blur comparison did not pass")
+        walk_outputs = {}
+        for mode in ("normal", "motion_blur"):
+            video = walk[mode]
+            name = video.get("file", "")
+            if name not in {"person-walk-none.mp4", "person-walk-motion-blur.mp4"}:
+                raise ValueError("Unexpected synthetic walk MP4 filename")
+            content = read("exports/" + name)
+            if (hashlib.sha256(content).hexdigest() != video.get("sha256") or
+                    len(content) != video.get("bytes") or content[4:8] != b"ftyp"):
+                raise ValueError("Synthetic walk video hash or MP4 header mismatch")
+            if (video.get("samples"), video.get("width"), video.get("height")) != (7, 640, 360):
+                raise ValueError("Unexpected synthetic walk MP4 dimensions/frame count")
+            target = output / "exports" / name
+            target.write_bytes(content)
+            host_decode = {"ffprobe": False, "ffmpeg": False}
+            if shutil.which("ffprobe"):
+                probe = subprocess.run([
+                    "ffprobe", "-v", "error", "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height:format=duration", "-of", "json", str(target)
+                ], check=True, capture_output=True, text=True, timeout=30)
+                metadata = json.loads(probe.stdout)
+                stream = metadata["streams"][0]
+                duration = float(metadata["format"]["duration"])
+                if (stream["width"], stream["height"]) != (640, 360) or abs(duration - 1.0) > 0.2:
+                    raise ValueError("ffprobe reported unexpected synthetic walk video metadata")
+                host_decode["ffprobe"] = True
+                host_decode["duration_seconds"] = duration
+            if shutil.which("ffmpeg"):
+                subprocess.run([
+                    "ffmpeg", "-v", "error", "-i", str(target), "-f", "null", "-"
+                ], check=True, capture_output=True, timeout=60)
+                host_decode["ffmpeg"] = True
+            walk_outputs[mode] = {**video, "host_decode": host_decode}
+        for name in ("person-walk-normal.png", "person-walk-blur.png", "person-walk-comparison.png"):
+            content = read(name)
+            with Image.open(io.BytesIO(content)) as image:
+                image.load()
+                if image.format != "PNG" or image.width <= 0 or image.height <= 0:
+                    raise ValueError("Invalid synthetic walk comparison image")
+                if name == "person-walk-comparison.png" and image.size != (1280, 404):
+                    raise ValueError("Unexpected synthetic walk comparison dimensions")
+            (output / name).write_bytes(content)
+        walk["host_outputs"] = walk_outputs
+        (output / "person-walk-validation.json").write_text(json.dumps(walk, indent=2) + "\n")
         (output / "export-performance.json").write_text(json.dumps(performance, indent=2) + "\n")
         (output / "batch-export-validation.json").write_text(json.dumps(batch, indent=2) + "\n")
         for name in ("projects-home.png", "planner.png", "project-gallery.png", "restored-project.png", "photolapse.png", "project-validation.txt"):
@@ -87,11 +140,12 @@ def verify(archive_path: str, destination: str) -> dict:
             if not member.isfile() or member.size > 16 * 1024 * 1024:
                 raise ValueError("Invalid workspace evidence")
             (output / name).write_bytes(archive.extractfile(member).read())
-        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "videos": videos, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
+        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "videos": videos, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
 
 
 if __name__ == "__main__":
     report = verify(*sys.argv[1:])
-    print(f"PASS: {report['jpeg_count']} archived camera JPEGs decoded and hashes matched independently on host")
+    walk = report["person_walk_simulation"]
+    print(f"PASS: {report['jpeg_count']} camera-simulator JPEGs decoded and hash-checked; synthetic person-walk Normal/Blur exports: {walk['pixels_delta_over_30']} middle-frame pixels differ")

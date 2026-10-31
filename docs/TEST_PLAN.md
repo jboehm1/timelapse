@@ -16,6 +16,12 @@
 - Android PR CI remains the authoritative build/unit/lint check. The emulator job reuses its existing committed screenshot-evidence commit as a checkpoint: any app/core/emulator-harness changes since that tested commit trigger the full virtual-device path; documentation-only and unrelated tool updates skip it. Manual dispatch always runs the full simulation. It exercises camera, saved JPEGs, export effects/batches and workspace UI, then independently verifies evidence on the host.
 - Emulator success is a simulated-camera regression signal only; the S21 gate below remains mandatory for device claims.
 
+### Moving-person export fixture (emulator)
+- `PersonWalkExportSimulationTest` generates seven deterministic JPEG frames of a high-visibility worker walking left-to-right across a fixed construction-site scene. This is a synthetic encoder input, not CameraX footage.
+- It exports the same originals as `NONE` and `MOTION_BLUR` MP4s (640×360, 7 fps, five-sample blur window), checks frame count/metadata, decodes the middle output frame on Android, and requires a visible pixel difference between the two effects.
+- `verify-emulator-evidence.py` checks hashes and MP4 headers, then independently probes and decodes both files with host `ffprobe`/`ffmpeg` when installed. It also validates the PNG comparison. The artifacts are `person-walk-comparison.png`, the two decoded frames, both MP4s, and `person-walk-validation.json`.
+- This demonstrates the visual and export-path behavior on the emulator only. It says nothing about real pedestrians, physical camera motion, or S21 performance.
+
 ## 2. Device test matrix (Samsung S21 target)
 | Case | Setup / action | Expected |
 |---|---|---|
@@ -68,11 +74,11 @@ Run ExportPlanningTest plus ExportPerformanceCheck in RecordingSmokeTest. Requir
 
 ## CI follow-up — 2026-10-31
 
-PR #2 head `cc8f031a4af31840c00b555f07c38a753f559dc6` produced a red Android build because three invalid-input tests omitted the required `openOutput` callback. The local fix is commit `5aca98301f95c6523444dd358cc95a911ab53dab`; the current remote PR head does not include it, so the passing policy suite does not validate this Android test compilation.
+PR #2 head `cc8f031a4af31840c00b555f07c38a753f559dc6` produced a red Android build because three invalid-input tests omitted the required `openOutput` callback. Commit `5aca98301f95c6523444dd358cc95a911ab53dab` records the fix; the current branch head `404e4c7ca11f3607177046cf77a14fd901691f31` contains the explicit callbacks in all three calls. Android run [#41191004498](https://github.com/jboehm1/timelapse/actions/runs/41191004498) passes for that head.
 
 The same PR head's emulator job compiled the app and instrumentation APK, and its recording/export cases passed. The workspace journey failed at the project detail's Rename action because UiAutomator could not resolve the Compose text node. The action buttons now expose stable content descriptions; the emulator journey must pass again before updating its evidence checkpoint or any acceptance score. This is an automation selector correction, not evidence of new device behavior.
 
-The accessibility-description correction passed all three instrumentation tests on source SHA `ec6daaebce3f4924835f78ef6feeda3d7c6fecb9` in [emulator run #41190162334](https://github.com/jboehm1/timelapse/actions/runs/41190162334). Host evidence independently decoded and hash-checked 12 emulator JPEGs. This closes the Compose selector regression only; it does not change the S21 acceptance gate or checklist score.
+The accessibility-description correction passed all three instrumentation tests on source SHA `ec6daaebce3f4924835f78ef6feeda3d7c6fecb9` in [emulator run #41190162334](https://github.com/jboehm1/timelapse/actions/runs/41190162334). Host evidence independently decoded and hash-checked 12 emulator JPEGs. Latest storage-journal CI on `404e4c7` has policy and Android runs green; emulator run [#41191004588](https://github.com/jboehm1/timelapse/actions/runs/41191004588) was still running at this update. This closes the Compose selector regression only; it does not change the S21 acceptance gate or checklist score.
 
 ## S21 first-capture acceptance run
 
