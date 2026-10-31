@@ -3,8 +3,8 @@
     {
       "fps": 24,
       "file": "fps-24.mp4",
-      "bytes": 9005,
-      "sha256": "fb3549c18bcba9981c6728eec72092b44bab20c5260bae7dbe7af025e5a8a22d",
+      "bytes": 8889,
+      "sha256": "94f69ccdf38c63688fea4de41940c2d958702d81f43075242223fe5f5e6e5e98",
       "width": 640,
       "height": 360,
       "samples": 4,
@@ -13,8 +13,8 @@
     {
       "fps": 25,
       "file": "fps-25.mp4",
-      "bytes": 9005,
-      "sha256": "67bf51d20b9634880e332e9d921ecfbf27d95d94d7af97508df259add27910c3",
+      "bytes": 8889,
+      "sha256": "403c99ea879cb1642b2c31544b8594bf284650b4a3eab635d07a13a40c31ce20",
       "width": 640,
       "height": 360,
       "samples": 4,
@@ -23,8 +23,8 @@
     {
       "fps": 30,
       "file": "fps-30.mp4",
-      "bytes": 9005,
-      "sha256": "cf269f23ca108680a85ee12dc5a367221b3bf1043df84e22367427346cb3146a",
+      "bytes": 8889,
+      "sha256": "873bfa27d63dd0e1467c3179d3c963713959450fc0c8c4370e6dba41d34176da",
       "width": 640,
       "height": 360,
       "samples": 4,
@@ -33,8 +33,8 @@
     {
       "fps": 60,
       "file": "fps-60.mp4",
-      "bytes": 9005,
-      "sha256": "fdd12c52373857cf5e005b4f314e0c65b7402ee997397cf295cf9515f5222da0",
+      "bytes": 8889,
+      "sha256": "69d9d1ef1c54b07acf91b1cc858dc064fed20afd432e4dc866bb9990d9b05f75",
       "width": 640,
       "height": 360,
       "samples": 4,

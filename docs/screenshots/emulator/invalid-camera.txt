@@ -1,0 +1,8 @@
+{
+  "status": "NEEDS_USER_ACTION CAMERA_BIND: No available camera can be found. Cams:2 Id:0  Lens:1 Id:1  Lens:0 PhyId:null  Filters:1 Id:Identifier{value=java.lang.Object@b697742}",
+  "saved_frames": 0,
+  "attempts": 0,
+  "failures": 5,
+  "skipped_slots": 0,
+  "binding_context": "elapsed=73557 wall=1793450290081 session=2 project=fault_1793450289883 camera=NONEXISTENT_TEST_CAMERA event=CAMERA_BIND_FAILURE_CONTEXT requested=NONEXISTENT_TEST_CAMERA available_ids=0,1"
+}

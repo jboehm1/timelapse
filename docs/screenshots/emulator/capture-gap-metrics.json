@@ -2,11 +2,11 @@
   "scope": "Android emulator only",
   "saved_frames": 10,
   "attempts": 10,
-  "skipped_slots": 1,
-  "longest_successful_gap_ms": 3240,
+  "skipped_slots": 0,
+  "longest_successful_gap_ms": 2394,
   "gap_sample_count": 9,
   "gap_window_max_samples": 1000,
-  "gap_p50_ms": 2029,
-  "gap_p95_ms": 3240,
-  "gap_p99_ms": 3240
+  "gap_p50_ms": 1955,
+  "gap_p95_ms": 2394,
+  "gap_p99_ms": 2394
 }
