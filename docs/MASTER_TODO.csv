@@ -89,7 +89,7 @@
 "E-07","E","P0","25","Caméra libérée durant nuit","Libération mesurée, réouverture vérifiée sur S21"
 "E-08","E","P0","10","Alarme de réveil lors du matin","Réveil mesuré en Doze Android 15"
 "E-09","E","P0","0","Reprise matin sans action utilisateur","Test S21 sur 3 jours avec écran OFF"
-"E-10","E","P0","10","Service FGS caméra et notification","Permissions Android 14/15, Android FGS validés"
+"E-10","E","P0","55","Service FGS caméra et notification","Permissions Android 14/15, Android FGS validés"
 "E-11","E","P0","0","Reprise après kill par système","Retour sûr ou alerte action requise"
 "E-12","E","P0","0","Comportement après reboot / force-stop","Limites Android documentées et testées"
 "E-13","E","P1","0","Mode écran noir de secours","Ne jamais confondre noir OLED et écran OFF"

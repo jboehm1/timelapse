@@ -23,7 +23,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 36 %** — **49/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 37 %** — **49/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
@@ -31,7 +31,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | B — Projets, Photolapse, import et stockage | 19 | **59 %** |
 | C — Capture caméra, objectifs, format et qualité | 22 | **19 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
-| E — Programmation, écran OFF et consommation | 20 | **19 %** |
+| E — Programmation, écran OFF et consommation | 20 | **22 %** |
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **38 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **43 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **30 %** |
@@ -164,7 +164,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | D-22 | P1 | **0 %** | Presets scène chantier | Sauver/télécharger réglages d'un chantier |
 | [ ] | D-23 | P1 | **0 %** | Recalibrage focus sans chasse excessive | Recalibrage ponctuel optionnel et traçable |
 
-### E. Programmation, écran OFF et consommation — 19 %
+### E. Programmation, écran OFF et consommation — 22 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -177,7 +177,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | E-07 | P0 | **25 %** | Caméra libérée durant nuit | Libération mesurée, réouverture vérifiée sur S21 |
 | [ ] | E-08 | P0 | **10 %** | Alarme de réveil lors du matin | Réveil mesuré en Doze Android 15 |
 | [ ] | E-09 | P0 | **0 %** | Reprise matin sans action utilisateur | Test S21 sur 3 jours avec écran OFF |
-| [ ] | E-10 | P0 | **10 %** | Service FGS caméra et notification | Permissions Android 14/15, Android FGS validés |
+| [ ] | E-10 | P0 | **55 %** | Service FGS caméra et notification | Permissions Android 14/15, Android FGS validés |
 | [ ] | E-11 | P0 | **0 %** | Reprise après kill par système | Retour sûr ou alerte action requise |
 | [ ] | E-12 | P0 | **0 %** | Comportement après reboot / force-stop | Limites Android documentées et testées |
 | [ ] | E-13 | P1 | **0 %** | Mode écran noir de secours | Ne jamais confondre noir OLED et écran OFF |
