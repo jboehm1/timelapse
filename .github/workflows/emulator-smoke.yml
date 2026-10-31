@@ -97,6 +97,13 @@ jobs:
       - name: Host JPEG validation dependency
         if: steps.plan.outputs.run_emulator == 'true'
         run: python3 -m pip install Pillow==11.3.0
+      - name: Install independent MP4 validation tools
+        if: steps.plan.outputs.run_emulator == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ffmpeg
+          ffprobe -version
+          ffmpeg -version
       - name: Run emulator and capture UI
         if: steps.plan.outputs.run_emulator == 'true'
         uses: reactivecircus/android-emulator-runner@v2

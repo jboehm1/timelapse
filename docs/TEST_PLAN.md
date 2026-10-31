@@ -19,7 +19,7 @@
 ### Moving-person export fixture (emulator)
 - `PersonWalkExportSimulationTest` generates seven deterministic JPEG frames of a high-visibility worker walking left-to-right across a fixed construction-site scene. This is a synthetic encoder input, not CameraX footage.
 - It exports the same originals as `NONE` and `MOTION_BLUR` MP4s (640×360, 7 fps, five-sample blur window), checks frame count/metadata, decodes the middle output frame on Android, and requires a visible pixel difference between the two effects.
-- `verify-emulator-evidence.py` checks hashes and MP4 headers, then independently probes and decodes both files with host `ffprobe`/`ffmpeg` when installed. It also validates the PNG comparison. The artifacts are `person-walk-comparison.png`, the two decoded frames, both MP4s, and `person-walk-validation.json`.
+- CI installs FFmpeg and `verify-emulator-evidence.py` requires both host `ffprobe` and `ffmpeg`; missing independent decoders now fail the evidence job. The verifier checks hashes and MP4 headers, probes metadata, decodes both files, and validates the PNG comparison. The artifacts are `person-walk-comparison.png`, the two decoded frames, both MP4s, and `person-walk-validation.json`.
 - This demonstrates the visual and export-path behavior on the emulator only. It says nothing about real pedestrians, physical camera motion, or S21 performance.
 
 ## 2. Device test matrix (Samsung S21 target)

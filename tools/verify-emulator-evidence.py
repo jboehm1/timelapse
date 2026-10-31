@@ -89,6 +89,8 @@ def verify(archive_path: str, destination: str) -> dict:
                 walk.get("effect_window") != 5 or walk.get("pixels_delta_over_30", 0) <= 1000 or
                 len(centroids) != 7 or any(after - before <= 30 for before, after in zip(centroids, centroids[1:]))):
             raise ValueError("Synthetic moving-person normal/blur comparison did not pass")
+        if not shutil.which("ffprobe") or not shutil.which("ffmpeg"):
+            raise RuntimeError("Independent validation requires both ffprobe and ffmpeg")
         walk_outputs = {}
         for mode in ("normal", "motion_blur"):
             video = walk[mode]

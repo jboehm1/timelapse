@@ -41,6 +41,9 @@ Our evaluated component inventory is [OPEN_SOURCE_REUSE.md](docs/OPEN_SOURCE_REU
 - [Reliability and soak-test plan](docs/TEST_PLAN.md).
 - [AI/developer working rules](AGENTS.md).
 - [Technical source references](docs/REFERENCES.md).
+- [Architecture decisions and risk register](docs/DECISIONS.md) · [Known product risks](docs/RISK_REGISTER.md).
+- [S21 diagnostic install guide](docs/S21_INSTALLATION.md) · [Field operation guide](docs/FIELD_OPERATIONS.md) · [Focus/exposure guide](docs/FOCUS_EXPOSURE_GUIDE.md).
+- [Device evidence register](docs/DEVICE_TEST_EVIDENCE.md) · [Release gates](docs/RELEASE_CHECKLIST.md) · [Engineering changelog](docs/CHANGELOG.md).
 
 ## Reference application
 Velocity Lapse is a **feature reference**, not a code source. Do **not** commit its proprietary APK, resources or decompiled code into this public repository. Use user-observed UI and public documentation to independently implement equivalent behavior.
