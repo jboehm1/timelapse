@@ -1,0 +1,86 @@
+{
+  "outputs": [
+    {
+      "fps": 24,
+      "file": "fps-24.mp4",
+      "bytes": 9010,
+      "sha256": "8de018ca1bce32b888d7ac93426cb6be7c76146cc7a90ee9da8421821e3025ed",
+      "width": 640,
+      "height": 360,
+      "samples": 4,
+      "duration_us": 166666
+    },
+    {
+      "fps": 25,
+      "file": "fps-25.mp4",
+      "bytes": 9010,
+      "sha256": "7ffd3efcb454b82c66baaf543e16d96e661461fbe2916a581f52cea569c344f5",
+      "width": 640,
+      "height": 360,
+      "samples": 4,
+      "duration_us": 160000
+    },
+    {
+      "fps": 30,
+      "file": "fps-30.mp4",
+      "bytes": 9010,
+      "sha256": "cd87ee08358de59930e1c97b9afd4d2defa857d9dc725bdb8727e9240b7d01e7",
+      "width": 640,
+      "height": 360,
+      "samples": 4,
+      "duration_us": 133333
+    },
+    {
+      "fps": 60,
+      "file": "fps-60.mp4",
+      "bytes": 9010,
+      "sha256": "5a02fbf0b7f659e16eeb53051f7b93f892a6ba276a6cb8e9c28e10d50ae9c184",
+      "width": 640,
+      "height": 360,
+      "samples": 4,
+      "duration_us": 66666
+    }
+  ],
+  "host_validation": {
+    "24": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 24.0,
+      "frames": 4,
+      "duration_seconds": 0.166667
+    },
+    "25": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 25.0,
+      "frames": 4,
+      "duration_seconds": 0.16
+    },
+    "30": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 30.0,
+      "frames": 4,
+      "duration_seconds": 0.133333
+    },
+    "60": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 60.0,
+      "frames": 4,
+      "duration_seconds": 0.066667
+    }
+  }
+}
