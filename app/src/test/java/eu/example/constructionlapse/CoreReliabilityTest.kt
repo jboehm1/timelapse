@@ -40,6 +40,38 @@ class CoreReliabilityTest {
         } finally { dir.deleteRecursively() }
     }
 
+    @Test fun integrityAuditFindsMissingJournaledOriginal() {
+        val dir = Files.createTempDirectory("missing-original-test").toFile()
+        try {
+            val store = FrameStore(dir)
+            val bytes = byteArrayOf(-1, -40, 1, 2, 3, 4, 5, 6, -1, -39)
+            val staging = File(dir, "frame_0000000001_1000.pending").apply { writeBytes(bytes) }
+            val original = store.commit(staging, "frame_0000000001_1000.jpg", 1000L)
+            assertTrue(store.auditOriginals().isEmpty())
+            assertTrue(original.delete())
+            assertEquals(listOf(original.name), store.auditOriginals())
+        } finally { dir.deleteRecursively() }
+    }
+
+    @Test fun committedPhotoIsRecoveredWhenJournalAppendFails() {
+        val dir = Files.createTempDirectory("journal-failure-test").toFile()
+        try {
+            val store = FrameStore(dir)
+            val bytes = byteArrayOf(-1, -40, 7, 6, 5, 4, 3, 2, -1, -39)
+            val staging = File(dir, "frame_0000000001_1000.pending").apply { writeBytes(bytes) }
+            assertTrue(File(dir, "frames.journal").mkdir())
+            val name = "frame_0000000001_1000.jpg"
+            assertTrue(runCatching { store.commit(staging, name, 1000L) }.isFailure)
+            val published = File(dir, name)
+            assertTrue(published.isFile)
+            assertArrayEquals(bytes, published.readBytes())
+            assertFalse(staging.exists())
+            File(dir, "frames.journal").deleteRecursively()
+            assertEquals(1, store.recover().originals)
+            assertTrue(store.auditOriginals().isEmpty())
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun diagnosticLogIsBoundedAndKeepsRecentFailure() {
         val dir = Files.createTempDirectory("capture-log-test").toFile()
         try {

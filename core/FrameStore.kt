@@ -2,6 +2,7 @@ package eu.example.constructionlapse
 
 import java.io.File
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
@@ -26,26 +27,26 @@ class FrameStore(private val directory: File) {
     /** Do not trust an extension; check both beginning and end of the data. */
     fun structurallyValid(file: File, extension: String): Boolean {
         if (!file.isFile || file.length() < 8) return false
-        file.inputStream().buffered().use { stream ->
+        return runCatching {
+            RandomAccessFile(file, "r").use { stream ->
             val header = ByteArray(8)
-            if (stream.read(header) != 8) return false
+            stream.readFully(header)
             if (extension.lowercase() == "png") {
                 val png = byteArrayOf(-119,80,78,71,13,10,26,10)
                 if (!header.contentEquals(png) || file.length() < 20) return false
-                file.inputStream().use { tail ->
-                    tail.skip(file.length() - 8)
-                    val bytes = ByteArray(8)
-                    if (tail.read(bytes) != 8) return false
-                    return bytes.contentEquals(byteArrayOf(73,69,78,68,-82,66,96,-126))
-                }
+                stream.seek(stream.length() - 8)
+                val footer = ByteArray(8)
+                stream.readFully(footer)
+                return@use footer.contentEquals(byteArrayOf(73,69,78,68,-82,66,96,-126))
             }
-            if (extension.lowercase() !in setOf("jpg", "jpeg")) return false
-            if ((header[0].toInt() and 0xff) != 0xff || (header[1].toInt() and 0xff) != 0xd8) return false
-            file.inputStream().use { tail ->
-                tail.skip(file.length() - 2)
-                return (tail.read() == 0xff && tail.read() == 0xd9)
+            if (extension.lowercase() !in setOf("jpg", "jpeg")) return@use false
+            if ((header[0].toInt() and 0xff) != 0xff || (header[1].toInt() and 0xff) != 0xd8) return@use false
+            stream.seek(stream.length() - 2)
+            val end = ByteArray(2)
+            stream.readFully(end)
+            end[0].toInt() and 0xff == 0xff && end[1].toInt() and 0xff == 0xd9
             }
-        }
+        }.getOrDefault(false)
     }
 
     /** Atomic publish, no replacement. Fsync staging before commit and audit log afterward. */
@@ -97,10 +98,14 @@ class FrameStore(private val directory: File) {
     /** Full integrity audit is deliberately opt-in; it reads every image. */
     fun auditOriginals(): List<String> {
         val expected = journalHashes()
-        return originals().mapNotNull { image ->
+        val images = originals()
+        val byName = images.associateBy { it.name }
+        val missing = expected.keys.filter { it !in byName }
+        val damaged = images.mapNotNull { image ->
             val digest = expected[image.name]
             if (digest == null || digest != sha256(image)) image.name else null
         }
+        return (missing + damaged).distinct().sorted()
     }
 
     private fun journalHashes(): Map<String, String> {

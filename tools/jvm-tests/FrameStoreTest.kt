@@ -35,6 +35,24 @@ fun main() {
         done.writeBytes(jpg + byteArrayOf(1))
         check(store.auditOriginals().contains(done.name))
         check(runCatching { store.commit(File(root,"evil"),"../bad.jpg",0) }.isFailure)
+        // Simulate a failure after atomic rename but before the journal append.
+        // Recovery must discover the durable original and reconstruct its journal row.
+        val interruptedBytes = byteArrayOf(-1,-40,9,8,7,6,5,4,-1,-39)
+        val interrupted = File(root,"frame_0000000005_1700004.pending").apply { writeBytes(interruptedBytes) }
+        val journalPath = File(root,"frames.journal")
+        journalPath.delete()
+        check(journalPath.mkdir())
+        val finalName = "frame_0000000005_1700004.jpg"
+        check(runCatching { store.commit(interrupted,finalName,1700004) }.isFailure)
+        val committed = File(root,finalName)
+        check(committed.isFile && committed.readBytes().contentEquals(interruptedBytes))
+        check(!interrupted.exists())
+        journalPath.deleteRecursively()
+        val reconciled = store.recover()
+        check(reconciled.originals == 4) { reconciled }
+        check(store.auditOriginals().isEmpty()) { store.auditOriginals() }
+        check(done.delete())
+        check(store.auditOriginals() == listOf(done.name)) { store.auditOriginals() }
         println("PASS: FrameStore original preservation, atomic publish, resume, quarantine, journal")
     } finally { root.deleteRecursively() }
 }
