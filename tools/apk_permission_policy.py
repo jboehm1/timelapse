@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from app_permission_policy import ALLOWED_PERMISSIONS
+from app_permission_policy import ALLOWED_PERMISSIONS, REQUIRED_PERMISSIONS
 
 PERMISSION_LINE = re.compile(r"uses-permission(?:-[^:]+)?:\s+name=['\"]([^'\"]+)['\"]")
 
@@ -16,7 +16,7 @@ def verify_aapt_output(output: str) -> list[str]:
     declared = parse_aapt_permissions(output)
     errors = []
     unexpected = declared - ALLOWED_PERMISSIONS
-    missing = ALLOWED_PERMISSIONS - declared
+    missing = REQUIRED_PERMISSIONS - declared
     if unexpected:
         errors.append("Unexpected merged APK permissions: " + ", ".join(sorted(unexpected)))
     if missing:

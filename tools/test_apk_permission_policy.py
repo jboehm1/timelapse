@@ -18,6 +18,13 @@ class CompiledApkPermissionPolicyTest(unittest.TestCase):
     def test_minimal_compiled_apk_permissions_pass(self):
         self.assertEqual([], verify_aapt_output(ALLOWED))
 
+    def test_expected_androidx_camera_permissions_pass(self):
+        merged = ALLOWED + (
+            "uses-permission: name='android.permission.ACCESS_NETWORK_STATE'\n"
+            "uses-permission: name='eu.example.constructionlapse.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'\n"
+        )
+        self.assertEqual([], verify_aapt_output(merged))
+
     def test_dependency_added_internet_permission_fails(self):
         result = verify_aapt_output(ALLOWED + "uses-permission: name='android.permission.INTERNET'\n")
         self.assertTrue(any("INTERNET" in error for error in result))

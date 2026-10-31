@@ -6,12 +6,18 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
-ALLOWED_PERMISSIONS = {
+REQUIRED_PERMISSIONS = {
     "android.permission.CAMERA",
     "android.permission.FOREGROUND_SERVICE",
     "android.permission.FOREGROUND_SERVICE_CAMERA",
     "android.permission.POST_NOTIFICATIONS",
     "android.permission.WAKE_LOCK",
+}
+# AndroidX/CameraX merged manifests contribute these non-network permissions.
+# Neither grants INTERNET access; keep the exceptions exact and package-scoped.
+ALLOWED_PERMISSIONS = REQUIRED_PERMISSIONS | {
+    "android.permission.ACCESS_NETWORK_STATE",
+    "eu.example.constructionlapse.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
 }
 NETWORK_API = re.compile(
     r"(?:java\.net\.(?:HttpURLConnection|URL|Socket|ServerSocket)|java\.net\.\*|"
@@ -27,7 +33,7 @@ def verify_manifest(path: Path) -> list[str]:
     permission_nodes = [node for node in root if node.tag.startswith("uses-permission")]
     declared = {node.get(ANDROID + "name", "") for node in permission_nodes}
     unexpected = declared - ALLOWED_PERMISSIONS
-    missing = ALLOWED_PERMISSIONS - declared
+    missing = REQUIRED_PERMISSIONS - declared
     if unexpected:
         errors.append("Unexpected permissions: " + ", ".join(sorted(unexpected)))
     if missing:
