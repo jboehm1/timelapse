@@ -53,6 +53,18 @@ fun main() {
         check(store.auditOriginals().isEmpty()) { store.auditOriginals() }
         check(done.delete())
         check(store.auditOriginals() == listOf(done.name)) { store.auditOriginals() }
+        val corruptRoot = Files.createTempDirectory("timelapse-journal-torn").toFile()
+        try {
+            val durable = byteArrayOf(-1,-40,1,2,3,4,5,6,-1,-39)
+            val original = File(corruptRoot, "frame_0000000001_1700010.jpg").apply { writeBytes(durable) }
+            File(corruptRoot, "frames.journal").writeText("FRAME\t${original.name}\t${original.length()}\t1700010\ttruncated")
+            val recoveredStore = FrameStore(corruptRoot)
+            check(recoveredStore.recover().originals == 1)
+            check(recoveredStore.auditOriginals().isEmpty()) { recoveredStore.auditOriginals() }
+            check(File(corruptRoot, "frames.journal").readLines().size == 2)
+            check(recoveredStore.recover().originals == 1)
+            check(recoveredStore.auditOriginals().isEmpty())
+        } finally { corruptRoot.deleteRecursively() }
         println("PASS: FrameStore original preservation, atomic publish, resume, quarantine, journal")
     } finally { root.deleteRecursively() }
 }

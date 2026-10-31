@@ -142,6 +142,25 @@ def verify(archive_path: str, destination: str) -> dict:
             )
             video["host_validation"] = host_video_outputs[video["effect"]]
         (output / "video-validation.json").write_text(json.dumps(videos, indent=2) + "\n")
+        fps_validation = json.loads(read("fps-output-validation.json"))
+        if [row.get("fps") for row in fps_validation] != [24, 25, 30, 60]:
+            raise ValueError("Missing 24/25/30/60 fps output validation")
+        fps_outputs = {}
+        for row in fps_validation:
+            rate = row["fps"]
+            name = row.get("file", "")
+            if (name != f"fps-{rate}.mp4" or row.get("samples") != 4 or
+                    (row.get("width"), row.get("height")) != (640, 360)):
+                raise ValueError("Unexpected frame-rate clip metadata")
+            content = read("exports/" + name)
+            if hashlib.sha256(content).hexdigest() != row.get("sha256") or len(content) != row.get("bytes"):
+                raise ValueError("Frame-rate output hash/length differs from the tested MP4")
+            target = output / "exports" / name
+            target.write_bytes(content)
+            fps_outputs[str(rate)] = validate_mp4(target, frames=4, width=640, height=360,
+                                                  fps=rate, duration_seconds=4 / rate)
+        (output / "fps-output-validation.json").write_text(json.dumps({"outputs": fps_validation,
+                                                                         "host_validation": fps_outputs}, indent=2) + "\n")
         performance = json.loads(read("export-performance.json"))
         if performance["uncached_decodes"] != 88 or performance["cached_decodes"] != 30 or performance["cache_hits"] != 58:
             raise ValueError("Sliding cache did not reduce repeated JPEG decoding")
@@ -170,16 +189,20 @@ def verify(archive_path: str, destination: str) -> dict:
             )
         walk = json.loads(read("person-walk-validation.json"))
         centroids = walk.get("person_centroids_x", [])
+        normal_centroids = walk.get("normal_decoded_centroids_x", [])
         if (walk.get("result") != "PASS" or walk.get("people") != 2 or walk.get("source_frames") != 7 or
                 (walk.get("width"), walk.get("height"), walk.get("fps")) != (640, 360, 7) or
                 walk.get("effect_window") != 5 or walk.get("pixels_delta_over_30", 0) <= 1000 or
-                len(centroids) != 7 or any(after - before <= 30 for before, after in zip(centroids, centroids[1:]))):
+                len(centroids) != 7 or any(after - before <= 30 for before, after in zip(centroids, centroids[1:])) or
+                len(normal_centroids) != 7 or any(abs(actual - source) >= 12 for actual, source in zip(normal_centroids, centroids)) or
+                any(after - before <= 30 for before, after in zip(normal_centroids, normal_centroids[1:])) or
+                walk.get("light_trails_vest_pixels", 0) <= walk.get("normal_vest_pixels", 0) * 2):
             raise ValueError("Synthetic moving-person normal/blur comparison did not pass")
         walk_outputs = {}
-        for mode in ("normal", "motion_blur"):
+        for mode in ("normal", "motion_blur", "light_trails"):
             video = walk[mode]
             name = video.get("file", "")
-            if name not in {"person-walk-none.mp4", "person-walk-motion-blur.mp4"}:
+            if name not in {"person-walk-none.mp4", "person-walk-motion-blur.mp4", "person-walk-light-trails.mp4"}:
                 raise ValueError("Unexpected synthetic walk MP4 filename")
             content = read("exports/" + name)
             if (hashlib.sha256(content).hexdigest() != video.get("sha256") or
@@ -192,6 +215,26 @@ def verify(archive_path: str, destination: str) -> dict:
             host_validation = validate_mp4(target, frames=video["samples"], width=640, height=360,
                                            fps=7, duration_seconds=1.0)
             walk_outputs[mode] = {**video, "host_validation": host_validation}
+        expected_windows = [1, 3, 5, 7, 9]
+        window_rows = walk.get("window_outputs", [])
+        if [row.get("window") for row in window_rows] != expected_windows:
+            raise ValueError("Motion Blur window output set is incomplete")
+        window_outputs = {}
+        for row in window_rows:
+            window = row["window"]
+            expected_name = "person-walk-motion-blur.mp4" if window == 5 else f"person-walk-blur-window-{window}.mp4"
+            name = row.get("file", "")
+            if (name != expected_name or row.get("samples") != 7 or
+                    (window == 1 and row.get("pixels_delta_over_30", 1001) >= 1000) or
+                    (window > 1 and row.get("pixels_delta_over_30", 0) <= 1000)):
+                raise ValueError("Motion Blur window artifact metrics are invalid")
+            content = read("exports/" + name)
+            if hashlib.sha256(content).hexdigest() != row.get("sha256") or len(content) != row.get("bytes"):
+                raise ValueError("Motion Blur window output hash/length mismatch")
+            target = output / "exports" / name
+            target.write_bytes(content)
+            window_outputs[str(window)] = validate_mp4(target, frames=7, width=640, height=360,
+                                                        fps=7, duration_seconds=1.0)
         for name in ("person-walk-normal.png", "person-walk-blur.png", "person-walk-comparison.png"):
             content = read(name)
             with Image.open(io.BytesIO(content)) as image:
@@ -202,6 +245,7 @@ def verify(archive_path: str, destination: str) -> dict:
                     raise ValueError("Unexpected synthetic walk comparison dimensions")
             (output / name).write_bytes(content)
         walk["host_outputs"] = walk_outputs
+        walk["window_host_outputs"] = window_outputs
         (output / "person-walk-validation.json").write_text(json.dumps(walk, indent=2) + "\n")
         (output / "export-performance.json").write_text(json.dumps(performance, indent=2) + "\n")
         (output / "batch-export-validation.json").write_text(json.dumps(batch, indent=2) + "\n")
@@ -210,7 +254,7 @@ def verify(archive_path: str, destination: str) -> dict:
             if not member.isfile() or member.size > 16 * 1024 * 1024:
                 raise ValueError("Invalid workspace evidence")
             (output / name).write_bytes(archive.extractfile(member).read())
-        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "capture_gaps": capture_gaps, "original_export": original_export, "videos": videos, "host_video_outputs": host_video_outputs, "additional_video_outputs": additional_videos, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
+        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "capture_gaps": capture_gaps, "original_export": original_export, "videos": videos, "host_video_outputs": host_video_outputs, "fps_outputs": fps_outputs, "additional_video_outputs": additional_videos, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
 

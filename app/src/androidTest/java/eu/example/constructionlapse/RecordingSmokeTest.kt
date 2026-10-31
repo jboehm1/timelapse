@@ -99,6 +99,7 @@ class RecordingSmokeTest {
         device.takeScreenshot(File(evidence, "starting.png"))
         try {
             waitFor("ten independently saved JPEGs", 90_000) { frames(project).size >= 10 }
+            waitFor("successful-frame gap telemetry") { CaptureService.activeService?.maxSuccessfulFrameGapMs != null }
             val liveCapture = requireNotNull(CaptureService.activeService)
             val longestSuccessfulGap = requireNotNull(liveCapture.maxSuccessfulFrameGapMs)
             assertTrue("Two or more committed frames must produce a measured monotonic gap", longestSuccessfulGap > 0L)
@@ -209,6 +210,38 @@ class RecordingSmokeTest {
                 } finally { extractor.release() }
             }
             File(evidence, "video-validation.json").writeText(videoMetrics.toString(2))
+            val fpsOutputs = JSONArray()
+            for (rate in listOf(24, 25, 30, 60)) {
+                assertTrue("Requested $rate fps must be supported", VideoExporter.canEncode(640, 360, rate))
+                val video = File(exports, "fps-$rate.mp4")
+                ParcelFileDescriptor.open(video, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_TRUNCATE or ParcelFileDescriptor.MODE_READ_WRITE).use { output ->
+                    VideoExporter.encode(originals.take(4), output.fileDescriptor, 640, 360, rate,
+                        VideoEffect.NONE, 1, 1_000_000, progress = {})
+                }
+                val extractor = MediaExtractor()
+                try {
+                    extractor.setDataSource(video.absolutePath)
+                    val track = (0 until extractor.trackCount).first {
+                        extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true
+                    }
+                    val format = extractor.getTrackFormat(track)
+                    assertEquals(640, format.getInteger(MediaFormat.KEY_WIDTH))
+                    assertEquals(360, format.getInteger(MediaFormat.KEY_HEIGHT))
+                    assertEquals("video/avc", format.getString(MediaFormat.KEY_MIME))
+                    extractor.selectTrack(track)
+                    val times = mutableListOf<Long>()
+                    while (extractor.sampleTime >= 0) { times.add(extractor.sampleTime); if (!extractor.advance()) break }
+                    assertEquals(4, times.size)
+                    val expectedPeriodUs = 1_000_000L / rate
+                    assertTrue(times.zipWithNext().all { (a, b) -> kotlin.math.abs((b - a) - expectedPeriodUs) <= 2_000L })
+                    val duration = format.getLong(MediaFormat.KEY_DURATION)
+                    assertTrue(kotlin.math.abs(duration - 4_000_000L / rate) <= expectedPeriodUs)
+                    fpsOutputs.put(JSONObject().put("fps", rate).put("file", video.name).put("bytes", video.length())
+                        .put("sha256", digest(video)).put("width", 640).put("height", 360)
+                        .put("samples", times.size).put("duration_us", duration))
+                } finally { extractor.release() }
+            }
+            File(evidence, "fps-output-validation.json").writeText(fpsOutputs.toString(2) + "\n")
             ExportPerformanceCheck.run(context, evidence, originals)
             val cancelled = File(exports, "cancelled.partial")
             ParcelFileDescriptor.open(cancelled, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_READ_WRITE).use { output ->

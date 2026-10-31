@@ -47,8 +47,10 @@ class PersonWalkExportSimulationTest {
 
             val normal = File(exports, "person-walk-none.mp4")
             val blur = File(exports, "person-walk-motion-blur.mp4")
+            val trails = File(exports, "person-walk-light-trails.mp4")
             val normalInfo = encodeAndInspect(source, normal, VideoEffect.NONE, width, height, fps)
             val blurInfo = encodeAndInspect(source, blur, VideoEffect.MOTION_BLUR, width, height, fps)
+            val trailsInfo = encodeAndInspect(source, trails, VideoEffect.LIGHT_TRAILS, width, height, fps)
             val normalCentroids = source.indices.map { index ->
                 val decoded = decodedFrame(normal, index * 1_000_000L / fps)
                 try { orangeCentroid(decoded) } finally { decoded.recycle() }
@@ -61,6 +63,7 @@ class PersonWalkExportSimulationTest {
             val middleUs = 3_000_000L / fps
             val normalFrame = decodedFrame(normal, middleUs)
             val blurFrame = decodedFrame(blur, middleUs)
+            val trailsFrame = decodedFrame(trails, middleUs)
             try {
                 val normalPixels = IntArray(width * height)
                 val blurPixels = IntArray(width * height)
@@ -78,6 +81,24 @@ class PersonWalkExportSimulationTest {
                     if (difference > 30) pixelsChanged++
                 }
                 assertTrue("Blur must visibly spread the moving person across adjacent positions", pixelsChanged > 1_000)
+                val normalVestPixels = vestPixelCount(normalFrame)
+                val trailVestPixels = vestPixelCount(trailsFrame)
+                assertTrue("Light Trails must retain bright safety-vest positions from prior samples",
+                    trailVestPixels > normalVestPixels * 2)
+                val windowExports = org.json.JSONArray()
+                for (window in listOf(1, 3, 5, 7, 9)) {
+                    val target = if (window == 5) blur else File(exports, "person-walk-blur-window-$window.mp4")
+                    val info = if (window == 5) blurInfo else encodeAndInspect(source, target,
+                        VideoEffect.MOTION_BLUR, width, height, fps, window)
+                    val decoded = if (window == 5) blurFrame else decodedFrame(target, middleUs)
+                    val changed = try { changedPixels(normalFrame, decoded, 30) }
+                    finally { if (window != 5) decoded.recycle() }
+                    if (window == 1) assertTrue("One-sample blur must equal Normal", changed < 1_000)
+                    else assertTrue("$window-sample blur must change the walking scene", changed > 1_000)
+                    windowExports.put(JSONObject().put("window", window).put("file", info.getString("file"))
+                        .put("bytes", info.getLong("bytes")).put("sha256", info.getString("sha256"))
+                        .put("samples", info.getInt("samples")).put("pixels_delta_over_30", changed))
+                }
                 val normalPng = File(evidence, "person-walk-normal.png")
                 val blurPng = File(evidence, "person-walk-blur.png")
                 savePng(normalFrame, normalPng)
@@ -94,6 +115,10 @@ class PersonWalkExportSimulationTest {
                     .put("effect_window", 5)
                     .put("normal", normalInfo)
                     .put("motion_blur", blurInfo)
+                    .put("light_trails", trailsInfo)
+                    .put("normal_vest_pixels", normalVestPixels)
+                    .put("light_trails_vest_pixels", trailVestPixels)
+                    .put("window_outputs", windowExports)
                     .put("comparison_frame_us", middleUs)
                     .put("pixels_delta_over_30", pixelsChanged)
                     .put("sum_absolute_rgb_delta", absoluteChannelDifference)
@@ -102,6 +127,7 @@ class PersonWalkExportSimulationTest {
             } finally {
                 normalFrame.recycle()
                 blurFrame.recycle()
+                trailsFrame.recycle()
             }
         } finally {
             root.deleteRecursively()
@@ -163,11 +189,33 @@ class PersonWalkExportSimulationTest {
         return weightedX.toFloat() / count
     }
 
+    private fun vestPixelCount(bitmap: Bitmap): Int {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        return pixels.count { color -> Color.red(color) > 200 &&
+            Color.red(color) - Color.green(color) > 35 && Color.blue(color) < 190 }
+    }
+
+    private fun changedPixels(left: Bitmap, right: Bitmap, threshold: Int): Int {
+        require(left.width == right.width && left.height == right.height)
+        val leftPixels = IntArray(left.width * left.height)
+        val rightPixels = IntArray(right.width * right.height)
+        left.getPixels(leftPixels, 0, left.width, 0, 0, left.width, left.height)
+        right.getPixels(rightPixels, 0, right.width, 0, 0, right.width, right.height)
+        return leftPixels.indices.count { index ->
+            val a = leftPixels[index]
+            val b = rightPixels[index]
+            kotlin.math.abs(Color.red(a) - Color.red(b)) +
+                kotlin.math.abs(Color.green(a) - Color.green(b)) +
+                kotlin.math.abs(Color.blue(a) - Color.blue(b)) > threshold
+        }
+    }
+
     private fun encodeAndInspect(files: List<File>, target: File, effect: VideoEffect,
-                                 width: Int, height: Int, fps: Int): JSONObject {
+                                 width: Int, height: Int, fps: Int, window: Int = 5): JSONObject {
         ParcelFileDescriptor.open(target, ParcelFileDescriptor.MODE_CREATE or
             ParcelFileDescriptor.MODE_TRUNCATE or ParcelFileDescriptor.MODE_READ_WRITE).use { output ->
-            VideoExporter.encode(files, output.fileDescriptor, width, height, fps, effect, 5, 1_500_000, progress = {})
+            VideoExporter.encode(files, output.fileDescriptor, width, height, fps, effect, window, 1_500_000, progress = {})
         }
         val extractor = MediaExtractor()
         try {

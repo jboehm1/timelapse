@@ -138,7 +138,18 @@ class FrameStore(private val directory: File) {
 
     private fun record(file: File, timestampMs: Long) {
         val event = "FRAME\t${file.name}\t${file.length()}\t$timestampMs\t${sha256(file)}\n"
-        FileOutputStream(File(directory, "frames.journal"), true).use {
+        val journal = File(directory, "frames.journal")
+        // A process killed during a previous append may leave a torn final row
+        // without a newline. Separate the next durable row so recovery can parse it.
+        if (journal.isFile && journal.length() > 0L) RandomAccessFile(journal, "rw").use { stream ->
+            stream.seek(stream.length() - 1L)
+            if (stream.read() != '\n'.code) {
+                stream.seek(stream.length())
+                stream.write('\n'.code)
+                stream.fd.sync()
+            }
+        }
+        FileOutputStream(journal, true).use {
             it.write(event.toByteArray(Charsets.UTF_8))
             it.fd.sync()
         }

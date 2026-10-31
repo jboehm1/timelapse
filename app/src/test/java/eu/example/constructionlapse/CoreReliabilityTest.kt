@@ -85,6 +85,21 @@ class CoreReliabilityTest {
         } finally { dir.deleteRecursively() }
     }
 
+    @Test fun recoverySeparatesTornJournalRowFromRebuiltIntegrityRecord() {
+        val dir = Files.createTempDirectory("torn-journal-recovery-test").toFile()
+        try {
+            val bytes = byteArrayOf(-1, -40, 1, 2, 3, 4, 5, 6, -1, -39)
+            val original = File(dir, "frame_0000000001_2000.jpg").apply { writeBytes(bytes) }
+            File(dir, "frames.journal").writeText("FRAME\t${original.name}\t${original.length()}\t2000\tpartial")
+            val freshStore = FrameStore(dir)
+            assertEquals(1, freshStore.recover().originals)
+            assertTrue(freshStore.auditOriginals().isEmpty())
+            assertEquals(2, File(dir, "frames.journal").readLines().size)
+            assertEquals(1, FrameStore(dir).recover().originals)
+            assertTrue(FrameStore(dir).auditOriginals().isEmpty())
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun diagnosticLogIsBoundedAndKeepsRecentFailure() {
         val dir = Files.createTempDirectory("capture-log-test").toFile()
         try {
