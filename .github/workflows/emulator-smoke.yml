@@ -1,0 +1,192 @@
+name: JPEG recording gate and emulator UI
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'tools/emulator-smoke.sh'
+      - 'tools/verify-emulator-evidence.py'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'gradle/wrapper/**'
+      - '.github/workflows/emulator-smoke.yml'
+  workflow_dispatch:
+concurrency:
+  group: emulator-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Decide whether this update needs emulator regression
+        id: plan
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            run_emulator=true
+            reason="manual full run"
+          else
+            checkpoint="$(git log -1 --format=%H --grep='^docs(ui): commit real emulator screenshots for handoff$' || true)"
+            if [[ -n "$checkpoint" ]]; then
+              changed="$(git diff --name-only "$checkpoint...HEAD")"
+              reason="changes since the last committed emulator evidence"
+            elif [[ -n "$PR_BASE_SHA" ]]; then
+              changed="$(git diff --name-only "$PR_BASE_SHA...HEAD")"
+              reason="no prior emulator evidence checkpoint; checking the full PR"
+            else
+              changed="$(git show --format= --name-only HEAD)"
+              reason="no PR base or emulator evidence checkpoint; checking latest commit"
+            fi
+            if grep -Eq '^(app/src/main/|app/src/androidTest/|core/|tools/emulator-smoke\.sh$|tools/verify-emulator-evidence\.py$|\.github/workflows/emulator-smoke\.yml$|app/build\.gradle\.kts$|build\.gradle\.kts$|settings\.gradle\.kts$|gradlew$|gradlew\.bat$|gradle/wrapper/)' <<< "$changed"; then
+              run_emulator=true
+            else
+              run_emulator=false
+            fi
+          fi
+          echo "run_emulator=$run_emulator" >> "$GITHUB_OUTPUT"
+          echo "Emulator regression: $run_emulator ($reason)"
+      - uses: actions/setup-java@v4
+        if: steps.plan.outputs.run_emulator == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.plan.outputs.run_emulator == 'true'
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+      - name: Enable KVM
+        if: steps.plan.outputs.run_emulator == 'true'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build APK to install on emulator
+        if: steps.plan.outputs.run_emulator == 'true'
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?Android SDK path missing}"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
+          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+          test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Install camera test system image with bounded download retries
+        if: steps.plan.outputs.run_emulator == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          image="$ANDROID_HOME/system-images/android-35/google_apis/x86_64/system.img"
+          for attempt in 1 2 3; do
+            if "$SDKMANAGER" --install 'system-images;android-35;google_apis;x86_64' && test -s "$image"; then
+              break
+            fi
+            echo "System image provisioning attempt $attempt failed; retrying official download."
+          done
+          test -s "$image"
+      - name: Host JPEG validation dependency
+        if: steps.plan.outputs.run_emulator == 'true'
+        run: python3 -m pip install Pillow==11.3.0
+      - name: Install independent MP4 validation tools
+        if: steps.plan.outputs.run_emulator == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ffmpeg
+          ffprobe -version
+          ffmpeg -version
+      - name: Run emulator and capture UI
+        if: steps.plan.outputs.run_emulator == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          enable-hw-keyboard: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front emulated
+          script: bash tools/emulator-smoke.sh
+      - name: Summarize application and UI failures
+        if: failure() && steps.plan.outputs.run_emulator == 'true'
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import xml.etree.ElementTree as ET
+          log = Path("emulator-evidence/logcat.txt")
+          if log.exists():
+              lines = log.read_text(errors="replace").splitlines()
+              for i, line in enumerate(lines):
+                  if any(term in line for term in ("FATAL EXCEPTION", "TimelapseWorkspace", "Background activity", "ANR in", "not responding")):
+                      print("\n".join(lines[max(0,i-2):i+35]))
+              print("\n".join([line for line in lines if "AndroidRuntime" in line][-100:]))
+          for name in ("windows.txt", "activities.txt"):
+              path = Path("emulator-evidence") / name
+              if path.exists():
+                  print("SYSTEM STATE:", name)
+                  lines = path.read_text(errors="replace").splitlines()
+                  print("\n".join(line for line in lines if any(term in line for term in ("mCurrentFocus", "mFocusedApp", "mResumedActivity", "topResumedActivity", "keyguard", "Keyguard", "mShowing", "mTopFullscreenOpaqueWindowState"))))
+          archive = Path("emulator-evidence/recording-evidence.tar")
+          if archive.exists():
+              with tarfile.open(archive) as data:
+                  for member in data.getmembers():
+                      if member.isfile() and member.name.endswith(".xml"):
+                          print("UI EVIDENCE:", member.name)
+                          raw = data.extractfile(member).read()
+                          try:
+                              root = ET.fromstring(raw)
+                              for node in root.iter("node"):
+                                  attrs = node.attrib
+                                  if attrs.get("package") == "eu.example.constructionlapse" or attrs.get("text") or attrs.get("content-desc"):
+                                      print({k: attrs.get(k) for k in ("package", "text", "class", "content-desc", "enabled", "focused", "bounds")})
+                          except ET.ParseError:
+                              print(raw.decode(errors="replace")[:24000])
+          PY
+      - name: Upload emulator evidence
+        if: always() && steps.plan.outputs.run_emulator == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: timelapse-emulator-ui
+          path: emulator-evidence/
+          if-no-files-found: warn
+          retention-days: 7
+      # Keep screenshot evidence in Git instead of only short-lived artifacts.
+      - name: Publish emulator screenshots to PR branch
+        if: ${{ success() && steps.plan.outputs.run_emulator == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/screenshots/emulator
+          for f in app-home.png app-settings.png app-settings-scroll.png; do
+            test -s "emulator-evidence/$f"
+            cp "emulator-evidence/$f" "docs/screenshots/emulator/$f"
+          done
+          for f in starting.png recording.png reopened.png invalid-camera.png invalid-camera.txt camera-id-validation.json jpeg-validation.tsv capture-gap-metrics.json verification.json projects-home.png planner.png project-gallery.png restored-project.png photolapse.png video-validation.json fps-output-validation.json project-validation.txt export-performance.json batch-export-validation.json person-walk-comparison.png person-walk-normal.png person-walk-blur.png person-walk-validation.json; do
+            test -s "emulator-evidence/verified/$f"
+            cp "emulator-evidence/verified/$f" "docs/screenshots/emulator/$f"
+          done
+          printf '%s\n' '# Timelapse emulator evidence' '' 'Generated with .github/workflows/emulator-smoke.yml (Android emulator API 35).' 'Camera recording uses the emulator camera. Export effect comparison uses separate deterministic synthetic frames showing a person walking across a fixed construction-site background. Host JPEG and MP4 validation results are in verification.json. S21 hardware remains unverified.' > docs/screenshots/emulator/README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/emulator
+          if git diff --cached --quiet; then
+            echo "Visual references unchanged."
+          else
+            git commit -m "docs(ui): commit real emulator screenshots for handoff"
+            git pull --rebase origin "$HEAD_BRANCH"
+            git push origin "HEAD:refs/heads/$HEAD_BRANCH"
+          fi

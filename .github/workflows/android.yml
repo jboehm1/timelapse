@@ -1,0 +1,83 @@
+name: Android APK and unit tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Progress tracker consistency
+        run: python3 tools/progress.py --check
+      - name: Local-only permission and network policy tests
+        run: |
+          python3 tools/test_app_permission_policy.py
+          python3 tools/test_apk_permission_policy.py
+          python3 tools/verify_app_permissions.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      # Reuse the Android SDK provisioning method proven in our SLAM app
+      # (jboehm1/VisualOdometry, feature/slam-explorer).
+      # Hosted Ubuntu runners already ship Android SDK; setup-android sometimes
+      # requests obsolete "tools" package and fails before actual compilation.
+      - name: Discover preinstalled Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -x "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          "$SDKMANAGER" --version
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Android API 36
+        run: |
+          set -euo pipefail
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Compile and run unit tests before static lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-build.log
+      - name: Verify final merged APK permission allowlist
+        run: python3 tools/verify_apk_permissions.py app/build/outputs/apk/debug/app-debug.apk
+      # Make the alpha installable even when static analysis discovers issues.
+      # The job still reports FAILURE if lint fails, so findings are not hidden.
+      - name: Upload debug APK from successful compile
+        uses: actions/upload-artifact@v4
+        with:
+          name: timelapse-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Android lint (release gate; retains red status on findings)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :app:lintDebug --no-daemon 2>&1 | tee lint-build.log
+      - name: Upload build diagnostics and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-diagnostics
+          path: |
+            gradle-build.log
+            lint-build.log
+            app/build/reports/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -1,0 +1,23 @@
+{
+  "scope": "Android emulator only",
+  "camera_ids_tested": [
+    {
+      "camera_id": "0",
+      "lens_facing": 1,
+      "file": "frame_0000000001_1793450356951.jpg",
+      "bytes": 60046,
+      "sha256": "d0a8ef41379300029b0d4078816ea1916eeb54326e6971934481b5ff0f8c45db",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "camera_id": "1",
+      "lens_facing": 0,
+      "file": "frame_0000000001_1793450358520.jpg",
+      "bytes": 55974,
+      "sha256": "61acf694a807c8739033c7c6db7c793886d1b1fb80cff2c923407ffccf839391",
+      "width": 1920,
+      "height": 1440
+    }
+  ]
+}

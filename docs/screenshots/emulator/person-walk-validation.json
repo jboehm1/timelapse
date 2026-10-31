@@ -1,0 +1,220 @@
+{
+  "result": "PASS",
+  "scene": "two synthetic workers walk left to right in front of a fixed construction-site background",
+  "people": 2,
+  "source_frames": 7,
+  "person_centroids_x": [
+    132.0945,
+    189.90039,
+    268.09448,
+    325.9004,
+    404.09448,
+    461.9004,
+    540.0945
+  ],
+  "normal_decoded_centroids_x": [
+    131.85736,
+    189.52112,
+    267.91373,
+    325.82806,
+    403.73804,
+    461.93976,
+    539.6524
+  ],
+  "width": 640,
+  "height": 360,
+  "fps": 7,
+  "effect_window": 5,
+  "normal": {
+    "file": "person-walk-none.mp4",
+    "bytes": 34001,
+    "sha256": "c0bcc93b7a54b1b332a030c9ad6f92c178a4f0561ff07ee82924cc0fb1e1c50a",
+    "samples": 7,
+    "width": 640,
+    "height": 360,
+    "fps": 7,
+    "duration_us": 1000000
+  },
+  "motion_blur": {
+    "file": "person-walk-motion-blur.mp4",
+    "bytes": 32390,
+    "sha256": "589aed5b3705aa445eebc4ec225248c3f02dd068cb2c789a913f07098e3fda74",
+    "samples": 7,
+    "width": 640,
+    "height": 360,
+    "fps": 7,
+    "duration_us": 1000000
+  },
+  "light_trails": {
+    "file": "person-walk-light-trails.mp4",
+    "bytes": 18158,
+    "sha256": "0d09da9c02b9765cb199212141e9a37e0ae7b4c7882fa8897c3e6099b4514c62",
+    "samples": 7,
+    "width": 640,
+    "height": 360,
+    "fps": 7,
+    "duration_us": 1000000
+  },
+  "normal_vest_pixels": 4951,
+  "light_trails_vest_pixels": 12661,
+  "window_outputs": [
+    {
+      "window": 1,
+      "file": "person-walk-blur-window-1.mp4",
+      "bytes": 34001,
+      "sha256": "d765431dcf0ba578470f5940b64d788533404accb927c5ca06ecd1d4143474b3",
+      "samples": 7,
+      "pixels_delta_over_30": 0
+    },
+    {
+      "window": 3,
+      "file": "person-walk-blur-window-3.mp4",
+      "bytes": 32560,
+      "sha256": "9e70c18b5823147a3211e887d1f6ac63d9a49df4919291f0df0bb2f3b077ec92",
+      "samples": 7,
+      "pixels_delta_over_30": 23123
+    },
+    {
+      "window": 5,
+      "file": "person-walk-motion-blur.mp4",
+      "bytes": 32390,
+      "sha256": "589aed5b3705aa445eebc4ec225248c3f02dd068cb2c789a913f07098e3fda74",
+      "samples": 7,
+      "pixels_delta_over_30": 29626
+    },
+    {
+      "window": 7,
+      "file": "person-walk-blur-window-7.mp4",
+      "bytes": 31274,
+      "sha256": "6f132342de3a1cfdb4acec2d2b78aca5b16a7fe6c206bfa2cb269a200eb041b0",
+      "samples": 7,
+      "pixels_delta_over_30": 33868
+    },
+    {
+      "window": 9,
+      "file": "person-walk-blur-window-9.mp4",
+      "bytes": 28489,
+      "sha256": "751c368576871b323d22dc82101efa49e471dcac054082c7602bad5eb3451526",
+      "samples": 7,
+      "pixels_delta_over_30": 34156
+    }
+  ],
+  "comparison_frame_us": 428571,
+  "pixels_delta_over_30": 29626,
+  "sum_absolute_rgb_delta": 2579832,
+  "comparison_image": "person-walk-comparison.png",
+  "host_outputs": {
+    "normal": {
+      "file": "person-walk-none.mp4",
+      "bytes": 34001,
+      "sha256": "c0bcc93b7a54b1b332a030c9ad6f92c178a4f0561ff07ee82924cc0fb1e1c50a",
+      "samples": 7,
+      "width": 640,
+      "height": 360,
+      "fps": 7,
+      "duration_us": 1000000,
+      "host_validation": {
+        "ffprobe": true,
+        "ffmpeg_full_decode": true,
+        "codec": "h264",
+        "width": 640,
+        "height": 360,
+        "fps": 7.000077778641985,
+        "frames": 7,
+        "duration_seconds": 0.999989
+      }
+    },
+    "motion_blur": {
+      "file": "person-walk-motion-blur.mp4",
+      "bytes": 32390,
+      "sha256": "589aed5b3705aa445eebc4ec225248c3f02dd068cb2c789a913f07098e3fda74",
+      "samples": 7,
+      "width": 640,
+      "height": 360,
+      "fps": 7,
+      "duration_us": 1000000,
+      "host_validation": {
+        "ffprobe": true,
+        "ffmpeg_full_decode": true,
+        "codec": "h264",
+        "width": 640,
+        "height": 360,
+        "fps": 7.000077778641985,
+        "frames": 7,
+        "duration_seconds": 0.999989
+      }
+    },
+    "light_trails": {
+      "file": "person-walk-light-trails.mp4",
+      "bytes": 18158,
+      "sha256": "0d09da9c02b9765cb199212141e9a37e0ae7b4c7882fa8897c3e6099b4514c62",
+      "samples": 7,
+      "width": 640,
+      "height": 360,
+      "fps": 7,
+      "duration_us": 1000000,
+      "host_validation": {
+        "ffprobe": true,
+        "ffmpeg_full_decode": true,
+        "codec": "h264",
+        "width": 640,
+        "height": 360,
+        "fps": 7.000077778641985,
+        "frames": 7,
+        "duration_seconds": 0.999989
+      }
+    }
+  },
+  "window_host_outputs": {
+    "1": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 7.000077778641985,
+      "frames": 7,
+      "duration_seconds": 0.999989
+    },
+    "3": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 7.000077778641985,
+      "frames": 7,
+      "duration_seconds": 0.999989
+    },
+    "5": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 7.000077778641985,
+      "frames": 7,
+      "duration_seconds": 0.999989
+    },
+    "7": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 7.000077778641985,
+      "frames": 7,
+      "duration_seconds": 0.999989
+    },
+    "9": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 7.000077778641985,
+      "frames": 7,
+      "duration_seconds": 0.999989
+    }
+  }
+}

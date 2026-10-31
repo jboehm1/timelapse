@@ -1,0 +1,7 @@
+{
+  "days": 2,
+  "frames_per_day": 2,
+  "kept_after_cancel": 1,
+  "pending_after_cancel": 0,
+  "state": "CANCELLED"
+}

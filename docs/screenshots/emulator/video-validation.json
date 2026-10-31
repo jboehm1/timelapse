@@ -1,0 +1,62 @@
+[
+  {
+    "effect": "NONE",
+    "file": "none.mp4",
+    "bytes": 8889,
+    "width": 640,
+    "height": 360,
+    "samples": 4,
+    "duration_us": 133333,
+    "sha256": "ed728a8ff09a4120ed9b693093d3e7967df556d3ac8a5b834ad081f858c5115d",
+    "host_validation": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 30.0,
+      "frames": 4,
+      "duration_seconds": 0.133333
+    }
+  },
+  {
+    "effect": "MOTION_BLUR",
+    "file": "motion_blur.mp4",
+    "bytes": 9161,
+    "width": 640,
+    "height": 360,
+    "samples": 4,
+    "duration_us": 133333,
+    "sha256": "a902e15d34bc0d865b96032c9f59f4da6aa148009d6ba6f1a885b48ba5589c2b",
+    "host_validation": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 30.0,
+      "frames": 4,
+      "duration_seconds": 0.133333
+    }
+  },
+  {
+    "effect": "LIGHT_TRAILS",
+    "file": "light_trails.mp4",
+    "bytes": 8969,
+    "width": 640,
+    "height": 360,
+    "samples": 4,
+    "duration_us": 133333,
+    "sha256": "bf7b54fdaf659a447439c5e4676624e38a690617874b1c5a9aa7c15758a0ac18",
+    "host_validation": {
+      "ffprobe": true,
+      "ffmpeg_full_decode": true,
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "fps": 30.0,
+      "frames": 4,
+      "duration_seconds": 0.133333
+    }
+  }
+]

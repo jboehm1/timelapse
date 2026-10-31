@@ -18,6 +18,21 @@ data class DayWindow(
 ) {
     init { require(start != end || !enabled) { "A schedule needs a nonzero window" } }
 
+    /** Strictly future window opening, respecting weekdays, DST gaps and both overlap offsets. */
+    fun nextOpeningAfter(after: Instant): Instant? {
+        if (!enabled) return null
+        val today = after.atZone(zone).toLocalDate()
+        return (0L..8L).flatMap { day ->
+            val date = today.plusDays(day)
+            if (date.dayOfWeek !in days) emptyList() else {
+                val local = date.atTime(start)
+                val offsets = zone.rules.getValidOffsets(local)
+                if (offsets.isNotEmpty()) offsets.map { local.toInstant(it) }
+                else listOfNotNull(zone.rules.getTransition(local)?.dateTimeAfter?.atZone(zone)?.toInstant())
+            }
+        }.filter { it.isAfter(after) && contains(it) }.minOrNull()
+    }
+
     /** Crossing-midnight windows are associated with the previous starting day. */
     fun contains(instant: Instant): Boolean {
         if (!enabled) return true
@@ -66,7 +81,7 @@ data class SafetyPolicy(
 
     /** In moderate thermal throttling we may reduce capture frequency rather than overheat. */
     fun effectiveIntervalMs(baseIntervalMs: Long, thermalStatus: Int): Long {
-        require(baseIntervalMs >= 1000L)
+        require(baseIntervalMs >= 500L)
         return if (thermalStatus == 2) Math.multiplyExact(baseIntervalMs, 2L) else baseIntervalMs
     }
 }

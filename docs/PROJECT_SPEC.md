@@ -25,7 +25,7 @@ This specification outranks README, issue titles, UI mockups and optimistic prio
 - **EXP-007 (P1):** Project gallery, scrub/preview, select/delete with confirmation, import existing images, resume/add to project, reverse at export.
 - **EXP-008 (P1):** Export under low storage: preflight estimated temp size with reserve, cleanup on failures.
 
-- **CAM-001 (P0):** Capture JPEG originals at configurable interval (initial 1–3600 s, capability-dependent), timestamps and monotonic frame IDs. Sequence must survive app restart and resume without duplicate names.
+- **CAM-001 (P0):** Capture JPEG originals at configurable interval (initial 0.5–3600 s, capability-dependent), timestamps and monotonic frame IDs. Sequence must survive app restart and resume without duplicate names.
 - **CAM-002 (P0):** **Tap-to-focus** independent from exposure; user selects Focus, Exposure, Both. CameraX AF/AE metering point uses preview coordinate transform. Show focus confirmation or failure; never report AE-only as AF success.
 - **CAM-003 (P1):** Focus lock / manual distance if supported; focus must not hunt unnecessarily through a static construction scene. AE lock/unlock, exposure compensation, ISO/shutter and white balance where camera supports them.
 - **CAM-004 (P0):** Camera interruption must never corrupt previously saved photographs. Expose recoverable vs fatal error states and bounded recovery.
@@ -82,3 +82,41 @@ Spec and architecture are written. No confirmed 72h/7d on-device test. Avoid say
 
 ## 9. Traceability policy
 Every PR shall state requirement IDs addressed, tests run, tests missing, failure modes changed, and whether documentation has been updated.
+
+## 10. Mandatory full PRO functionality
+Every item in [PRO_PARITY.md](PRO_PARITY.md), **PRO-001 through PRO-018**, is a product requirement. PRO_PARITY is normative, and status is explicitly SPEC/IMPLEMENTED/DEVICE_VERIFIED; nothing there is optional merely because the app is alpha. Features are released only after the corresponding measurable acceptance criteria pass. Any external references are for functional comparison, not copying proprietary source or binaries.
+
+
+## 11. Independent camera setting regions and manual controls
+
+The exact binding interaction contract is [CAMERA_CONTROL_UX.md](CAMERA_CONTROL_UX.md). It is required for this product. Summary:
+
+- **CAM-007 (P0):** The preview offers independent persistent focus and exposure editing targets, showing two separate markers, chosen region size, and explicit hardware feedback. Selecting one target must not silently shift or reset the other.
+- **CAM-008 (P0):** Focus accepts continuous autofocus, user-selected AF zone with optional long-lived lock, and manual diopter focus if supported by the lens. The camera capability range must be respected, and focus success is not inferred from a tap alone.
+- **CAM-009 (P0):** Exposure accepts matrix auto, point-based adaptive auto, optional exposure lock, and manual ISO/shutter on lenses supporting those controls. AE locking is NOT the default for changing outdoor daylight. Focus must not be modified by an AE-only tap.
+- **CAM-010 (P1):** Independent white balance mode (auto, lock, and manual only if supported). Surface actual supported values, no pretend sliders.
+- **CAM-011 (P0):** Focus/exposure regions and lock intentions persist per project and per lens, with restore/verification on camera rebinding and app restart. A persisted UI marker is not proof hardware metering was successfully restored.
+- **CAM-012 (P0):** The UI distinguishes planned, user-requested, hardware-applied and visually verified states; unsupported controls and unstable firmware behavior must be displayed clearly.
+
+**Device quality gates:** cameraX focus/metering state, Camera2 AF/AE/AWB region counts, true AE lock support, physical focus range in diopters, accurate preview-to-sensor coordinate transform, start/stop and scheduled rebind behavior on S21.
+
+## 12. Commercialisation and repo visibility
+
+As verified on GitHub on 2026-10-29, the repository is **private**. GitHub-hosted CI minutes in private repositories count toward the owner's plan allowance; do not assume public-repository free CI. If commercial proprietary development is intended, favor private storage plus local/self-hosted build runners. A separate public open-core component may be created deliberately if desired. Keep proprietary credentials, signing keys and third-party APKs out of Git. Any code already exposed publicly may have been copied or archived even if future commits move to a private repo. A later closed-source product should segregate confidential software and assets **before** adding them to public history. Licensing/commercial strategy is a separate owner decision. Public GitHub hosting does not imply permission for others to reuse copyright-protected code in the absence of a license, but visibility increases practical copy risk.
+
+
+## 13. Avancement global et strict suivi 100 %
+
+**[MASTER_TODO.md](MASTER_TODO.md)** est le tableau exhaustif de 233 sous-tâches (fonctionnalités, fiabilité, sécurité, tests, documentation, packaging) avec scores, priorités et critères de réussite. **MASTER_TODO.csv** est la source canonique modifiable ; exécuter `python tools/progress.py --write` après tout changement et `--check` lors de la validation. Les pourcentages de code non compilé ne dépassent pas 25 %, la certification longue sur S21 exige les preuves des tests réels. **Ne pas confondre la moyenne d'avancement avec la qualité de production.** Les exigences PRO-001..018 ainsi que CAM/EXP/REL sont des prérequis absolus pour 100 %.
+
+## 14. Diagnostic v0.3 additions — 2026-10-30
+
+- Requested interval supports 0.5–3600 seconds with exact millisecond parsing. This is nominal cadence; slow camera calls skip slots, never queue a burst. 0.5 seconds is not an S21 throughput claim.
+- A finite session stops after N newly committed frames; existing project originals do not count toward N. A Test Photo and Photolapse action each save exactly one new original, subject to thermal/storage/battery safety.
+- Trash is reversible metadata, with stable original paths. It hides a project and frees no disk space; active projects cannot be archived. No permanent deletion has been added.
+- Planner days mean active shooting days. Fixed-frame sessions compute totals from N; unlimited sessions show per-day and active-day projections. Photo-size medians and storage reserve are explicit estimates, not capacity guarantees.
+
+
+## Export day-batch decision — 2026-10-30
+
+User requested efficient video export and at least a separator per day. G-20/G-21/G-22 now include independent local-calendar-day MP4s, optional inclusive date selection, sequential bounded-memory rendering, preserved completed outputs on cancellation, and measurable decode/cache/timing evidence. Effects restart at day boundaries; originals remain immutable. Hardware throughput and long-sequence stress are acceptance gates, not inferred from prototype code. See [EXPORT_PERFORMANCE_2026-10-30.md](EXPORT_PERFORMANCE_2026-10-30.md).
