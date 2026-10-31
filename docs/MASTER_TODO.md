@@ -33,7 +33,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **19 %** |
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **38 %** |
-| G — Export, formats, effets et montage vidéo | 27 | **42 %** |
+| G — Export, formats, effets et montage vidéo | 27 | **43 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **30 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **32 %** |
 | J — Tests, mesures, robustesse validée et release | 24 | **18 %** |
@@ -224,7 +224,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-29 | P0 | **55 %** | Mode dégradation contrôlée | Captures ralentissent, reprennent avec hysteresis |
 | [ ] | F-30 | P1 | **0 %** | Test mémoire/thermique avec instrumentation | Rapports p95, courbes et seuils |
 
-### G. Export, formats, effets et montage vidéo — 42 %
+### G. Export, formats, effets et montage vidéo — 43 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -239,7 +239,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | G-09 | P0 | **25 %** | Résolution 1080p | Sortie validée sur S21 |
 | [ ] | G-10 | P0 | **25 %** | Résolution 4K si supportée | Source réellement 4K et encodeur validé |
 | [ ] | G-11 | P1 | **25 %** | Résolution 8K si supportée | Source et encodeur 8K vérifiés, refus propre sinon |
-| [ ] | G-12 | P0 | **40 %** | FPS 24 25 30 60 | Durée=N/FPS vérifiée |
+| [ ] | G-12 | P0 | **55 %** | FPS 24 25 30 60 | Durée=N/FPS vérifiée |
 | [ ] | G-13 | P1 | **10 %** | FPS 29.97 réel | Horodatage fractionnaire correct |
 | [ ] | G-14 | P0 | **25 %** | Bitrate Auto Low Medium High | Taille et qualité comparées |
 | [ ] | G-15 | P1 | **0 %** | Bitrate personnalisé | Champ Mbps borné selon codec |

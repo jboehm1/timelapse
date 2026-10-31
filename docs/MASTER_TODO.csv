@@ -141,7 +141,7 @@
 "G-09","G","P0","25","Résolution 1080p","Sortie validée sur S21"
 "G-10","G","P0","25","Résolution 4K si supportée","Source réellement 4K et encodeur validé"
 "G-11","G","P1","25","Résolution 8K si supportée","Source et encodeur 8K vérifiés, refus propre sinon"
-"G-12","G","P0","40","FPS 24 25 30 60","Durée=N/FPS vérifiée"
+"G-12","G","P0","55","FPS 24 25 30 60","Durée=N/FPS vérifiée"
 "G-13","G","P1","10","FPS 29.97 réel","Horodatage fractionnaire correct"
 "G-14","G","P0","25","Bitrate Auto Low Medium High","Taille et qualité comparées"
 "G-15","G","P1","0","Bitrate personnalisé","Champ Mbps borné selon codec"
