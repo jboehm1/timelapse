@@ -49,6 +49,15 @@ class PersonWalkExportSimulationTest {
             val blur = File(exports, "person-walk-motion-blur.mp4")
             val normalInfo = encodeAndInspect(source, normal, VideoEffect.NONE, width, height, fps)
             val blurInfo = encodeAndInspect(source, blur, VideoEffect.MOTION_BLUR, width, height, fps)
+            val normalCentroids = source.indices.map { index ->
+                val decoded = decodedFrame(normal, index * 1_000_000L / fps)
+                try { orangeCentroid(decoded) } finally { decoded.recycle() }
+            }
+            assertEquals("Normal export must contain one decoded frame for every source", personCentroids.size, normalCentroids.size)
+            assertTrue("Normal export must preserve each source moment in order", normalCentroids.zip(personCentroids)
+                .all { (decodedX, sourceX) -> kotlin.math.abs(decodedX - sourceX) < 12f })
+            assertTrue("Normal export must retain the source walking direction",
+                normalCentroids.zipWithNext().all { (before, after) -> after - before > 30f })
             val middleUs = 3_000_000L / fps
             val normalFrame = decodedFrame(normal, middleUs)
             val blurFrame = decodedFrame(blur, middleUs)
@@ -80,6 +89,7 @@ class PersonWalkExportSimulationTest {
                     .put("people", 2)
                     .put("source_frames", source.size)
                     .put("person_centroids_x", org.json.JSONArray(personCentroids))
+                    .put("normal_decoded_centroids_x", org.json.JSONArray(normalCentroids))
                     .put("width", width).put("height", height).put("fps", fps)
                     .put("effect_window", 5)
                     .put("normal", normalInfo)
