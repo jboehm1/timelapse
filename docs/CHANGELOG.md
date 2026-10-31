@@ -47,3 +47,14 @@ Feature history includes project workspace, finite capture and Test Photo, plann
 
 - Added the official Gradle 8.13 wrapper scripts and matching wrapper JAR; `gradle-wrapper.properties` pins the published binary distribution SHA-256. Android CI, emulator CI, and Linux/Windows build scripts now invoke `./gradlew` / `gradlew.bat` so they use one version source.
 - The wrapper distribution could not be fetched from this local network namespace, so local `./gradlew --version` stopped at network connection before execution. No wrapper or Android validation is claimed yet; the workflow must pass before A-05 advances. The emulator path matcher includes wrapper files so this build-system change receives the full applicable build and simulation checks.
+
+- **C-22 — unavailable-camera feedback.** The API 35 emulator failure injection in #41197640738 visibly distinguishes zero saved photos from five camera failures and exposes a retry/log instruction; C-22 reaches 55% automated-test stage only. Synthetic binding failure is not S21 evidence.
+
+- **J-08 — export decoding and reference comparison.** Emulator run #41196363177 passed ffprobe and full FFmpeg decoding for the two-worker Normal, Motion Blur, Light Trails, and five Blur-window exports; reference image deltas and bright-vest retention passed. J-08 reaches its export test acceptance. All worker imagery is synthetic.
+- **C-22 — unavailable-camera feedback.** Emulator run #41197640738 visibly distinguished zero saved frames from five binding failures and displayed a retry/log instruction. C-22 is at automated-test stage (55%) only.
+
+- **A-05 — Gradle wrapper validated on Linux CI.** Run #41200191933 passed unit tests, APK build, merged permission checks and lint through Gradle 8.13 wrapper. A-05 is 55%; no Windows/`gradlew.bat` execution is claimed.
+
+- Pending Android/emulator validation: camera bind failures now record the requested camera ID and CameraX available IDs; the invalid-camera JSON keeps only this diagnostic context, and the host verifier checks its presence before publishing the report. This improves failure diagnosis; it does not claim a camera capture fix.
+
+- Pending emulator validation: enumerate Camera2 IDs and require each to bind through the recording service and save one independently decodable JPEG; preserve the per-ID metrics and hashes in emulator evidence. Physical Galaxy S21 lens behavior remains untested.

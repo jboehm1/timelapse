@@ -2,6 +2,7 @@ package eu.example.constructionlapse
 
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.hardware.camera2.CameraManager
 import android.os.Environment
 import android.os.SystemClock
 import android.os.ParcelFileDescriptor
@@ -308,17 +309,96 @@ class RecordingSmokeTest {
             assertTrue("Camera failure count must be separate from saved photos", service.failures > 0)
             assertTrue("The live UI must show saved and failed counts separately",
                 device.wait(Until.hasObject(By.text(Pattern.compile(".*0 photos · [1-9][0-9]* errors.*"))), 10_000))
+            val diagnostic = CaptureDiagnostics.snapshot()
+            assertTrue("Camera binding failure must record requested and discoverable IDs",
+                diagnostic.contains("CAMERA_BIND_FAILURE_CONTEXT") &&
+                    diagnostic.contains("requested=NONEXISTENT_TEST_CAMERA") &&
+                    diagnostic.contains("available_ids="))
+            val bindContext = diagnostic.lineSequence()
+                .first { it.contains("CAMERA_BIND_FAILURE_CONTEXT") }
             File(evidence, "invalid-camera.txt").writeText(JSONObject()
                 .put("status", service.status)
                 .put("saved_frames", service.savedCount)
                 .put("attempts", service.attempts)
                 .put("failures", service.failures)
                 .put("skipped_slots", service.skippedSlots)
+                .put("binding_context", bindContext)
                 .toString(2) + "\n")
             device.takeScreenshot(File(evidence, "invalid-camera.png"))
         } finally {
             context.startService(Intent(context, CaptureService::class.java).apply { action = CaptureService.ACTION_STOP })
         }
+    }
+
+    @Test fun everyReportedCameraIdBindsAndSavesADecodableJpeg() {
+        unlockTestDevice()
+        context.startActivity(Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        waitFor("visible camera preview") { CaptureService.activeService?.isPreviewing == true }
+
+        val manager = context.getSystemService(android.content.Context.CAMERA_SERVICE) as CameraManager
+        val cameraIds = manager.cameraIdList.toList()
+        assertTrue("The emulated camera setup must expose at least two IDs", cameraIds.size >= 2)
+        val root = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "projects")
+        val reports = JSONArray()
+        try {
+            for (cameraId in cameraIds) {
+                context.startService(Intent(context, CaptureService::class.java).apply {
+                    action = CaptureService.ACTION_STOP
+                })
+                waitFor("release previous camera service") {
+                    CaptureService.activeService?.isCapturing != true &&
+                        CaptureService.activeService?.isPreviewing != true
+                }
+                val safeId = cameraId.replace(Regex("[^A-Za-z0-9_-]"), "_")
+                val project = File(root, "lens_check_${safeId}_${SystemClock.elapsedRealtime()}")
+                assertTrue("Create isolated camera test project", project.mkdirs())
+                context.startForegroundService(Intent(context, CaptureService::class.java).apply {
+                    action = CaptureService.ACTION_START
+                    putExtra(CaptureService.EXTRA_PROJECT, project.name)
+                    putExtra(CaptureService.EXTRA_CAMERA_ID, cameraId)
+                    putExtra(CaptureService.EXTRA_INTERVAL, 2_000L)
+                    putExtra(CaptureService.EXTRA_MAX_FRAMES, 1L)
+                    putExtra(CaptureService.EXTRA_WEEKDAYS, IntArray(7) { it + 1 })
+                    putExtra(CaptureService.EXTRA_DAY_ONLY, false)
+                })
+                waitFor("camera $cameraId produces one committed JPEG", 40_000) {
+                    frames(project).size == 1
+                }
+                val frame = frames(project).single()
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(frame.absolutePath, bounds)
+                assertTrue("Camera $cameraId must produce valid JPEG dimensions",
+                    bounds.outWidth > 0 && bounds.outHeight > 0)
+                val decoded = BitmapFactory.decodeFile(frame.absolutePath)
+                assertNotNull("Camera $cameraId JPEG must fully decode", decoded)
+                decoded?.recycle()
+                val diagnostics = CaptureDiagnostics.snapshot()
+                assertTrue("Requested camera $cameraId must bind as the actual camera",
+                    diagnostics.contains("CAMERA_BOUND actual=$cameraId"))
+                reports.put(JSONObject()
+                    .put("camera_id", cameraId)
+                    .put("lens_facing", manager.getCameraCharacteristics(cameraId)
+                        .get(android.hardware.camera2.CameraCharacteristics.LENS_FACING))
+                    .put("file", frame.name)
+                    .put("bytes", frame.length())
+                    .put("sha256", digest(frame))
+                    .put("width", bounds.outWidth)
+                    .put("height", bounds.outHeight))
+                waitFor("camera $cameraId capture service stops after its single frame") {
+                    CaptureService.activeService?.isCapturing != true &&
+                        CaptureService.activeService?.isPreviewing != true
+                }
+            }
+        } finally {
+            context.startService(Intent(context, CaptureService::class.java).apply {
+                action = CaptureService.ACTION_STOP
+            })
+        }
+        File(evidence, "camera-id-validation.json").writeText(JSONObject()
+            .put("scope", "Android emulator only")
+            .put("camera_ids_tested", reports)
+            .toString(2) + "\n")
     }
 
 }

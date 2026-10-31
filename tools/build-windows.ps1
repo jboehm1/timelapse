@@ -3,7 +3,7 @@
     Build the Android debug APK on a Windows PC without GitHub Actions.
 .DESCRIPTION
     One-time downloads: portable JDK 17 (if Java is missing), pinned Gradle 8.13
-    through the versioned wrapper, official Android command-line tools, Android command-line tools, SDK Platform 36 and Build Tools 35.
+    through the versioned wrapper, official Android command-line tools, SDK Platform 36 and Build Tools 35.
     The script prompts for Android SDK licence acceptance. The wrapper downloads Gradle with the published SHA-256; -SkipDownloads skips only JDK and Android SDK bootstrap downloads.
     It then compiles/tests the CURRENT checkout and produces dist/Timelapse-debug.apk.
     The build never uploads source or signing keys to any third-party CI provider.

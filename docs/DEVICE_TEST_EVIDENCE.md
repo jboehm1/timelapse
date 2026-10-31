@@ -55,3 +55,6 @@ Restart / screen-off / lens-switch outcomes:
 Logs and artifact links:
 Result, scope, limitations, follow-up:
 ```
+
+
+| [Emulator wrapper run #41200191954](https://github.com/jboehm1/timelapse/actions/runs/41200191954) | Tested source `f3741a5dbdf9877518791ddf9cd002ee79ae3d70`; evidence checkpoint `9c6fdfaeeda05b5303a15e3a068287c8794444f0` | Android API 35, Pixel 6 x86_64 profile, emulated cameras; Gradle 8.13 from the SHA-256-pinned wrapper; host ffprobe/ffmpeg | **PASS, 4/4 instrumentation tests.** Android wrapper build and host verifier passed; 12 camera-simulator JPEGs were fully decoded and hash-checked. Synthetic two-worker Normal/Motion-Blur exports fully decoded; their middle frames differed at 29,626 pixels. Background capture and reopened-project persistence passed. Artifact #13043130189, 5,701,039 bytes, archive SHA-256 `7c3b9cfa615ac2d54dbedb9812946edb6dd43e7722324d2d94108425a0a760ed`. Matching Android build #41200191933 passed unit tests, APK build, merged-permission allowlist and lint; its diagnostic APK artifact #13041714785 archive digest is `e8e746299784181899a0204ac2187003aade841c81db4f316f724743bc276345`. | Emulator and generated pedestrian imagery only. Wrapper validation was Linux only. No Galaxy S21, physical people, physical screen-off, hardware encoder or thermal/battery validation. APK is diagnostic only. |

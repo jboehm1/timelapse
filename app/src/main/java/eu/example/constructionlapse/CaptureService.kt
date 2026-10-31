@@ -369,6 +369,13 @@ class CaptureService : LifecycleService() {
         } catch (e: Exception) {
             camera = null
             cameraBound = false
+            val availableIds = runCatching {
+                p.availableCameraInfos.joinToString(",") { info ->
+                    Camera2CameraInfo.from(info).cameraId
+                }
+            }.getOrElse { "unavailable:${it.javaClass.simpleName}" }
+            trace("CAMERA_BIND_FAILURE_CONTEXT",
+                "requested=$requestedCameraId available_ids=$availableIds")
             cameraFailure("CAMERA_BIND", e)
             return false
         }

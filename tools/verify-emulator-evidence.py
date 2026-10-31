@@ -78,6 +78,24 @@ def verify(archive_path: str, destination: str) -> dict:
             raise ValueError("Non-monotonic or duplicate frame IDs")
         for name in ("idle.png", "starting.png", "recording.png", "reopened.png", "invalid-camera.png", "invalid-camera.txt"):
             (output / name).write_bytes(read(name))
+        camera_validation = json.loads(read("camera-id-validation.json"))
+        camera_rows = camera_validation.get("camera_ids_tested", [])
+        camera_ids = [row.get("camera_id") for row in camera_rows]
+        if (camera_validation.get("scope") != "Android emulator only" or len(camera_rows) < 2 or
+                len(camera_ids) != len(set(camera_ids)) or any(
+                    not row.get("camera_id") or not row.get("file", "").endswith(".jpg") or
+                    row.get("bytes", 0) <= 0 or row.get("width", 0) <= 0 or row.get("height", 0) <= 0 or
+                    not re.fullmatch(r"[0-9a-f]{64}", row.get("sha256", "")) for row in camera_rows)):
+            raise ValueError("Camera ID evidence lacks unique successful JPEG results for every reported ID")
+        (output / "camera-id-validation.json").write_text(json.dumps(camera_validation, indent=2) + "\n")
+        invalid_camera = json.loads(read("invalid-camera.txt"))
+        binding_context = invalid_camera.get("binding_context", "")
+        if (invalid_camera.get("saved_frames") != 0 or invalid_camera.get("attempts") != 0 or
+                invalid_camera.get("failures", 0) <= 0 or
+                "CAMERA_BIND_FAILURE_CONTEXT" not in binding_context or
+                "requested=NONEXISTENT_TEST_CAMERA" not in binding_context or
+                "available_ids=" not in binding_context):
+            raise ValueError("Invalid-camera evidence is missing saved/error counters or camera ID context")
         (output / "jpeg-validation.tsv").write_bytes(table)
         capture_gaps = json.loads(read("capture-gap-metrics.json"))
         if (capture_gaps.get("scope") != "Android emulator only" or capture_gaps.get("saved_frames", 0) < 10 or

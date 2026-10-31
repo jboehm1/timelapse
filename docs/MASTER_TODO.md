@@ -23,20 +23,20 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 37 %** — **49/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 38 %** — **50/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
-| A — Build, outils, CI et livraison | 17 | **33 %** |
+| A — Build, outils, CI et livraison | 17 | **37 %** |
 | B — Projets, Photolapse, import et stockage | 19 | **59 %** |
-| C — Capture caméra, objectifs, format et qualité | 22 | **19 %** |
+| C — Capture caméra, objectifs, format et qualité | 22 | **21 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **22 %** |
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **38 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **43 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **30 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **40 %** |
-| J — Tests, mesures, robustesse validée et release | 24 | **18 %** |
+| J — Tests, mesures, robustesse validée et release | 24 | **23 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **96 %** |
 
 <!-- PROGRESS-SCORE-END -->
@@ -63,7 +63,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-LIST-START -->
 
-### A. Build, outils, CI et livraison — 33 %
+### A. Build, outils, CI et livraison — 37 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -71,7 +71,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [x] | A-02 | P0 | **100 %** | APK debug téléchargeable | APK généré et SHA-256 publié |
 | [ ] | A-03 | P0 | **40 %** | SDK Android installé pour build autonome | Toolchain officielle installée et testée |
 | [ ] | A-04 | P0 | **25 %** | Script build Windows sans Actions | Exécuté de bout en bout sur Windows |
-| [ ] | A-05 | P0 | **10 %** | Gradle wrapper versionné | gradlew et gradlew.bat reproduisent le build |
+| [ ] | A-05 | P0 | **55 %** | Gradle wrapper versionné | gradlew et gradlew.bat reproduisent le build |
 | [x] | A-06 | P0 | **100 %** | CI exécute compilation et tests | Run vert avec journaux et artefact APK |
 | [ ] | A-07 | P0 | **10 %** | Alternative runner auto-hébergé privé | Runner branché, durci et reproductible |
 | [ ] | A-08 | P1 | **0 %** | Cache fiable dépendances | Build hors réseau après initialisation |
@@ -109,7 +109,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
 
-### C. Capture caméra, objectifs, format et qualité — 19 %
+### C. Capture caméra, objectifs, format et qualité — 21 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -134,7 +134,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | C-19 | P1 | **0 %** | Anti-flicker capture/posttraitement | Transition jour/nuages non clignotante sur vidéos |
 | [ ] | C-20 | P2 | **0 %** | Prévisualisation faible puissance | Mesures RAM et batterie conformes au budget |
 | [ ] | C-21 | P1 | **0 %** | Contrôles exposition/mise au point persistants | Appliqués après réouverture de session |
-| [ ] | C-22 | P1 | **0 %** | Gestion sans camera ou objectifs indisponibles | Explication visible et reprise guidée |
+| [ ] | C-22 | P1 | **55 %** | Gestion sans camera ou objectifs indisponibles | Explication visible et reprise guidée |
 
 ### D. Focus, exposition, balances et interface de mesure — 15 %
 
@@ -299,7 +299,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | I-14 | P1 | **0 %** | Signatures et mises à jour sécurisées | Clés protégées et stratégie rotation |
 | [ ] | I-15 | P2 | **0 %** | Gestion crash telemetry opt-in | Aucune transmission sans consentement |
 
-### J. Tests, mesures, robustesse validée et release — 18 %
+### J. Tests, mesures, robustesse validée et release — 23 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -310,7 +310,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | J-05 | P0 | **0 %** | Photo réelle / métadonnées / fichiers | Capture JPEG décodable avec EXIF |
 | [ ] | J-06 | P0 | **0 %** | Tap AF AE deux zones réelles | Test mur/sky sur S21 |
 | [ ] | J-07 | P0 | **0 %** | Exposition et focus manual mesurés | CaptureResult + photos correspondantes |
-| [ ] | J-08 | P0 | **0 %** | Motion blur/trails export vérifié | ffprobe et comparaison image référence |
+| [x] | J-08 | P0 | **100 %** | Motion blur/trails export vérifié | ffprobe et comparaison image référence |
 | [ ] | J-09 | P0 | **0 %** | Test capture 1h | Taux frames vs plan, zéro perte inexpliquée |
 | [ ] | J-10 | P0 | **0 %** | Test capture 8h écran OFF | Pas crash, logs et durée batterie |
 | [ ] | J-11 | P0 | **0 %** | Test veille/reprise chaque matin 72h | Horaires exacts, écran physiquement OFF |
