@@ -4,106 +4,106 @@
   "jpeg_count": 13,
   "frames": [
     {
-      "file": "frame_0000000001_1793441522325.jpg",
-      "bytes": "60513",
+      "file": "frame_0000000001_1793442205324.jpg",
+      "bytes": "60046",
       "dimensions": "1856x1392",
-      "sha256": "7a30169122a6e185b3525c768f70e588300395dff7bba0baeadc35a65a203655",
+      "sha256": "c10923f81330ece4f06b755e4127678b39ea332c593dd7af5615389eb70ef882",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000002_1793441526099.jpg",
-      "bytes": "61272",
+      "file": "frame_0000000002_1793442208966.jpg",
+      "bytes": "59011",
       "dimensions": "1856x1392",
-      "sha256": "8910bff1ded61acf94178c6cc2fb1a1ee7b980084f85315f3a676d4dca708358",
+      "sha256": "30fd5b5938d6af0d8be82340e28a28a1ddd961aa3ed60fd4973ad32690631db4",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000003_1793441528170.jpg",
-      "bytes": "59015",
+      "file": "frame_0000000003_1793442210934.jpg",
+      "bytes": "60101",
       "dimensions": "1856x1392",
-      "sha256": "2ef6af5c5e11967303f5217daa9a3ca5706211ae0afb595bce400d15e963e9a1",
+      "sha256": "bbd8013000537763300cf9adc62ccb34ae82b74056c0ede69275f19689ae42a7",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000004_1793441530121.jpg",
-      "bytes": "59015",
+      "file": "frame_0000000004_1793442212944.jpg",
+      "bytes": "60101",
       "dimensions": "1856x1392",
-      "sha256": "9749a3bd844101f40fd9527f5c7a679f8504f022bb378de9e56359d6482fa772",
+      "sha256": "103a6bf27a59326664dd3fc0380f9b7ca17a35952b848988ee549915d2ae252a",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000005_1793441532098.jpg",
+      "file": "frame_0000000005_1793442214933.jpg",
+      "bytes": "59442",
+      "dimensions": "1856x1392",
+      "sha256": "6d352e60ed64446b6b9145c0477722b9dfd730902cdf6296287672beb83b4e41",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000006_1793442216945.jpg",
+      "bytes": "59833",
+      "dimensions": "1856x1392",
+      "sha256": "0f46f018189e38cbdc4d0ffb78fc9c758b84e50fe3ef681a0b541f558ba40931",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000007_1793442218938.jpg",
+      "bytes": "59125",
+      "dimensions": "1856x1392",
+      "sha256": "6197521ac6cf504dff5f5f6c1736df38cce70f719f2ff5820df1c627a453c745",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000008_1793442220954.jpg",
+      "bytes": "61397",
+      "dimensions": "1856x1392",
+      "sha256": "c5636646119632a03d1704f5c4bdc9c250319e107a0690df529b52a5d636de25",
+      "width": 1856,
+      "height": 1392
+    },
+    {
+      "file": "frame_0000000009_1793442223016.jpg",
       "bytes": "61287",
       "dimensions": "1856x1392",
-      "sha256": "36d44b9cfe1ba09695511e925cc1c86ac3b16e0fc324a2c57a9ee8c17fe5b5c5",
+      "sha256": "7ff8249fd21118cfe91b3298ac81ad2120c40ef4aec1efef97a1569b033040a8",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000006_1793441534100.jpg",
-      "bytes": "59015",
-      "dimensions": "1856x1392",
-      "sha256": "17766c3d4ae61016c1d858fd6f61cb5146f29d37ae050a3deff53fcce3fa6e4e",
-      "width": 1856,
-      "height": 1392
-    },
-    {
-      "file": "frame_0000000007_1793441536254.jpg",
+      "file": "frame_0000000010_1793442225027.jpg",
       "bytes": "61287",
       "dimensions": "1856x1392",
-      "sha256": "3967e39b8b6aa1b61bb7cd19e498ee4146f03891abb900d106ad056f8b040890",
+      "sha256": "6b13fb61f44f46ec4d2bb8e6c6bcaece3756ebf935a99486a364ae504144b991",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000008_1793441538178.jpg",
-      "bytes": "61287",
+      "file": "frame_0000000011_1793442226958.jpg",
+      "bytes": "59442",
       "dimensions": "1856x1392",
-      "sha256": "f8b963a72c1b4c03eb74a12fb2e792c45a57a4696d0c2c3c03dd84c6c2d8bfb8",
+      "sha256": "b0f49709ea9b737873bbd59d32ddff6114f072287f986fac7627eeff092ee6ce",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000009_1793441540153.jpg",
-      "bytes": "61287",
-      "dimensions": "1856x1392",
-      "sha256": "ee038ad5ec88bf65878fd48768bfeac2d7b49daf25f517ce6e136f63e03ba6f0",
-      "width": 1856,
-      "height": 1392
-    },
-    {
-      "file": "frame_0000000010_1793441542138.jpg",
-      "bytes": "61287",
-      "dimensions": "1856x1392",
-      "sha256": "5690a7d5b2eb4bf8cc6c6de8fabfbf9414631cdfcb423fe18c058f03ecc74a3d",
-      "width": 1856,
-      "height": 1392
-    },
-    {
-      "file": "frame_0000000011_1793441544109.jpg",
+      "file": "frame_0000000012_1793442229045.jpg",
       "bytes": "61115",
       "dimensions": "1856x1392",
-      "sha256": "aff2626c2c176c9165f1ff684ff0ffe308c4a8c65b6099dbc2cf33bef013ba2a",
+      "sha256": "1304d3011ea4a9cd7bf59270a7398da12b6868b168bf3780d3281a8e7a1a5209",
       "width": 1856,
       "height": 1392
     },
     {
-      "file": "frame_0000000013_1793441566496.jpg",
-      "bytes": "61343",
+      "file": "frame_0000000013_1793442233012.jpg",
+      "bytes": "59439",
       "dimensions": "1856x1392",
-      "sha256": "2740c7453d48a2e87a9a6bf8d8d595cc5bdbdfb9a5d3248f192bfefbd14ae11e",
-      "width": 1856,
-      "height": 1392
-    },
-    {
-      "file": "frame_0000000014_1793441568097.jpg",
-      "bytes": "59184",
-      "dimensions": "1856x1392",
-      "sha256": "5fb12975a703ccb72e2662754461df53ef3efd55c38245bbe320b0842e0a0af8",
+      "sha256": "9189d200eec011aac4805311407e8ab660e3677f0d5da8d231ee987adc69c649",
       "width": 1856,
       "height": 1392
     }
@@ -112,32 +112,32 @@
     {
       "effect": "NONE",
       "file": "none.mp4",
-      "bytes": 9025,
+      "bytes": 7868,
       "width": 640,
       "height": 360,
       "samples": 4,
       "duration_us": 133333,
-      "sha256": "33bcce3e5fa02bfd7305a4eaef30c8e8c8c1d72c43b33c3d27b8be214e2dd461"
+      "sha256": "02f4f3a4bc523276d796d80d699ada6295537227c9acf54508a2d3e53e4de7ea"
     },
     {
       "effect": "MOTION_BLUR",
       "file": "motion_blur.mp4",
-      "bytes": 9144,
+      "bytes": 7053,
       "width": 640,
       "height": 360,
       "samples": 4,
       "duration_us": 133333,
-      "sha256": "d4872633205841049b146c60967d611b14c6c898e8419453e31b991f00a4394c"
+      "sha256": "f76cabe9e424d322e7b0d651f98bbb7e7b15c48590c1e426f1e88e28cacb5209"
     },
     {
       "effect": "LIGHT_TRAILS",
       "file": "light_trails.mp4",
-      "bytes": 8910,
+      "bytes": 7812,
       "width": 640,
       "height": 360,
       "samples": 4,
       "duration_us": 133333,
-      "sha256": "91834b1f0632c44d37ddaaa13907e1d7585cc277a4f5d36563b847a7f2f71ae6"
+      "sha256": "3b2e3b1d6cdbb69010cff26b7ba45885e912d282218145f52e12b8d8e0cc6bfc"
     }
   ],
   "person_walk_simulation": {
@@ -160,7 +160,7 @@
     "normal": {
       "file": "person-walk-none.mp4",
       "bytes": 21808,
-      "sha256": "05bf600618ebcfc4170391b370bd91cb9ae61a0b0d48045b9d027148ba7b6746",
+      "sha256": "3daafe6096aa6d5bf2400fd4a8756ee5eb0e57e5947462c906b97bd39f9c5569",
       "samples": 7,
       "width": 640,
       "height": 360,
@@ -170,7 +170,7 @@
     "motion_blur": {
       "file": "person-walk-motion-blur.mp4",
       "bytes": 21728,
-      "sha256": "b13d8372c62d68260425b617c47959c062bb0b8ed2c19907b3aa5bb9f12ca187",
+      "sha256": "ff87e9b9e7ad87d254fd3f98b6565d375a085d6c6cf6123fff8bf9d899388d9d",
       "samples": 7,
       "width": 640,
       "height": 360,
@@ -185,29 +185,31 @@
       "normal": {
         "file": "person-walk-none.mp4",
         "bytes": 21808,
-        "sha256": "05bf600618ebcfc4170391b370bd91cb9ae61a0b0d48045b9d027148ba7b6746",
+        "sha256": "3daafe6096aa6d5bf2400fd4a8756ee5eb0e57e5947462c906b97bd39f9c5569",
         "samples": 7,
         "width": 640,
         "height": 360,
         "fps": 7,
         "duration_us": 1000000,
         "host_decode": {
-          "ffprobe": false,
-          "ffmpeg": false
+          "ffprobe": true,
+          "ffmpeg": true,
+          "duration_seconds": 0.999989
         }
       },
       "motion_blur": {
         "file": "person-walk-motion-blur.mp4",
         "bytes": 21728,
-        "sha256": "b13d8372c62d68260425b617c47959c062bb0b8ed2c19907b3aa5bb9f12ca187",
+        "sha256": "ff87e9b9e7ad87d254fd3f98b6565d375a085d6c6cf6123fff8bf9d899388d9d",
         "samples": 7,
         "width": 640,
         "height": 360,
         "fps": 7,
         "duration_us": 1000000,
         "host_decode": {
-          "ffprobe": false,
-          "ffmpeg": false
+          "ffprobe": true,
+          "ffmpeg": true,
+          "duration_seconds": 0.999989
         }
       }
     }
@@ -217,8 +219,8 @@
     "frames": 30,
     "uncached_decodes": 88,
     "cached_decodes": 30,
-    "uncached_ms": 3084,
-    "cached_ms": 1570,
+    "uncached_ms": 3791,
+    "cached_ms": 1646,
     "cache_hits": 58,
     "peak_cache_bytes": 2764800,
     "encoder": "c2.android.avc.encoder",

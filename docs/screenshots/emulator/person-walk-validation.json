@@ -18,7 +18,7 @@
   "normal": {
     "file": "person-walk-none.mp4",
     "bytes": 21808,
-    "sha256": "05bf600618ebcfc4170391b370bd91cb9ae61a0b0d48045b9d027148ba7b6746",
+    "sha256": "3daafe6096aa6d5bf2400fd4a8756ee5eb0e57e5947462c906b97bd39f9c5569",
     "samples": 7,
     "width": 640,
     "height": 360,
@@ -28,7 +28,7 @@
   "motion_blur": {
     "file": "person-walk-motion-blur.mp4",
     "bytes": 21728,
-    "sha256": "b13d8372c62d68260425b617c47959c062bb0b8ed2c19907b3aa5bb9f12ca187",
+    "sha256": "ff87e9b9e7ad87d254fd3f98b6565d375a085d6c6cf6123fff8bf9d899388d9d",
     "samples": 7,
     "width": 640,
     "height": 360,
@@ -43,29 +43,31 @@
     "normal": {
       "file": "person-walk-none.mp4",
       "bytes": 21808,
-      "sha256": "05bf600618ebcfc4170391b370bd91cb9ae61a0b0d48045b9d027148ba7b6746",
+      "sha256": "3daafe6096aa6d5bf2400fd4a8756ee5eb0e57e5947462c906b97bd39f9c5569",
       "samples": 7,
       "width": 640,
       "height": 360,
       "fps": 7,
       "duration_us": 1000000,
       "host_decode": {
-        "ffprobe": false,
-        "ffmpeg": false
+        "ffprobe": true,
+        "ffmpeg": true,
+        "duration_seconds": 0.999989
       }
     },
     "motion_blur": {
       "file": "person-walk-motion-blur.mp4",
       "bytes": 21728,
-      "sha256": "b13d8372c62d68260425b617c47959c062bb0b8ed2c19907b3aa5bb9f12ca187",
+      "sha256": "ff87e9b9e7ad87d254fd3f98b6565d375a085d6c6cf6123fff8bf9d899388d9d",
       "samples": 7,
       "width": 640,
       "height": 360,
       "fps": 7,
       "duration_us": 1000000,
       "host_decode": {
-        "ffprobe": false,
-        "ffmpeg": false
+        "ffprobe": true,
+        "ffmpeg": true,
+        "duration_seconds": 0.999989
       }
     }
   }
