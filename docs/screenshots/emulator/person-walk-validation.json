@@ -1,0 +1,72 @@
+{
+  "result": "PASS",
+  "scene": "synthetic person walks left to right in front of a fixed construction-site background",
+  "source_frames": 7,
+  "person_centroids_x": [
+    114.5,
+    182.49527,
+    250.5,
+    318.49527,
+    386.5095,
+    454.49527,
+    522.5
+  ],
+  "width": 640,
+  "height": 360,
+  "fps": 7,
+  "effect_window": 5,
+  "normal": {
+    "file": "person-walk-none.mp4",
+    "bytes": 21808,
+    "sha256": "05bf600618ebcfc4170391b370bd91cb9ae61a0b0d48045b9d027148ba7b6746",
+    "samples": 7,
+    "width": 640,
+    "height": 360,
+    "fps": 7,
+    "duration_us": 1000000
+  },
+  "motion_blur": {
+    "file": "person-walk-motion-blur.mp4",
+    "bytes": 21728,
+    "sha256": "b13d8372c62d68260425b617c47959c062bb0b8ed2c19907b3aa5bb9f12ca187",
+    "samples": 7,
+    "width": 640,
+    "height": 360,
+    "fps": 7,
+    "duration_us": 1000000
+  },
+  "comparison_frame_us": 428571,
+  "pixels_delta_over_30": 17815,
+  "sum_absolute_rgb_delta": 1577888,
+  "comparison_image": "person-walk-comparison.png",
+  "host_outputs": {
+    "normal": {
+      "file": "person-walk-none.mp4",
+      "bytes": 21808,
+      "sha256": "05bf600618ebcfc4170391b370bd91cb9ae61a0b0d48045b9d027148ba7b6746",
+      "samples": 7,
+      "width": 640,
+      "height": 360,
+      "fps": 7,
+      "duration_us": 1000000,
+      "host_decode": {
+        "ffprobe": false,
+        "ffmpeg": false
+      }
+    },
+    "motion_blur": {
+      "file": "person-walk-motion-blur.mp4",
+      "bytes": 21728,
+      "sha256": "b13d8372c62d68260425b617c47959c062bb0b8ed2c19907b3aa5bb9f12ca187",
+      "samples": 7,
+      "width": 640,
+      "height": 360,
+      "fps": 7,
+      "duration_us": 1000000,
+      "host_decode": {
+        "ffprobe": false,
+        "ffmpeg": false
+      }
+    }
+  }
+}
