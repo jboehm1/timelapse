@@ -33,6 +33,12 @@ fun main() {
     check(policy.evaluate(ok.copy(thermalStatus=3), day) == CaptureDecision.THERMAL_COOLDOWN)
     check(policy.evaluate(ok.copy(thermalStatus=6), day) == CaptureDecision.THERMAL_COOLDOWN)
     check(policy.evaluate(ok.copy(availableBytes=1000), day) == CaptureDecision.STORAGE_PAUSED)
+    // Reserve is max(512 MiB, 5% of the volume): pause below the boundary,
+    // resume exactly at it, and keep critical thermal protection highest priority.
+    val storageReserve = maxOf(512L * 1024L * 1024L, (ok.volumeBytes * 0.05).toLong())
+    check(policy.evaluate(ok.copy(availableBytes=storageReserve - 1L), day) == CaptureDecision.STORAGE_PAUSED)
+    check(policy.evaluate(ok.copy(availableBytes=storageReserve), day) == CaptureDecision.CAPTURE)
+    check(policy.evaluate(ok.copy(availableBytes=storageReserve - 1L, thermalStatus=3), day) == CaptureDecision.THERMAL_COOLDOWN)
     check(policy.evaluate(ok.copy(batteryPercent=10), day) == CaptureDecision.BATTERY_PAUSED)
     check(policy.evaluate(ok.copy(batteryPercent=10, isCharging=true), day) == CaptureDecision.CAPTURE)
     check(policy.evaluate(ok.copy(cameraRecoveryExhausted=true), day) == CaptureDecision.NEEDS_USER_ACTION)
