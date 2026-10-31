@@ -63,7 +63,7 @@ On an Internet-connected Windows PC, check out branch `feat/android-capture-expo
 powershell -ExecutionPolicy Bypass -File tools/build-windows.ps1
 ```
 
-The script downloads official Android command-line tools, Gradle and Java if absent, asks for SDK licence acceptance, runs the local Android test+build tasks and, **only upon success**, copies `app-debug.apk` to `dist/Timelapse-debug.apk`. It does not require hosted GitHub Actions. If the build fails, keep its Gradle output for troubleshooting rather than claiming APK success.
+The script downloads official Android command-line tools and Java if absent; the versioned Gradle wrapper downloads its SHA-256-pinned Gradle distribution. It asks for SDK licence acceptance, runs the local Android test+build tasks and, **only upon success**, copies `app-debug.apk` to `dist/Timelapse-debug.apk`. It does not require hosted GitHub Actions. If the build fails, keep its Gradle output for troubleshooting rather than claiming APK success.
 
 ### Linux build (without GitHub-hosted runners)
 
@@ -73,7 +73,7 @@ On a Linux PC with outbound HTTPS and Java already installed:
 bash tools/build-linux.sh
 ```
 
-The script verifies checksums of the official Android command-line SDK and Gradle, requests SDK licence acceptance and builds the debug APK to dist/Timelapse-debug.apk. Pure Kotlin policy logic can also be tested without an Android SDK using `bash tools/test-policy.sh` (with JDK 17 and Kotlin CLI 2.0.21 installed).
+The script verifies the checksum of the official Android command-line SDK and uses the versioned Gradle wrapper with its published distribution checksum; it requests SDK licence acceptance and builds the debug APK to dist/Timelapse-debug.apk. Pure Kotlin policy logic can also be tested without an Android SDK using `bash tools/test-policy.sh` (with JDK 17 and Kotlin CLI 2.0.21 installed).
 
 ## Diagnostic v0.3 workspace
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command Linux Android APK build: SDK CLI / platform / Gradle / tests.
+# One-command Linux Android APK build: SDK CLI / platform / Gradle wrapper / tests.
 # This bootstrap needs outbound HTTPS on first use; it does NOT require GitHub Actions.
 # Android CLI SDK license acceptance is explicitly requested from the user.
 set -euo pipefail
@@ -8,9 +8,6 @@ TOOLS="${TIMELAPSE_BUILD_CACHE:-$HOME/.cache/timelapse-android-build}"
 SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$TOOLS/android-sdk}}"
 SDK_ARCHIVE="commandlinetools-linux-15859902_latest.zip"
 SDK_SHA256="4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583"
-GRADLE_VERSION="8.13"
-GRADLE_ARCHIVE="gradle-${GRADLE_VERSION}-bin.zip"
-GRADLE_BIN="$TOOLS/gradle-${GRADLE_VERSION}/bin/gradle"
 SDKMANAGER="$SDK/cmdline-tools/latest/bin/sdkmanager"
 
 fail(){ echo "ERROR: $*" >&2; exit 1; }
@@ -21,15 +18,6 @@ require unzip
 require sha256sum
 require java
 mkdir -p "$TOOLS" "$SDK"
-
-if [ ! -x "$GRADLE_BIN" ]; then
-    log "Downloading Gradle $GRADLE_VERSION with official published checksum"
-    curl -fL --retry 3 -o "$TOOLS/$GRADLE_ARCHIVE" "https://services.gradle.org/distributions/$GRADLE_ARCHIVE"
-    curl -fL --retry 3 -o "$TOOLS/$GRADLE_ARCHIVE.sha256" "https://services.gradle.org/distributions/$GRADLE_ARCHIVE.sha256"
-    expected="$(tr -d '[:space:]' < "$TOOLS/$GRADLE_ARCHIVE.sha256")"
-    printf '%s  %s\n' "$expected" "$TOOLS/$GRADLE_ARCHIVE" | sha256sum -c - || fail "Gradle checksum mismatch"
-    unzip -oq "$TOOLS/$GRADLE_ARCHIVE" -d "$TOOLS"
-fi
 
 if [ ! -x "$SDKMANAGER" ]; then
     log "Downloading official Android SDK command-line tools (181 MB)"
@@ -51,9 +39,10 @@ if [ ! -f "$SDK/platforms/android-36/android.jar" ] || [ ! -x "$SDK/build-tools/
 fi
 
 cd "$ROOT"
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$TOOLS/gradle-cache}"
 log "Android build started (repository: $ROOT)"
 python3 tools/progress.py --check
-"$GRADLE_BIN" --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+"$ROOT/gradlew" --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
 [ -s "$APK" ] || fail "Gradle exited successfully but APK is absent"
 mkdir -p "$ROOT/dist"

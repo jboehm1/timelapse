@@ -2,9 +2,9 @@
 .SYNOPSIS
     Build the Android debug APK on a Windows PC without GitHub Actions.
 .DESCRIPTION
-    One-time downloads: portable JDK 17 (if Java is missing), Gradle 8.11.1,
-    official Android command-line tools, SDK Platform 36 and Build Tools 35.
-    The script prompts for Android SDK licence acceptance.
+    One-time downloads: portable JDK 17 (if Java is missing), pinned Gradle 8.13
+    through the versioned wrapper, official Android command-line tools, Android command-line tools, SDK Platform 36 and Build Tools 35.
+    The script prompts for Android SDK licence acceptance. The wrapper downloads Gradle with the published SHA-256; -SkipDownloads skips only JDK and Android SDK bootstrap downloads.
     It then compiles/tests the CURRENT checkout and produces dist/Timelapse-debug.apk.
     The build never uploads source or signing keys to any third-party CI provider.
 
@@ -27,12 +27,9 @@ Set-StrictMode -Version Latest
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $cache = Join-Path $env:LOCALAPPDATA 'TimelapseBuild'
 $sdk = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } elseif ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
-$gradleVersion = '8.13'
-$gradleBin = Join-Path $cache "gradle-$gradleVersion\bin\gradle.bat"
 $cmdlineTools = Join-Path $sdk 'cmdline-tools\latest\bin\sdkmanager.bat'
 $androidToolsUrl = 'https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip'
 $androidToolsSha256 = '90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a'
-$gradleUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-bin.zip"
 
 function Log([string]$message) {
     Write-Host "[Timelapse] $message" -ForegroundColor Cyan
@@ -80,13 +77,6 @@ function Ensure-Java {
     $env:PATH = (Join-Path $env:JAVA_HOME 'bin') + ';' + $env:PATH
     Log "Java available at $env:JAVA_HOME"
 }
-function Ensure-Gradle {
-    if (Test-Path $gradleBin) { return }
-    $zip = Join-Path $cache "gradle-$gradleVersion-bin.zip"
-    Download $gradleUrl $zip
-    Expand-Archive -Path $zip -DestinationPath $cache -Force
-    if (-not (Test-Path $gradleBin)) { throw 'Gradle distribution extraction failed' }
-}
 function Ensure-AndroidSdk {
     if (-not (Test-Path $cmdlineTools)) {
         $zip = Join-Path $cache 'android-commandline-tools.zip'
@@ -123,12 +113,11 @@ New-Item -ItemType Directory -Force -Path $cache | Out-Null
 Push-Location $repo
 try {
     Ensure-Java
-    Ensure-Gradle
     Ensure-AndroidSdk
     $env:GRADLE_USER_HOME = Join-Path $cache 'gradle-cache'
     Log "Building repository revision: $repo"
     $tasks = if ($SkipTests) { @(':app:assembleDebug') } else { @(':app:testDebugUnitTest', ':app:assembleDebug') }
-    & $gradleBin --no-daemon @tasks
+    & (Join-Path $repo 'gradlew.bat') --no-daemon @tasks
     Require-ExitCode 'Gradle Android build'
     $source = Join-Path $repo 'app\build\outputs\apk\debug\app-debug.apk'
     if (-not (Test-Path $source)) { throw "Gradle completed but APK not found at $source" }

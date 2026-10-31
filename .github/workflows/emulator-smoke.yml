@@ -6,6 +6,9 @@ on:
       - 'core/**'
       - 'tools/emulator-smoke.sh'
       - 'tools/verify-emulator-evidence.py'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'gradle/wrapper/**'
       - '.github/workflows/emulator-smoke.yml'
   workflow_dispatch:
 concurrency:
@@ -46,7 +49,7 @@ jobs:
               changed="$(git show --format= --name-only HEAD)"
               reason="no PR base or emulator evidence checkpoint; checking latest commit"
             fi
-            if grep -Eq '^(app/src/main/|app/src/androidTest/|core/|tools/emulator-smoke\.sh$|tools/verify-emulator-evidence\.py$|\.github/workflows/emulator-smoke\.yml$|app/build\.gradle\.kts$|build\.gradle\.kts$|settings\.gradle\.kts$)' <<< "$changed"; then
+            if grep -Eq '^(app/src/main/|app/src/androidTest/|core/|tools/emulator-smoke\.sh$|tools/verify-emulator-evidence\.py$|\.github/workflows/emulator-smoke\.yml$|app/build\.gradle\.kts$|build\.gradle\.kts$|settings\.gradle\.kts$|gradlew$|gradlew\.bat$|gradle/wrapper/)' <<< "$changed"; then
               run_emulator=true
             else
               run_emulator=false
@@ -62,7 +65,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         if: steps.plan.outputs.run_emulator == 'true'
         with:
-          gradle-version: '8.13'
           cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
       - name: Enable KVM
         if: steps.plan.outputs.run_emulator == 'true'
@@ -78,7 +80,7 @@ jobs:
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           test -x "$SDKMANAGER"
           "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
-          gradle :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
           test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Install camera test system image with bounded download retries
         if: steps.plan.outputs.run_emulator == 'true'

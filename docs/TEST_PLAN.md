@@ -71,7 +71,13 @@ Alpha: T01/T02 and 8h day session without crash, all outputs validated.
 Beta: T04–T15 and 72h soak pass with limitations documented.
 Stable candidate: two 7-day runs with reproducible no-critical-data-loss metrics. Never write “100% reliable” or “guaranteed 24/7” without bounded stated conditions.
 
-## 5. Command snippets
+## 5. Reproducible Gradle invocation
+
+The repository versions `gradlew`, `gradlew.bat`, the matching wrapper JAR and `gradle/wrapper/gradle-wrapper.properties`. The wrapper pins Gradle 8.13 and its published distribution SHA-256. CI, Linux/Windows build scripts and local commands must call the wrapper; CI cache setup must derive the version from wrapper properties. The first wrapper invocation downloads the distribution, so offline builds still require that distribution in the Gradle user cache.
+
+`./gradlew --version` must report Gradle 8.13. The Android workflow must run unit tests, assemble the diagnostic APK, verify merged APK permissions and lint using the wrapper. The emulator workflow must also build with the wrapper when relevant app/core/harness changes require a run. These checks verify build reproducibility, not S21 camera behavior.
+
+## 6. Command snippets
 ```bash
 ./gradlew testDebugUnitTest assembleDebug
 adb shell dumpsys power

@@ -41,3 +41,9 @@ This is an engineering changelog for the feature branch. It does not describe a 
 ## Diagnostic v0.3.1 — not a release
 
 Feature history includes project workspace, finite capture and Test Photo, planning estimates, daily schedule logic, CameraX foreground capture, lossless originals, MP4 effects and day batches. See [the PR](https://github.com/jboehm1/timelapse/pull/2), [continuation reports](CONTINUATION_2026-10-31.md), and [export measurements](EXPORT_PERFORMANCE_2026-10-30.md). Samsung Galaxy S21 zero-JPEG report remains an absolute release blocker.
+
+
+## Unreleased — pinned Gradle wrapper (validation pending)
+
+- Added the official Gradle 8.13 wrapper scripts and matching wrapper JAR; `gradle-wrapper.properties` pins the published binary distribution SHA-256. Android CI, emulator CI, and Linux/Windows build scripts now invoke `./gradlew` / `gradlew.bat` so they use one version source.
+- The wrapper distribution could not be fetched from this local network namespace, so local `./gradlew --version` stopped at network connection before execution. No wrapper or Android validation is claimed yet; the workflow must pass before A-05 advances. The emulator path matcher includes wrapper files so this build-system change receives the full applicable build and simulation checks.

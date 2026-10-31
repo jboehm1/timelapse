@@ -44,8 +44,6 @@ jobs:
           echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
           "$SDKMANAGER" --version
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
       - name: Android API 36
         run: |
           set -euo pipefail
@@ -55,7 +53,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-build.log
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-build.log
       - name: Verify final merged APK permission allowlist
         run: python3 tools/verify_apk_permissions.py app/build/outputs/apk/debug/app-debug.apk
       # Make the alpha installable even when static analysis discovers issues.
@@ -71,7 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle :app:lintDebug --no-daemon 2>&1 | tee lint-build.log
+          ./gradlew :app:lintDebug --no-daemon 2>&1 | tee lint-build.log
       - name: Upload build diagnostics and lint reports
         if: always()
         uses: actions/upload-artifact@v4
