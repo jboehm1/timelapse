@@ -18,13 +18,13 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.security.MessageDigest
 
-/** Deterministic moving-person export fixture. Does not use or imply a physical camera. */
+/** Deterministic two-person moving export fixture. Does not use or imply a physical camera. */
 @RunWith(AndroidJUnit4::class)
 class PersonWalkExportSimulationTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val evidence = File(context.filesDir, "recording-evidence")
 
-    @Test fun normalAndMotionBlurShowPersonWalkingAcrossFixedScene() {
+    @Test fun normalAndMotionBlurShowPeopleWalkingAcrossFixedScene() {
         val root = File(context.cacheDir, "person-walk-fixture-${System.currentTimeMillis()}").apply { mkdirs() }
         val exports = File(evidence, "exports").apply { mkdirs() }
         val source = ArrayList<File>()
@@ -76,7 +76,8 @@ class PersonWalkExportSimulationTest {
                 saveComparison(normalFrame, blurFrame, File(evidence, "person-walk-comparison.png"))
                 File(evidence, "person-walk-validation.json").writeText(JSONObject()
                     .put("result", "PASS")
-                    .put("scene", "synthetic person walks left to right in front of a fixed construction-site background")
+                    .put("scene", "two synthetic workers walk left to right in front of a fixed construction-site background")
+                    .put("people", 2)
                     .put("source_frames", source.size)
                     .put("person_centroids_x", org.json.JSONArray(personCentroids))
                     .put("width", width).put("height", height).put("fps", fps)
@@ -110,9 +111,14 @@ class PersonWalkExportSimulationTest {
         canvas.drawRect(0f, 239f, width.toFloat(), 247f, paint)
         paint.color = Color.rgb(112, 111, 102)
         for (x in 0..width step 80) canvas.drawRect(x.toFloat(), 125f, x + 2f, 230f, paint)
+        drawWorker(canvas, 65f + index * 68f, index, paint)
+        drawWorker(canvas, 190f + index * 68f, index + 1, paint)
+        return frame
+    }
+
+    private fun drawWorker(canvas: Canvas, personX: Float, gaitIndex: Int, paint: Paint) {
+        val gait = if (gaitIndex % 2 == 0) 1f else -1f
         paint.color = Color.rgb(232, 121, 32)
-        val personX = 115f + index * 68f
-        val gait = if (index % 2 == 0) 1f else -1f
         canvas.drawRoundRect(RectF(personX - 15, 164f, personX + 15, 238f), 7f, 7f, paint)
         paint.color = Color.rgb(204, 155, 112)
         canvas.drawCircle(personX, 149f, 12f, paint)
@@ -129,7 +135,6 @@ class PersonWalkExportSimulationTest {
         paint.strokeWidth = 9f
         canvas.drawLine(personX - 18 + gait * 14, 286f, personX - 29 + gait * 20, 289f, paint)
         canvas.drawLine(personX + 18 - gait * 14, 286f, personX + 29 - gait * 20, 289f, paint)
-        return frame
     }
 
     private fun orangeCentroid(bitmap: Bitmap): Float {

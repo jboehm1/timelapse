@@ -88,10 +88,25 @@ class PlannerLibraryTest {
         val root = Files.createTempDirectory("hundred-projects-test").toFile()
         try {
             val library = ProjectLibrary(root)
-            repeat(105) { library.create("Roof $it", preset = ProjectLibrary.Preset(500L + it)) }
+            val created = (0 until 105).map { library.create("Roof $it", preset = ProjectLibrary.Preset(500L + it)) }
+            val reopened = ProjectLibrary(root)
+            assertEquals(105, reopened.list().size)
+            assertEquals(105, reopened.list().map { it.id }.toSet().size)
+            assertEquals(105, reopened.list().map { it.preset.intervalMs }.toSet().size)
+
+            created.forEachIndexed { index, project ->
+                reopened.rename(project.id, "Renamed roof $index")
+                if (index < 100) reopened.archive(project.id, true)
+            }
+            assertEquals("Trash/archive should not hide or remove project data", 5, reopened.list().size)
+            assertEquals(100, reopened.list(includeArchived = true).count { it.archived })
+
+            val afterRestart = ProjectLibrary(root)
+            created.forEachIndexed { index, project ->
+                assertEquals("Renamed roof $index", afterRestart.read(project.id).title)
+                if (index < 100) afterRestart.archive(project.id, false)
+            }
             assertEquals(105, ProjectLibrary(root).list().size)
-            assertEquals(105, library.list().map { it.id }.toSet().size)
-            assertEquals(105, library.list().map { it.preset.intervalMs }.toSet().size)
         } finally { root.deleteRecursively() }
     }
     @Test fun damagedMetadataCannotHideExistingOriginals() {

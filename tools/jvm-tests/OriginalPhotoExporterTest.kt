@@ -33,7 +33,8 @@ fun main() {
         check(before == destination.listFiles()!!.associate { it.name to originalSha(it.readBytes()) })
 
         val zipBytes = ByteArrayOutputStream()
-        val zipResult = OriginalPhotoExporter.exportZip(sources, zipBytes)
+        var zipDeleted = false
+        val zipResult = OriginalPhotoExporter.exportZip(sources, zipBytes, deleteOutput = { zipDeleted = true })
         val zipHashes = linkedMapOf<String, String>()
         ZipInputStream(ByteArrayInputStream(zipBytes.toByteArray())).use { zip ->
             while (true) {
@@ -44,6 +45,13 @@ fun main() {
         }
         check(zipResult.files == 2 && zipResult.bytes == result.bytes)
         check(before == zipHashes)
+        check(!zipDeleted)
+
+        zipDeleted = false
+        check(runCatching {
+            OriginalPhotoExporter.exportZip(sources, OutputStreamFailure(16), deleteOutput = { zipDeleted = true })
+        }.isFailure)
+        check(zipDeleted)
 
         destination.listFiles()!!.forEach { check(it.delete()) }
         var opened = 0
@@ -87,5 +95,16 @@ fun main() {
         println("PASS: original JPEG/PNG sequence and ZIP hashes; partial destination cleanup; immutable sources")
     } finally {
         root.deleteRecursively()
+    }
+}
+
+private class OutputStreamFailure(private val limit: Int) : OutputStream() {
+    private var written = 0
+    override fun write(value: Int) {
+        if (++written > limit) throw IOException("injected ZIP destination failure")
+    }
+    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+        if (written + length > limit) throw IOException("injected ZIP destination failure")
+        written += length
     }
 }

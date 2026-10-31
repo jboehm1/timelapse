@@ -24,6 +24,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.security.MessageDigest
 import java.util.regex.Pattern
+import java.util.zip.ZipInputStream
 
 /** Real UI -> foreground service -> emulated camera -> durable JPEG. No fixture images. */
 @RunWith(AndroidJUnit4::class)
@@ -71,6 +72,9 @@ class RecordingSmokeTest {
         return hash.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
     }
 
+    private fun digest(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes)
+        .joinToString("") { "%02x".format(it.toInt() and 255) }
+
     @Test fun actualStartWritesTenJpegsAndSurvivesBackgroundAndReopen() {
         val root = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "projects")
         val before = root.listFiles().orEmpty().map { it.name }.toSet()
@@ -111,6 +115,41 @@ class RecordingSmokeTest {
             val originals = frames(project)
             assertTrue(originals.size >= 12)
             val hashes = originals.associate { it.name to digest(it) }
+            // Exercise the lossless original-photo delivery paths with camera-generated JPEGs.
+            val sequenceDirectory = File(evidence, "original-sequence").apply { mkdirs() }
+            val sequenceResult = OriginalPhotoExporter.exportSequence(
+                photos = originals,
+                openOutput = { name, _ -> File(sequenceDirectory, name).outputStream() },
+                deleteOutput = { name -> File(sequenceDirectory, name).delete() }
+            )
+            assertEquals(originals.size, sequenceResult.files)
+            assertEquals(originals.sumOf { it.length() }, sequenceResult.bytes)
+            assertEquals(hashes, sequenceDirectory.listFiles().orEmpty().associate { it.name to digest(it) })
+            originals.forEach { original ->
+                val copy = File(sequenceDirectory, original.name)
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(copy.absolutePath, bounds)
+                assertTrue("Exported JPEG failed to decode: ${copy.name}", bounds.outWidth > 0 && bounds.outHeight > 0)
+            }
+            val zipFile = File(evidence, "originals.zip")
+            val zipResult = zipFile.outputStream().use { OriginalPhotoExporter.exportZip(originals, it) }
+            assertEquals(originals.size, zipResult.files)
+            assertEquals(originals.sumOf { it.length() }, zipResult.bytes)
+            val zippedHashes = linkedMapOf<String, String>()
+            ZipInputStream(zipFile.inputStream()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    assertFalse("ZIP path escaped project folder", entry.name.contains('/') || entry.name.contains('\\'))
+                    zippedHashes[entry.name] = digest(zip.readBytes())
+                }
+            }
+            assertEquals(hashes, zippedHashes)
+            assertEquals(hashes, originals.associate { it.name to digest(it) })
+            File(evidence, "original-export-validation.json").writeText(JSONObject()
+                .put("source_images", originals.size).put("sequence_images", sequenceResult.files)
+                .put("sequence_bytes", sequenceResult.bytes).put("zip_images", zipResult.files)
+                .put("zip_bytes", zipResult.bytes).put("all_source_hashes_preserved", true)
+                .put("all_output_hashes_match", true).toString(2))
             val ids = originals.map { it.name.split('_')[1].toLong() }
             assertEquals(ids.size, ids.toSet().size)
             assertEquals(ids.sorted(), ids)

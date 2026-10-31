@@ -103,7 +103,11 @@ class OriginalPhotoExporterTest {
             }.isFailure
             assertTrue(sequenceFailed)
             assertEquals("Stop after the failing destination", 2, opened)
-            assertTrue(runCatching { OriginalPhotoExporter.exportZip(photos, FailingOutputStream(12)) }.isFailure)
+            var zipDeleted = false
+            assertTrue(runCatching {
+                OriginalPhotoExporter.exportZip(photos, FailingOutputStream(12), deleteOutput = { zipDeleted = true })
+            }.isFailure)
+            assertTrue("Failed ZIP destination must be removed", zipDeleted)
             assertEquals(before, photos.associate { it.name to sha(it.readBytes()) })
         } finally { dir.deleteRecursively() }
     }

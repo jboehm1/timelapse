@@ -46,19 +46,28 @@ object OriginalPhotoExporter {
         return OriginalExportResult(originals.size, bytes)
     }
 
-    fun exportZip(photos: List<File>, output: OutputStream): OriginalExportResult {
-        val originals = validate(photos)
-        var bytes = 0L
-        ZipOutputStream(BufferedOutputStream(NonClosingOutputStream(output))).use { zip ->
-            originals.forEach { photo ->
-                zip.putNextEntry(ZipEntry(photo.name))
-                val copied = photo.inputStream().buffered().use { it.copyTo(zip, BUFFER_SIZE) }
-                if (copied != photo.length()) throw IOException("Original changed while exporting ${photo.name}")
-                bytes += copied
-                zip.closeEntry()
+    fun exportZip(
+        photos: List<File>,
+        output: OutputStream,
+        deleteOutput: () -> Unit = {}
+    ): OriginalExportResult {
+        try {
+            val originals = validate(photos)
+            var bytes = 0L
+            ZipOutputStream(BufferedOutputStream(NonClosingOutputStream(output))).use { zip ->
+                originals.forEach { photo ->
+                    zip.putNextEntry(ZipEntry(photo.name))
+                    val copied = photo.inputStream().buffered().use { it.copyTo(zip, BUFFER_SIZE) }
+                    if (copied != photo.length()) throw IOException("Original changed while exporting ${photo.name}")
+                    bytes += copied
+                    zip.closeEntry()
+                }
             }
+            return OriginalExportResult(originals.size, bytes)
+        } catch (failure: Exception) {
+            runCatching { deleteOutput() }.exceptionOrNull()?.let(failure::addSuppressed)
+            throw failure
         }
-        return OriginalExportResult(originals.size, bytes)
     }
 
     private fun validate(photos: List<File>): List<File> {
