@@ -6,6 +6,7 @@
 - Refreshed the test evidence register with source/checkpoint SHAs, emulator metrics, diagnostic APK hash, workflow links and hardware scope limits (K-16).
 - Invalid-camera instrumentation confirmed separate visible saved/error counters (0 saved, 5 bind errors); C-16 reaches the automated-test stage only.
 - Added exact storage-reserve boundary and thermal-priority tests (B-12), and recorded CI proof for bounded diagnostic log rotation (F-13).
+- Added bounded capture-gap p50/p95/p99 telemetry with JVM and emulator assertions; C-03 waits for CI evidence.
 
 This is an engineering changelog for the feature branch. It does not describe a public release. Commits are linked to roadmap items; acceptance scores remain in [MASTER_TODO.csv](MASTER_TODO.csv).
 

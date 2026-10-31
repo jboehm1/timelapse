@@ -82,7 +82,10 @@ def verify(archive_path: str, destination: str) -> dict:
         capture_gaps = json.loads(read("capture-gap-metrics.json"))
         if (capture_gaps.get("scope") != "Android emulator only" or capture_gaps.get("saved_frames", 0) < 10 or
                 capture_gaps.get("attempts", 0) < capture_gaps.get("saved_frames", 0) or
-                capture_gaps.get("skipped_slots", -1) < 0 or capture_gaps.get("longest_successful_gap_ms", 0) <= 0):
+                capture_gaps.get("skipped_slots", -1) < 0 or capture_gaps.get("longest_successful_gap_ms", 0) <= 0 or
+                not 1 <= capture_gaps.get("gap_sample_count", 0) <= capture_gaps.get("gap_window_max_samples", 0) <= 1000 or
+                not 0 < capture_gaps.get("gap_p50_ms", 0) <= capture_gaps.get("gap_p95_ms", 0) <=
+                    capture_gaps.get("gap_p99_ms", 0) <= capture_gaps.get("longest_successful_gap_ms", 0)):
             raise ValueError("Capture gap metrics are missing or inconsistent")
         (output / "capture-gap-metrics.json").write_text(json.dumps(capture_gaps, indent=2) + "\n")
         original_export = json.loads(read("original-export-validation.json"))

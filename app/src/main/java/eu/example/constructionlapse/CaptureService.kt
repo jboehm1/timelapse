@@ -113,6 +113,10 @@ class CaptureService : LifecycleService() {
         private set
     var maxSuccessfulFrameGapMs: Long? = null
         private set
+    val successfulFrameGapSampleCount: Int get() = successfulFrameGaps.sampleCount
+    val successfulFrameGapP50Ms: Long? get() = successfulFrameGaps.percentileGapMs(50)
+    val successfulFrameGapP95Ms: Long? get() = successfulFrameGaps.percentileGapMs(95)
+    val successfulFrameGapP99Ms: Long? get() = successfulFrameGaps.percentileGapMs(99)
     private var cadencePaused = false
     private var lastSafetyTrace = 0L
     private var sessionGeneration = 0L
