@@ -23,7 +23,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 35 %** — **46/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 36 %** — **48/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
@@ -35,7 +35,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | F — Fiabilité, sécurité matérielle et récupération | 30 | **38 %** |
 | G — Export, formats, effets et montage vidéo | 27 | **43 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **30 %** |
-| I — Confidentialité, sécurité, droits, commercialisation | 15 | **32 %** |
+| I — Confidentialité, sécurité, droits, commercialisation | 15 | **40 %** |
 | J — Tests, mesures, robustesse validée et release | 24 | **18 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **94 %** |
 
@@ -279,13 +279,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | H-17 | P1 | **55 %** | Bouton test de capture et qualité | Vérifier zone, exposition avant session |
 | [ ] | H-18 | P1 | **0 %** | Avertissements chaleur et stockage proactifs | Badges couleur et notification claire |
 
-### I. Confidentialité, sécurité, droits, commercialisation — 32 %
+### I. Confidentialité, sécurité, droits, commercialisation — 40 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [x] | I-01 | P0 | **100 %** | Politique indépendante sans APK propriétaire en Git | Consigne présente dans AGENTS |
-| [ ] | I-02 | P0 | **55 %** | Audit permissions caméra/notifications/stockage | Aucune permission excessive ni contournement |
-| [ ] | I-03 | P0 | **55 %** | Stockage par défaut local | Aucun upload sans consentement |
+| [x] | I-02 | P0 | **100 %** | Audit permissions caméra/notifications/stockage | Aucune permission excessive ni contournement |
+| [x] | I-03 | P0 | **100 %** | Stockage par défaut local | Aucun upload sans consentement |
 | [ ] | I-04 | P0 | **0 %** | Pas de secrets ni clés signées dans le dépôt | Scan secrets et historique |
 | [ ] | I-05 | P0 | **0 %** | TLS/pairing pour contrôle Wi-Fi | Requêtes authentifiées, scope LAN |
 | [ ] | I-06 | P0 | **0 %** | Permissions SAF minimales | Accès limité à arbres sélectionnés |
