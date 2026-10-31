@@ -62,7 +62,7 @@ timeout 420s adb shell am instrument -w -r \
   -e class eu.example.constructionlapse.RecordingSmokeTest,eu.example.constructionlapse.WorkspaceSmokeTest,eu.example.constructionlapse.PersonWalkExportSimulationTest \
   eu.example.constructionlapse.test/androidx.test.runner.AndroidJUnitRunner \
   | tee emulator-evidence/instrumentation.txt
-grep -q 'OK (4 tests)' emulator-evidence/instrumentation.txt
+grep -q 'OK (5 tests)' emulator-evidence/instrumentation.txt
 if grep -Eq 'FAILURES|INSTRUMENTATION_FAILED|Process crashed' emulator-evidence/instrumentation.txt; then
   exit 3
 fi
