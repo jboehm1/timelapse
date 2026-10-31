@@ -1,0 +1,7 @@
+{
+  "scope": "Android emulator only",
+  "saved_frames": 10,
+  "attempts": 10,
+  "skipped_slots": 2,
+  "longest_successful_gap_ms": 3121
+}
