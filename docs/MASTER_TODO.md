@@ -28,7 +28,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **33 %** |
-| B — Projets, Photolapse, import et stockage | 19 | **56 %** |
+| B — Projets, Photolapse, import et stockage | 19 | **59 %** |
 | C — Capture caméra, objectifs, format et qualité | 22 | **18 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **19 %** |
@@ -85,7 +85,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [x] | A-16 | P1 | **100 %** | Contrôle des avertissements lint/static analysis | Lint + analyse statique sans défaut majeur |
 | [ ] | A-17 | P2 | **0 %** | Construction reproductible/hachage | Build déterministe comparé en CI locale |
 
-### B. Projets, Photolapse, import et stockage — 56 %
+### B. Projets, Photolapse, import et stockage — 59 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -100,7 +100,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-09 | P0 | **10 %** | Stockage SD/USB externe via SAF | Persistance URI et gestion du média retiré |
 | [ ] | B-10 | P0 | **90 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
 | [x] | B-11 | P0 | **100 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
-| [ ] | B-12 | P0 | **10 %** | Détection stockage plein et quotas | Arrêt sûr avant seuil avec notification |
+| [ ] | B-12 | P0 | **55 %** | Détection stockage plein et quotas | Arrêt sûr avant seuil avec notification |
 | [x] | B-13 | P1 | **100 %** | Estimation stockage restant en jours | Prévision avec taille réelle des dernières images |
 | [ ] | B-14 | P0 | **0 %** | Éviter doublons import et reprendre | Index conservé, aucune photo originale écrasée |
 | [ ] | B-15 | P1 | **40 %** | Miniatures et galerie de projets | Navigation fluide sur 10000+ photos |
@@ -205,7 +205,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-10 | P0 | **55 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
 | [ ] | F-11 | P0 | **90 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
 | [x] | F-12 | P0 | **100 %** | Photos originales immuables | Export raté ne modifie aucun hash source |
-| [ ] | F-13 | P0 | **40 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
+| [ ] | F-13 | P0 | **55 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
 | [ ] | F-14 | P0 | **40 %** | Diagnostics exportables et consentement | ZIP anonymisé pour analyse |
 | [ ] | F-15 | P0 | **0 %** | Gestion sous tension USB instable | Débranchement/connexion repris ou pause sûre |
 | [ ] | F-16 | P0 | **0 %** | Détection surchauffe en charge | Pause même si batterie 100% |
