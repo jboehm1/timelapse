@@ -100,14 +100,15 @@ class RecordingSmokeTest {
         try {
             waitFor("ten independently saved JPEGs", 90_000) { frames(project).size >= 10 }
             val liveCapture = requireNotNull(CaptureService.activeService)
-            assertTrue("Two or more committed frames must produce a measured monotonic gap", liveCapture.maxSuccessfulFrameGapMs > 0L)
+            val longestSuccessfulGap = requireNotNull(liveCapture.maxSuccessfulFrameGapMs)
+            assertTrue("Two or more committed frames must produce a measured monotonic gap", longestSuccessfulGap > 0L)
             assertTrue("Attempts cannot be fewer than committed originals", liveCapture.attempts >= liveCapture.savedCount)
             File(evidence, "capture-gap-metrics.json").writeText(JSONObject()
                 .put("scope", "Android emulator only")
                 .put("saved_frames", liveCapture.savedCount)
                 .put("attempts", liveCapture.attempts)
                 .put("skipped_slots", liveCapture.skippedSlots)
-                .put("longest_successful_gap_ms", liveCapture.maxSuccessfulFrameGapMs)
+                .put("longest_successful_gap_ms", longestSuccessfulGap)
                 .toString(2) + "\n")
             assertTrue(device.wait(Until.hasObject(By.text(Pattern.compile(".*[1-9][0-9]+ photos.*"))), 5000))
             device.takeScreenshot(File(evidence, "recording.png"))

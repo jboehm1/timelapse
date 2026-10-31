@@ -111,7 +111,7 @@ class CaptureService : LifecycleService() {
         private set
     var lastCommitElapsed = 0L
         private set
-    var maxSuccessfulFrameGapMs = 0L
+    var maxSuccessfulFrameGapMs: Long? = null
         private set
     private var cadencePaused = false
     private var lastSafetyTrace = 0L
@@ -191,7 +191,7 @@ class CaptureService : LifecycleService() {
                 sessionFrames = 0L
                 attempts = 0L; skippedSlots = 0L; cadencePaused = false
                 lastCommitElapsed = 0L; captureCount = 0L
-                successfulFrameGaps.reset(); maxSuccessfulFrameGapMs = 0L
+                successfulFrameGaps.reset(); maxSuccessfulFrameGapMs = null
                 lastFailure = ""
                 captureGeneration++
                 inFlight = false
@@ -728,7 +728,7 @@ class CaptureService : LifecycleService() {
                             val committedElapsed = SystemClock.elapsedRealtime()
                             val successfulGap = successfulFrameGaps.recordSuccess(committedElapsed)
                             lastCommitElapsed = committedElapsed
-                            maxSuccessfulFrameGapMs = successfulFrameGaps.longestGapMs
+                            maxSuccessfulFrameGapMs = successfulGap?.let { successfulFrameGaps.longestGapMs }
                             if (successfulGap != null) trace("SUCCESSFUL_FRAME_GAP",
                                 "gap_ms=$successfulGap max_gap_ms=$maxSuccessfulFrameGapMs committed=$captureCount")
                             actualPhotoSize = "${bounds.outWidth} × ${bounds.outHeight}"
