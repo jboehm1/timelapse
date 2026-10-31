@@ -4,6 +4,7 @@
 - Emulator export validation passed four camera-original MP4 rates (24/25/30/60 fps) with independent ffprobe and full decode; G-12 reaches the automated-test stage only.
 - Compiled APK permission verification passed after narrowly allowing CameraX/AndroidX's non-Internet merged permissions; I-02/I-03 acceptance evidence is complete for the current code.
 - Refreshed the test evidence register with source/checkpoint SHAs, emulator metrics, diagnostic APK hash, workflow links and hardware scope limits (K-16).
+- Added an invalid-camera instrumentation assertion for distinct visible saved/error counts (C-16); awaiting emulator CI before scoring.
 
 This is an engineering changelog for the feature branch. It does not describe a public release. Commits are linked to roadmap items; acceptance scores remain in [MASTER_TODO.csv](MASTER_TODO.csv).
 

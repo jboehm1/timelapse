@@ -295,7 +295,16 @@ class RecordingSmokeTest {
             assertTrue(frames(project).isEmpty())
             assertFalse(service.status.startsWith("RECORDING"))
             assertTrue(service.status.contains("CAMERA_BIND") || service.status.contains("no JPEG"))
-            File(evidence, "invalid-camera.txt").writeText(service.status)
+            assertTrue("Camera failure count must be separate from saved photos", service.failures > 0)
+            assertTrue("The live UI must show saved and failed counts separately",
+                device.wait(Until.hasObject(By.text(Pattern.compile(".*0 photos · [1-9][0-9]* errors.*"))), 10_000))
+            File(evidence, "invalid-camera.txt").writeText(JSONObject()
+                .put("status", service.status)
+                .put("saved_frames", service.savedCount)
+                .put("attempts", service.attempts)
+                .put("failures", service.failures)
+                .put("skipped_slots", service.skippedSlots)
+                .toString(2) + "\n")
             device.takeScreenshot(File(evidence, "invalid-camera.png"))
         } finally {
             context.startService(Intent(context, CaptureService::class.java).apply { action = CaptureService.ACTION_STOP })
