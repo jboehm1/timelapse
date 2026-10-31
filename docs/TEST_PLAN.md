@@ -65,3 +65,9 @@ Check Samsung "Unrestricted" battery setting during device runs but do not use i
 ## Export efficiency and day batches (new gate)
 
 Run ExportPlanningTest plus ExportPerformanceCheck in RecordingSmokeTest. Require 30 output frames in both cache modes, decoded-source calls 88→30 for window 3, bounded bitmap bytes, playable one-frame output, inclusive timezone/DST day grouping, two separately readable two-frame day MP4s, first-day persistence and zero pending rows after mid-second-day cancellation, and original hashes unchanged. Record real elapsed time and encoder hardware/software identity without claiming an S21 speedup. Require host benchmark/batch JSON and MP4 bytes. 10k/4K/8K and thermal stress remain separate unexecuted device checks.
+
+## CI follow-up — 2026-10-31
+
+PR #2 head `cc8f031a4af31840c00b555f07c38a753f559dc6` produced a red Android build because three invalid-input tests omitted the required `openOutput` callback. The local fix is commit `5aca98301f95c6523444dd358cc95a911ab53dab`; the current remote PR head does not include it, so the passing policy suite does not validate this Android test compilation.
+
+The same PR head's emulator job compiled the app and instrumentation APK, and its recording/export cases passed. The workspace journey failed at the project detail's Rename action because UiAutomator could not resolve the Compose text node. The action buttons now expose stable content descriptions; the emulator journey must pass again before updating its evidence checkpoint or any acceptance score. This is an automation selector correction, not evidence of new device behavior.

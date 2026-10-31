@@ -76,9 +76,9 @@ class OriginalPhotoExporterTest {
             val valid = File(dir, "frame.jpg").apply { writeBytes(byteArrayOf(1)) }
             val unsupported = File(dir, "frame.gif").apply { writeBytes(byteArrayOf(1)) }
             var opened = false
-            assertTrue(runCatching { OriginalPhotoExporter.exportSequence(emptyList()) { _, _ -> opened = true; ByteArrayOutputStream() } }.isFailure)
-            assertTrue(runCatching { OriginalPhotoExporter.exportSequence(listOf(valid, unsupported)) { _, _ -> opened = true; ByteArrayOutputStream() } }.isFailure)
-            assertTrue(runCatching { OriginalPhotoExporter.exportSequence(listOf(valid, File(dir, "frame.jpg"))) { _, _ -> opened = true; ByteArrayOutputStream() } }.isFailure)
+            assertTrue(runCatching { OriginalPhotoExporter.exportSequence(emptyList(), openOutput = { _, _ -> opened = true; ByteArrayOutputStream() }) }.isFailure)
+            assertTrue(runCatching { OriginalPhotoExporter.exportSequence(listOf(valid, unsupported), openOutput = { _, _ -> opened = true; ByteArrayOutputStream() }) }.isFailure)
+            assertTrue(runCatching { OriginalPhotoExporter.exportSequence(listOf(valid, File(dir, "frame.jpg")), openOutput = { _, _ -> opened = true; ByteArrayOutputStream() }) }.isFailure)
             assertFalse(opened)
         } finally { dir.deleteRecursively() }
     }

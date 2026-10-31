@@ -168,12 +168,12 @@ class WorkspaceSmokeTest {
         clickDescription("Open projects library")
         openProject(title)
         device.takeScreenshot(File(evidence, "project-gallery.png"))
-        clickText("Rename")
+        clickDescription("Rename project")
         val field = device.wait(Until.findObject(By.clazz("android.widget.EditText")), 10_000)
         assertNotNull(field); renameText("$title renamed")
         clickText("Save name")
         waitFor("rename") { library.read(project.id).title.endsWith("renamed") }
-        clickText("Copy preset")
+        clickDescription("Copy project preset")
         waitFor("duplicate preset") { library.list().any { it.title == "$title renamed · copy" } }
         val copy = library.list().single { it.title == "$title renamed · copy" }
         assertEquals(0, library.inventory(copy.id).count)

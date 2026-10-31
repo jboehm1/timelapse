@@ -247,9 +247,9 @@ class WorkspaceActivity : ComponentActivity() {
                     if (row.project.archived) Button(onClick = onRestore, Modifier.fillMaxWidth()) { Text("Restore project") }
                     else Button(onClick = onCamera, Modifier.fillMaxWidth()) { Icon(Icons.Default.Create, null); Spacer(Modifier.width(8.dp)); Text("Open camera & export") }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = onRename) { Text("Rename") }
-                        TextButton(onClick = onDuplicate) { Text("Copy preset") }
-                        TextButton(onClick = onPlanner) { Text("Plan") }
+                        TextButton(onClick = onRename, Modifier.semantics { contentDescription = "Rename project" }) { Text("Rename") }
+                        TextButton(onClick = onDuplicate, Modifier.semantics { contentDescription = "Copy project preset" }) { Text("Copy preset") }
+                        TextButton(onClick = onPlanner, Modifier.semantics { contentDescription = "Open project planner" }) { Text("Plan") }
                     }
                     if (!row.project.archived) TextButton(onClick = onTrash) { Icon(Icons.Default.Delete, null); Text("Move to trash") }
                 }
