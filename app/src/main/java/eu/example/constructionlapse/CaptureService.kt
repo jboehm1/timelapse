@@ -90,6 +90,7 @@ class CaptureService : LifecycleService() {
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private val retries = CameraRetryBudget()
     private val policy = SafetyPolicy()
+    private val successfulFrameGaps = CaptureGapTracker()
     private val retryDelayMs = 5_000L
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
@@ -109,6 +110,8 @@ class CaptureService : LifecycleService() {
     var skippedSlots = 0L
         private set
     var lastCommitElapsed = 0L
+        private set
+    var maxSuccessfulFrameGapMs = 0L
         private set
     private var cadencePaused = false
     private var lastSafetyTrace = 0L
@@ -188,6 +191,7 @@ class CaptureService : LifecycleService() {
                 sessionFrames = 0L
                 attempts = 0L; skippedSlots = 0L; cadencePaused = false
                 lastCommitElapsed = 0L; captureCount = 0L
+                successfulFrameGaps.reset(); maxSuccessfulFrameGapMs = 0L
                 lastFailure = ""
                 captureGeneration++
                 inFlight = false
@@ -721,7 +725,12 @@ class CaptureService : LifecycleService() {
                         inFlight = false
                         if (publication.isSuccess) {
                             captureCount++
-                            lastCommitElapsed = SystemClock.elapsedRealtime()
+                            val committedElapsed = SystemClock.elapsedRealtime()
+                            val successfulGap = successfulFrameGaps.recordSuccess(committedElapsed)
+                            lastCommitElapsed = committedElapsed
+                            maxSuccessfulFrameGapMs = successfulFrameGaps.longestGapMs
+                            if (successfulGap != null) trace("SUCCESSFUL_FRAME_GAP",
+                                "gap_ms=$successfulGap max_gap_ms=$maxSuccessfulFrameGapMs committed=$captureCount")
                             actualPhotoSize = "${bounds.outWidth} × ${bounds.outHeight}"
                             sessionFrames++
                             disarmFirstFrameDeadline()

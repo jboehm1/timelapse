@@ -9,6 +9,7 @@
 - Encoder tests with synthetic JPEG series: None, blur, light trails; verify output stream FPS, width, duration, playback and sample count by ffprobe or MediaExtractor.
 - Fault-injection fakes: camera callback timeout, MediaMuxer error, disk full, duplicate frame IDs, corrupted staging JPEG, low battery, thermal transition.
 - Original-photo export tests stream JPEG/PNG files through the same bounded exporter used by SAF folder output and ZIP. They compare extracted/output hashes, check ordering and MIME types, reject invalid input sets before writing, and inject destination failures while verifying every source hash remains unchanged.
+- Capture-session gap telemetry uses monotonic time between successful JPEG commits, exposes the longest gap alongside attempts/skipped slots, and resets per session. A JVM fault test covers nonuniform gaps and reset; emulator evidence requires at least ten committed originals plus internally consistent attempts/skips/gap metrics. These checks do not validate S21 cadence.
 - Project-library scale test creates 105 independent projects/presets, reopens the catalogue, renames all projects, moves 100 into reversible trash, and restores them after constructing a fresh library instance.
 
 ### Fast feedback and expensive simulation

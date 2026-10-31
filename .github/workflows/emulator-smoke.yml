@@ -173,7 +173,7 @@ jobs:
             test -s "emulator-evidence/$f"
             cp "emulator-evidence/$f" "docs/screenshots/emulator/$f"
           done
-          for f in starting.png recording.png reopened.png invalid-camera.png jpeg-validation.tsv verification.json projects-home.png planner.png project-gallery.png restored-project.png photolapse.png video-validation.json project-validation.txt export-performance.json batch-export-validation.json person-walk-comparison.png person-walk-normal.png person-walk-blur.png person-walk-validation.json; do
+          for f in starting.png recording.png reopened.png invalid-camera.png jpeg-validation.tsv capture-gap-metrics.json verification.json projects-home.png planner.png project-gallery.png restored-project.png photolapse.png video-validation.json project-validation.txt export-performance.json batch-export-validation.json person-walk-comparison.png person-walk-normal.png person-walk-blur.png person-walk-validation.json; do
             test -s "emulator-evidence/verified/$f"
             cp "emulator-evidence/verified/$f" "docs/screenshots/emulator/$f"
           done

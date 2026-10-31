@@ -6,6 +6,19 @@ import java.io.File
 import java.nio.file.Files
 
 class CoreReliabilityTest {
+    @Test fun committedFrameGapsUseElapsedTimeAndResetPerSession() {
+        val tracker = CaptureGapTracker()
+        assertNull(tracker.recordSuccess(2000L))
+        assertEquals(2500L, tracker.recordSuccess(4500L))
+        assertEquals(5500L, tracker.recordSuccess(10000L))
+        assertEquals(1000L, tracker.recordSuccess(11000L))
+        assertEquals(5500L, tracker.longestGapMs)
+        assertTrue(runCatching { tracker.recordSuccess(10999L) }.isFailure)
+        tracker.reset()
+        assertEquals(0L, tracker.longestGapMs)
+        assertNull(tracker.recordSuccess(500L))
+    }
+
     @Test fun timingSkipsMissedCaptureDeadlines() {
         assertEquals(20_000L, TimelapseLogic.nextDeadlineMs(0L, 0L, 20_000L))
         assertEquals(60_000L, TimelapseLogic.nextDeadlineMs(0L, 41_000L, 20_000L))

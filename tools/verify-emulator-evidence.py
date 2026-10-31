@@ -79,6 +79,12 @@ def verify(archive_path: str, destination: str) -> dict:
         for name in ("idle.png", "starting.png", "recording.png", "reopened.png", "invalid-camera.png", "invalid-camera.txt"):
             (output / name).write_bytes(read(name))
         (output / "jpeg-validation.tsv").write_bytes(table)
+        capture_gaps = json.loads(read("capture-gap-metrics.json"))
+        if (capture_gaps.get("scope") != "Android emulator only" or capture_gaps.get("saved_frames", 0) < 10 or
+                capture_gaps.get("attempts", 0) < capture_gaps.get("saved_frames", 0) or
+                capture_gaps.get("skipped_slots", -1) < 0 or capture_gaps.get("longest_successful_gap_ms", 0) <= 0):
+            raise ValueError("Capture gap metrics are missing or inconsistent")
+        (output / "capture-gap-metrics.json").write_text(json.dumps(capture_gaps, indent=2) + "\n")
         original_export = json.loads(read("original-export-validation.json"))
         expected_names = [row["file"] for row in rows]
         if (original_export.get("source_images") != len(rows) or
@@ -204,7 +210,7 @@ def verify(archive_path: str, destination: str) -> dict:
             if not member.isfile() or member.size > 16 * 1024 * 1024:
                 raise ValueError("Invalid workspace evidence")
             (output / name).write_bytes(archive.extractfile(member).read())
-        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "original_export": original_export, "videos": videos, "host_video_outputs": host_video_outputs, "additional_video_outputs": additional_videos, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
+        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "capture_gaps": capture_gaps, "original_export": original_export, "videos": videos, "host_video_outputs": host_video_outputs, "additional_video_outputs": additional_videos, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
 

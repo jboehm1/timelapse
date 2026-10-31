@@ -1160,7 +1160,7 @@ class MainActivity : ComponentActivity() {
                 .getString("last_state", "CAMERA READY")) + " · " +
                 saved + " photos · " +
                 (s?.failures ?: 0) + " errors" +
-                (s?.takeIf { it.isCapturing }?.let { " · ${it.attempts} attempts · ${it.skippedSlots} skipped" } ?: "") +
+                (s?.takeIf { it.isCapturing }?.let { " · ${it.attempts} attempts · ${it.skippedSlots} skipped · max gap ${it.maxSuccessfulFrameGapMs} ms" } ?: "") +
                 (s?.actualPhotoSize?.takeIf { it!="Not captured yet" }?.let { " · " + it } ?: ""))
         if(::mainRecordButton.isInitialized)
             mainRecordButton.text = when {
