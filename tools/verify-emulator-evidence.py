@@ -144,11 +144,24 @@ def verify(archive_path: str, destination: str) -> dict:
         batch = json.loads(read("batch-export-validation.json"))
         if batch != {"days": 2, "frames_per_day": 2, "kept_after_cancel": 1, "pending_after_cancel": 0, "state": "CANCELLED"}:
             raise ValueError("Day batch publication/cancellation proof failed")
-        for name in ("benchmark_uncached.mp4", "benchmark_cached.mp4", "single_frame.mp4", "batch_day_1.mp4", "batch_day_2.mp4"):
+        additional_videos = {}
+        extra_specs = {
+            "benchmark_uncached.mp4": performance["frames"],
+            "benchmark_cached.mp4": performance["frames"],
+            "single_frame.mp4": 1,
+            "batch_day_1.mp4": 2,
+            "batch_day_2.mp4": 2,
+        }
+        for name, expected_frames in extra_specs.items():
             content = read("exports/" + name)
             if len(content) < 100 or content[4:8] != b"ftyp":
                 raise ValueError("Missing benchmark/batch MP4 bytes")
-            (output / "exports" / name).write_bytes(content)
+            target = output / "exports" / name
+            target.write_bytes(content)
+            additional_videos[name] = validate_mp4(
+                target, frames=expected_frames, width=640, height=360, fps=30,
+                duration_seconds=expected_frames / 30
+            )
         walk = json.loads(read("person-walk-validation.json"))
         centroids = walk.get("person_centroids_x", [])
         if (walk.get("result") != "PASS" or walk.get("people") != 2 or walk.get("source_frames") != 7 or
@@ -191,7 +204,7 @@ def verify(archive_path: str, destination: str) -> dict:
             if not member.isfile() or member.size > 16 * 1024 * 1024:
                 raise ValueError("Invalid workspace evidence")
             (output / name).write_bytes(archive.extractfile(member).read())
-        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "original_export": original_export, "videos": videos, "host_video_outputs": host_video_outputs, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
+        report = {"result": "PASS", "scope": "Android emulator only; S21 unverified", "jpeg_count": len(rows), "frames": images, "original_export": original_export, "videos": videos, "host_video_outputs": host_video_outputs, "additional_video_outputs": additional_videos, "person_walk_simulation": walk, "workspace": "PASS", "export_performance": performance, "day_batch": batch}
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         return report
 

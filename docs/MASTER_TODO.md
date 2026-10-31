@@ -23,20 +23,20 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 
 <!-- PROGRESS-SCORE-START -->
 
-**Progression pondérée estimée : 30 %** — **25/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
+**Progression pondérée estimée : 33 %** — **35/233 tâches à 100 %** (surtout documents et pipeline de build). **CAPTURE-P0-001 reste BLOQUANT : aucune preuve de capture sur Galaxy S21. Les builds sont diagnostiques / UNVERIFIED. Compilation historique : [run #40978329365](https://github.com/jboehm1/timelapse/actions/runs/40978329365). Voir le rapport de continuation pour la validation de la révision actuelle.** Les fonctions caméra ne sont pas validées par une compilation seule.
 
 | Domaine | Tâches | Score pondéré |
 |---|---:|---:|
 | A — Build, outils, CI et livraison | 17 | **31 %** |
-| B — Projets, Photolapse, import et stockage | 19 | **34 %** |
+| B — Projets, Photolapse, import et stockage | 19 | **44 %** |
 | C — Capture caméra, objectifs, format et qualité | 22 | **18 %** |
 | D — Focus, exposition, balances et interface de mesure | 23 | **15 %** |
 | E — Programmation, écran OFF et consommation | 20 | **16 %** |
-| F — Fiabilité, sécurité matérielle et récupération | 30 | **33 %** |
-| G — Export, formats, effets et montage vidéo | 27 | **34 %** |
+| F — Fiabilité, sécurité matérielle et récupération | 30 | **35 %** |
+| G — Export, formats, effets et montage vidéo | 27 | **40 %** |
 | H — Commandes externes, UI, ergonomie | 18 | **22 %** |
 | I — Confidentialité, sécurité, droits, commercialisation | 15 | **30 %** |
-| J — Tests, mesures, robustesse validée et release | 24 | **15 %** |
+| J — Tests, mesures, robustesse validée et release | 24 | **18 %** |
 | K — Documentation, gouvernance et suivi du projet | 18 | **94 %** |
 
 <!-- PROGRESS-SCORE-END -->
@@ -85,7 +85,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | A-16 | P1 | **55 %** | Contrôle des avertissements lint/static analysis | Lint + analyse statique sans défaut majeur |
 | [ ] | A-17 | P2 | **0 %** | Construction reproductible/hachage | Build déterministe comparé en CI locale |
 
-### B. Projets, Photolapse, import et stockage — 34 %
+### B. Projets, Photolapse, import et stockage — 44 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -94,9 +94,9 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-03 | P0 | **25 %** | Import massif JPEG et PNG | Importer 10000 fichiers avec mémoire bornée |
 | [ ] | B-04 | P0 | **10 %** | Import via photothèque Android | Sélection multiple et permissions explicites |
 | [ ] | B-05 | P1 | **0 %** | Import RAW/DNG et EXIF | Conserver origines et orientations validées |
-| [ ] | B-06 | P0 | **55 %** | Export des photos originales par dossiers | Exporter individuellement sans modification d'original |
-| [ ] | B-07 | P0 | **55 %** | Export ZIP facultatif | Archive exacte validée par comparaison de hashes |
-| [ ] | B-08 | P0 | **55 %** | Stockage interne fichiers originaux | Photos accessibles au projet après relance |
+| [x] | B-06 | P0 | **100 %** | Export des photos originales par dossiers | Exporter individuellement sans modification d'original |
+| [x] | B-07 | P0 | **100 %** | Export ZIP facultatif | Archive exacte validée par comparaison de hashes |
+| [x] | B-08 | P0 | **100 %** | Stockage interne fichiers originaux | Photos accessibles au projet après relance |
 | [ ] | B-09 | P0 | **10 %** | Stockage SD/USB externe via SAF | Persistance URI et gestion du média retiré |
 | [ ] | B-10 | P0 | **55 %** | Journal/index des photos durable | Réconciliation après fermeture brutale et crash |
 | [ ] | B-11 | P0 | **55 %** | Écriture atomique et reprise partiels | Pas de photo tronquée présentée comme complète |
@@ -104,7 +104,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | B-13 | P1 | **55 %** | Estimation stockage restant en jours | Prévision avec taille réelle des dernières images |
 | [ ] | B-14 | P0 | **0 %** | Éviter doublons import et reprendre | Index conservé, aucune photo originale écrasée |
 | [ ] | B-15 | P1 | **40 %** | Miniatures et galerie de projets | Navigation fluide sur 10000+ photos |
-| [ ] | B-16 | P1 | **55 %** | Suppression confirmée et corbeille | Aucun effacement irréversible involontaire |
+| [x] | B-16 | P1 | **100 %** | Suppression confirmée et corbeille | Aucun effacement irréversible involontaire |
 | [ ] | B-17 | P1 | **0 %** | Export/backup projet complet portable | Réimporter métadonnées+images sur nouvel appareil |
 | [ ] | B-18 | P1 | **0 %** | Tris temporels et métadonnées EXIF | Ordre déterministe, orientation vérifiée |
 | [ ] | B-19 | P2 | **0 %** | Espace cloud facultatif | Transfert opt-in hors chemin critique de capture |
@@ -189,7 +189,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | E-19 | P2 | **0 %** | Pilotage appareils gérés/kiosk optionnel | Documentation et tests device-owner |
 | [ ] | E-20 | P1 | **0 %** | Comparaison consommation 24h 3 stratégies | Graphes Wh nuit noire/écran OFF/caméra idle |
 
-### F. Fiabilité, sécurité matérielle et récupération — 33 %
+### F. Fiabilité, sécurité matérielle et récupération — 35 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
@@ -204,7 +204,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-09 | P0 | **10 %** | File capture à taille bornée | Une image active; retard => skip et audit |
 | [ ] | F-10 | P0 | **55 %** | Écriture atomique fsync et réconciliation | Kill en pleine sauvegarde, aucune image valide perdue |
 | [ ] | F-11 | P0 | **55 %** | Manifest/journal d'intégrité durable | Reconstruction après corruption partielle |
-| [ ] | F-12 | P0 | **55 %** | Photos originales immuables | Export raté ne modifie aucun hash source |
+| [x] | F-12 | P0 | **100 %** | Photos originales immuables | Export raté ne modifie aucun hash source |
 | [ ] | F-13 | P0 | **40 %** | Journal d'événements rotatif | Horodatage, frame IDs, thermals, erreurs et reprise |
 | [ ] | F-14 | P0 | **40 %** | Diagnostics exportables et consentement | ZIP anonymisé pour analyse |
 | [ ] | F-15 | P0 | **0 %** | Gestion sous tension USB instable | Débranchement/connexion repris ou pause sûre |
@@ -224,14 +224,14 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | F-29 | P0 | **55 %** | Mode dégradation contrôlée | Captures ralentissent, reprennent avec hysteresis |
 | [ ] | F-30 | P1 | **0 %** | Test mémoire/thermique avec instrumentation | Rapports p95, courbes et seuils |
 
-### G. Export, formats, effets et montage vidéo — 34 %
+### G. Export, formats, effets et montage vidéo — 40 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
-| [ ] | G-01 | P0 | **55 %** | Choix export photos ou vidéo | Les deux produisent des fichiers lisibles vérifiés |
-| [ ] | G-02 | P0 | **55 %** | MP4 H.264 | ffprobe vérifie codec, durée et lecture |
+| [x] | G-01 | P0 | **100 %** | Choix export photos ou vidéo | Les deux produisent des fichiers lisibles vérifiés |
+| [x] | G-02 | P0 | **100 %** | MP4 H.264 | ffprobe vérifie codec, durée et lecture |
 | [ ] | G-03 | P0 | **55 %** | Vidéo sans effet (None) | Chaque image correspond à un original |
-| [ ] | G-04 | P0 | **55 %** | Motion Blur temporel | N images intégrées avec réglage force |
+| [x] | G-04 | P0 | **100 %** | Motion Blur temporel | N images intégrées avec réglage force |
 | [ ] | G-05 | P0 | **55 %** | Light Trails | Composition max-luminance, intensité configurable |
 | [ ] | G-06 | P0 | **55 %** | Force et fenêtre des effets | 1 3 5 7 9 images, tests artefacts |
 | [ ] | G-07 | P1 | **0 %** | Effet poids temporels et ghosting réglable | Réglages clairs vs moyenne brute |
@@ -299,13 +299,13 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | I-14 | P1 | **0 %** | Signatures et mises à jour sécurisées | Clés protégées et stratégie rotation |
 | [ ] | I-15 | P2 | **0 %** | Gestion crash telemetry opt-in | Aucune transmission sans consentement |
 
-### J. Tests, mesures, robustesse validée et release — 15 %
+### J. Tests, mesures, robustesse validée et release — 18 %
 
 | Fait | ID | Priorité | Avancement | Fonction / garde-fou | Critère de réussite |
 |---|---|---|---:|---|---|
 | [x] | J-01 | P0 | **100 %** | Tests purs Kotlin politique calendrier | Tous scénarios exécutés et journal CI vert |
 | [x] | J-02 | P0 | **100 %** | Tests Android JVM exécutables | Gradle testDebugUnitTest vert |
-| [ ] | J-03 | P0 | **55 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
+| [x] | J-03 | P0 | **100 %** | Tests instrumentation caméra simulée | Émulateur et fausses erreurs validés |
 | [ ] | J-04 | P0 | **0 %** | APK compile et s'installe S21 | Installation et lancement constatés |
 | [ ] | J-05 | P0 | **0 %** | Photo réelle / métadonnées / fichiers | Capture JPEG décodable avec EXIF |
 | [ ] | J-06 | P0 | **0 %** | Tap AF AE deux zones réelles | Test mur/sky sur S21 |
@@ -321,7 +321,7 @@ Les scores 25 % indiquent du code encore partiel et non vérifié ; les scores 4
 | [ ] | J-16 | P0 | **0 %** | Test kill process/force stop/reboot | Comportement honnête et sûr |
 | [ ] | J-17 | P0 | **0 %** | Test Doze et OEM Samsung | Latence de réveil mesurée |
 | [ ] | J-18 | P1 | **0 %** | Test mémoire 10k/50k images | Borne RAM et export sans crash |
-| [ ] | J-19 | P1 | **55 %** | Test interruptions export vidéo | MP4 partielle nettoyée, originaux hachés |
+| [x] | J-19 | P1 | **100 %** | Test interruptions export vidéo | MP4 partielle nettoyée, originaux hachés |
 | [ ] | J-20 | P1 | **0 %** | Tests de migration projets et versions | Aucune perte après upgrade |
 | [ ] | J-21 | P1 | **0 %** | Test multi-objectifs et SD externe | Toutes capacités S21 observées |
 | [ ] | J-22 | P1 | **0 %** | Rapport benchmark qualité Velocity Lapse | Comparaison fonctionnelle sans copier code |

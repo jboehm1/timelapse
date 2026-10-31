@@ -84,6 +84,28 @@ class OriginalPhotoExporterTest {
         } finally { dir.deleteRecursively() }
     }
 
+    @Test fun pathTraversalNamesAreRejectedBeforeWritingSequenceOrZip() {
+        val dir = createTempDir(prefix = "original-export-path-")
+        try {
+            val traversal = File(dir, "..\\\\escape.jpg").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val before = sha(traversal.readBytes())
+            var opened = false
+            assertTrue(runCatching {
+                OriginalPhotoExporter.exportSequence(listOf(traversal), openOutput = { _, _ ->
+                    opened = true
+                    ByteArrayOutputStream()
+                })
+            }.isFailure)
+            assertFalse(opened)
+            var zipDeleted = false
+            assertTrue(runCatching {
+                OriginalPhotoExporter.exportZip(listOf(traversal), ByteArrayOutputStream(), deleteOutput = { zipDeleted = true })
+            }.isFailure)
+            assertTrue(zipDeleted)
+            assertEquals(before, sha(traversal.readBytes()))
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun failedSequenceAndZipLeaveEveryOriginalUnchanged() {
         val dir = createTempDir(prefix = "original-export-failure-")
         try {

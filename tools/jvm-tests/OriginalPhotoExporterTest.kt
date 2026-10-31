@@ -47,6 +47,23 @@ fun main() {
         check(before == zipHashes)
         check(!zipDeleted)
 
+        val traversal = File(source, "..\\\\escape.jpg").apply { writeBytes(byteArrayOf(9, 8, 7)) }
+        val traversalHash = originalSha(traversal.readBytes())
+        var traversalOpened = false
+        check(runCatching {
+            OriginalPhotoExporter.exportSequence(listOf(traversal), openOutput = { _, _ ->
+                traversalOpened = true
+                ByteArrayOutputStream()
+            })
+        }.isFailure)
+        check(!traversalOpened)
+        var traversalZipDeleted = false
+        check(runCatching {
+            OriginalPhotoExporter.exportZip(listOf(traversal), ByteArrayOutputStream(), deleteOutput = { traversalZipDeleted = true })
+        }.isFailure)
+        check(traversalZipDeleted && traversalHash == originalSha(traversal.readBytes()))
+        check(traversal.delete())
+
         zipDeleted = false
         check(runCatching {
             OriginalPhotoExporter.exportZip(sources, OutputStreamFailure(16), deleteOutput = { zipDeleted = true })
